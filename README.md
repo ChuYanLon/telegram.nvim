@@ -1,6 +1,6 @@
 # telegram.nvim
 
-Send and receive Telegram messages inside Neovim.
+A Telegram chat tool for neovim, similar to telegra.el
 
 Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket communication.
 
@@ -57,10 +57,10 @@ The plugin auto-detects `libtdjson.so` at these paths:
 
 ## Commands
 
-| Command     | Description                                                         |
-| ----------- | ------------------------------------------------------------------- |
+| Command     | Description                                                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `:Tg`       | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
-| `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh |
+| `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 
 ## Keymaps
 
