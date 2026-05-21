@@ -410,8 +410,11 @@ local function close_chat()
 end
 
 local function close_chat_forget()
-  state.last_chat = nil
   close_chat()
+  state.last_chat = nil
+  M.ws_stop()
+  stop_server()
+  initialized = false
 end
 
 local function load_older()
