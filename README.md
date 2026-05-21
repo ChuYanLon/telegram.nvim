@@ -59,8 +59,8 @@ The plugin auto-detects `libtdjson.so` at these paths:
 
 | Command     | Description                                                         |
 | ----------- | ------------------------------------------------------------------- |
-| `:Tg`       | Start server → authenticate (async, non-blocking) → open group list |
-| `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh                   |
+| `:Tg`       | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
+| `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh |
 
 ## Keymaps
 
