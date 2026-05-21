@@ -102,11 +102,6 @@ local function server_health()
   return data
 end
 
-local function server_ready()
-  local data = server_health()
-  return data and data.ready == true
-end
-
 local function post_auth_input(value)
   local url = base_url() .. '/auth/input'
   local encoded = vim.json.encode({ value = value })
