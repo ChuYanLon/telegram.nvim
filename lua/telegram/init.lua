@@ -476,7 +476,7 @@ function M.open_chat(chat_id, chat_title)
   local msg_h = height - 3
   state.win = vim.api.nvim_open_win(state.buf, true, {
     relative = 'editor', width = width, height = msg_h,
-    row = row, col = col, style = 'minimal', border = 'single',
+    row = row, col = col, style = 'minimal', border = 'rounded',
     title = ' ' .. chat_title .. ' ',
     title_pos = 'center',
   })
@@ -492,7 +492,7 @@ function M.open_chat(chat_id, chat_title)
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
     style = 'minimal',
-    border = 'single',
+    border = 'rounded',
     focusable = false,
     zindex = 5,
   })
