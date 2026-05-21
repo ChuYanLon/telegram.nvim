@@ -377,12 +377,8 @@ local function update_title()
   if not state.menu_buf or not vim.api.nvim_buf_is_valid(state.menu_buf) then return end
   local line = vim.api.nvim_buf_get_lines(state.menu_buf, 0, 1, false)[1]
   if not line then return end
-  if state.unread > 0 then
-    local clean = line:gsub('^  ◆ %d+  ', '')
-    vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { '  ◆ ' .. state.unread .. '  ' .. clean })
-  elseif line:find('^  ◆ %d+  ') == 1 then
-    vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { (line:gsub('^  ◆ %d+  ', '')) })
-  end
+  local clean = line:gsub('^  ◆ %d+  ', '')
+  vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { '  ◆ ' .. state.unread .. '  ' .. clean })
 end
 
 local function close_chat()
@@ -518,6 +514,7 @@ function M.open_chat(chat_id, chat_title)
   for pos, key in bar:gmatch('()([%w<>]+):') do
     vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, pos - 1, pos - 1 + #key)
   end
+  update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', close_chat_forget, { buffer = state.buf })
   vim.keymap.set('n', 's', function()
