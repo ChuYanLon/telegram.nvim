@@ -64,6 +64,9 @@ The plugin auto-detects `libtdjson.so` at these paths:
     "Tg",
     "TgLogout",
   },
+  opts={
+    tdlib_path=""
+  }
 }
 ```
 
