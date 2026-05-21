@@ -19,7 +19,7 @@ global.broadcast = (data) => {
 };
 
 wss.on('connection', (ws) => {
-  console.log('Neovim 客户端已连接');
+  console.log('Neovim client connected');
 });
 
 app.use(express.json());
@@ -88,8 +88,8 @@ app.post('/sendMessage', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log('HTTP 服务: http://localhost:' + PORT);
-  console.log('WebSocket 服务: ws://localhost:' + WS_PORT);
+  console.log('HTTP server: http://localhost:' + PORT);
+  console.log('WebSocket server: ws://localhost:' + WS_PORT);
 });
 
 tgClient.start().catch(console.error);

@@ -52,7 +52,7 @@ class TelegramLSPClient {
         type: 'user',
         getPhoneNumber: async (retry) => {
           this._authState = 'waitPhone';
-          this._authError = retry ? '手机号无效，请重新输入' : null;
+          this._authError = retry ? 'Invalid phone number, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'phoneNumber', retry });
           }
@@ -62,7 +62,7 @@ class TelegramLSPClient {
         },
         getAuthCode: async (retry) => {
           this._authState = 'waitCode';
-          this._authError = retry ? '验证码错误，请重新输入' : null;
+          this._authError = retry ? 'Invalid code, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'authCode', retry });
           }
@@ -73,7 +73,7 @@ class TelegramLSPClient {
         getPassword: async (hint, retry) => {
           this._authState = 'waitPassword';
           this._authHint = hint || null;
-          this._authError = retry ? '密码错误，请重新输入' : null;
+          this._authError = retry ? 'Wrong password, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'password', hint, retry });
           }
@@ -85,7 +85,7 @@ class TelegramLSPClient {
       this._ready = true;
       this._authState = 'ready';
       this.listenUpdates();
-      console.log('TDLib 客户端已就绪');
+      console.log('TDLib client ready');
     } catch (err) {
       this._authState = 'error';
       this._authError = err.message;
@@ -189,7 +189,7 @@ class TelegramLSPClient {
       const chat = this._chats.get(msg.chat_id);
       global.broadcast({
         event: 'newMessage',
-        chat: { id: msg.chat_id, title: chat ? chat.title : '未知群组' },
+        chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
         sender: await this._resolveSender(msg.sender_id),
         text: this._extractText(msg.content),
         date: msg.date,
@@ -267,7 +267,7 @@ class TelegramLSPClient {
     });
     const chat = this._chats.get(chatId);
     return {
-      chat: { id: chatId, title: chat ? chat.title : '未知群组' },
+      chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
       messages: await Promise.all((result.messages || []).map(m => this._formatMessage(m))),
     };
   }

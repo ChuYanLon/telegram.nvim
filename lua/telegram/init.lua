@@ -216,7 +216,7 @@ local function auth_poll(on_done)
     end
 
     if a.state == 'error' then
-      vim.notify('[tg] 认证失败: ' .. (type(a.error) == 'string' and a.error or 'unknown'), vim.log.levels.ERROR)
+      vim.notify('[tg] Auth failed: ' .. (type(a.error) == 'string' and a.error or 'unknown'), vim.log.levels.ERROR)
       on_done(false)
       return
     end
@@ -224,14 +224,14 @@ local function auth_poll(on_done)
     if (a.state == 'waitPhone' or a.state == 'waitCode' or a.state == 'waitPassword') and a.canInput then
       local prompt
       if a.state == 'waitPhone' then
-        prompt = '请输入手机号'
+        prompt = 'Phone number'
         if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
       elseif a.state == 'waitCode' then
-        prompt = '请输入验证码'
+        prompt = 'Verification code'
         if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
       else
-        prompt = '2FA密码'
-        if type(a.hint) == 'string' then prompt = prompt .. ' (提示: ' .. a.hint .. ')' end
+        prompt = '2FA password'
+        if type(a.hint) == 'string' then prompt = prompt .. ' (hint: ' .. a.hint .. ')' end
         if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
       end
 
@@ -239,7 +239,7 @@ local function auth_poll(on_done)
         if val and #val > 0 then
           post_auth_input(val)
         else
-          vim.notify('[tg] 认证已取消', vim.log.levels.INFO)
+          vim.notify('[tg] Auth cancelled', vim.log.levels.INFO)
           on_done(false)
           return
         end
@@ -516,7 +516,7 @@ function M.list_groups(force_picker)
     if health and health.ready == true then
       finish_init()
     else
-      vim.notify('[tg] 等待认证...', vim.log.levels.INFO)
+      vim.notify('[tg] Waiting for auth...', vim.log.levels.INFO)
       auth_poll(function(success)
         if success then
           finish_init()
@@ -596,14 +596,14 @@ vim.api.nvim_create_autocmd('VimLeavePre', {
 vim.api.nvim_create_user_command('Tg', M.list_groups, {})
 
 function M.logout()
-  vim.notify('[tg] 正在登出并清除认证数据...', vim.log.levels.INFO)
+  vim.notify('[tg] Logging out and clearing auth data...', vim.log.levels.INFO)
   stop_server()
   local db_dir = M.config.data_dir .. '/tdlib_db'
   local files_dir = M.config.data_dir .. '/tdlib_files'
   vim.fn.delete(db_dir, 'rf')
   vim.fn.delete(files_dir, 'rf')
   initialized = false
-  vim.notify('[tg] 已登出，下次 :Tg 重新认证', vim.log.levels.INFO)
+  vim.notify('[tg] Logged out. Run :Tg again to re-authenticate', vim.log.levels.INFO)
 end
 
 vim.api.nvim_create_user_command('TgLogout', M.logout, {})
