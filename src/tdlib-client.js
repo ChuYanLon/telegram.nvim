@@ -48,6 +48,15 @@ class TelegramLSPClient {
 
   async start() {
     try {
+      const verOption = await this.client.invoke({ _: 'getOption', name: 'version' });
+      if (verOption && verOption.value) {
+        const parts = verOption.value.split('.').map(Number);
+        if (parts[0] < 1 || (parts[0] === 1 && parts[1] < 8) || (parts[0] === 1 && parts[1] === 8 && parts[2] < 64)) {
+          throw new Error(`TDLib version ${verOption.value} is too old. Minimum required: 1.8.64`);
+        }
+        console.log(`TDLib version: ${verOption.value}`);
+      }
+
       await this.client.login({
         type: 'user',
         getPhoneNumber: async (retry) => {
