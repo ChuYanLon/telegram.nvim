@@ -24,7 +24,21 @@ sudo pacman -S tdlib
 brew install tdlib
 ```
 
-**Other Linux:** Build from [tdlib/tag](https://github.com/tdlib/td/tags) sources, or rely on `prebuilt-tdlib` (listed as a dependency — the `.so` still needs to be on your system).
+**Other Linux:** Build from source:
+
+```bash
+git clone https://github.com/tdlib/td.git
+cd td
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=~/.local \
+    -DCMAKE_CXX_FLAGS="-O2 -g0" \
+    ..
+cmake --build . --target install -j$(nproc)
+ldconfig 2>/dev/null || true
+```
+
+Or rely on `prebuilt-tdlib` (listed as a dependency — the `.so` still needs to be on your system).
 
 The plugin auto-detects `libtdjson.so` at these paths:
 
