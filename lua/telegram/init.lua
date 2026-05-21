@@ -247,8 +247,10 @@ function M.get_groups()
   return http_get('/groups')
 end
 
+local DEFAULT_LIMIT = 10
+
 function M.get_messages(chat_id, limit, before)
-  local path = '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or 50)
+  local path = '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or DEFAULT_LIMIT)
   if before then path = path .. '&before=' .. before end
   return http_get(path)
 end
@@ -393,17 +395,21 @@ local function load_older()
   if state.loading or state.exhausted or #state.messages == 0 then return end
   state.loading = true
   local oldest_id = state.messages[1].id
-  local data = M.get_messages(state.chat_id, 50, oldest_id)
+  local data = M.get_messages(state.chat_id, DEFAULT_LIMIT, oldest_id)
   if not data then state.loading = false; return end
   local new_msgs = data.messages or {}
-  if #new_msgs == 0 then
+  if #new_msgs == 0 or #new_msgs < DEFAULT_LIMIT then
     state.exhausted = true
     state.loading = false
+    local cur = vim.api.nvim_win_get_cursor(state.win)
+    if cur[1] == 1 then
+      pcall(vim.api.nvim_win_set_cursor, state.win, { 2, cur[2] })
+    end
     return
   end
   local cursor = vim.api.nvim_win_get_cursor(state.win)
   local old_top = cursor[1]
-  for i = #new_msgs, 1, -1 do
+  for i = 1, #new_msgs do
     table.insert(state.messages, 1, new_msgs[i])
   end
   render()
@@ -413,7 +419,9 @@ end
 
 local function refresh_messages()
   if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then return end
-  local data = M.get_messages(state.chat_id)
+  state.loading = false
+  state.exhausted = false
+  local data = M.get_messages(state.chat_id, DEFAULT_LIMIT)
   if not data then
     vim.notify('[tg] Failed to load messages', vim.log.levels.ERROR)
     return
@@ -466,7 +474,15 @@ function M.open_chat(chat_id, chat_title)
     callback = function()
       if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
       if vim.api.nvim_get_current_win() ~= state.win then return end
-      if vim.api.nvim_win_get_cursor(state.win)[1] <= 2 then load_older() end
+      local cur = vim.api.nvim_win_get_cursor(state.win)[1]
+      if cur <= 2 then
+        if not state.exhausted then
+          load_older()
+        end
+        if state.exhausted then
+          pcall(vim.api.nvim_win_set_cursor, state.win, { 2, 0 })
+        end
+      end
     end,
   })
   refresh_messages()
