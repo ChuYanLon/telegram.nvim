@@ -8,7 +8,7 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 
 - **Node.js** (>= 18)
 - **curl**
-- **libtdjson** — TDLib shared library
+- **libtdjson** — TDLib shared library (minimum version **1.8.64**)
 
 ### Installing libtdjson
 
