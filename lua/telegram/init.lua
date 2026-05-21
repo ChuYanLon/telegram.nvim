@@ -21,8 +21,10 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend('force', M.config, opts or {})
   vim.api.nvim_set_hl(0, 'TgTimestamp', { link = 'Comment', default = true })
   vim.api.nvim_set_hl(0, 'TgSender', { link = 'Identifier', default = true })
-  vim.api.nvim_set_hl(0, 'TgSeparator', { link = 'NonText', default = true })
   vim.api.nvim_set_hl(0, 'TgKey', { link = 'Keyword', default = true })
+  vim.api.nvim_set_hl(0, 'TgNoBg', { fg = 'NONE', bg = 'NONE', default = true })
+  local bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name('FloatBorder') }) or {}).fg or '#6c6c6c'
+  vim.api.nvim_set_hl(0, 'TgBorder', { fg = bfg, bg = 'NONE', default = true })
 end
 
 local function ensure_deps()
@@ -480,8 +482,7 @@ function M.open_chat(chat_id, chat_title)
     title = ' ' .. chat_title .. ' ',
     title_pos = 'center',
   })
-  vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat,FloatBorder:Normal', { win = state.win })
-
+  vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.win })
   state.menu_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
@@ -496,7 +497,7 @@ function M.open_chat(chat_id, chat_title)
     focusable = false,
     zindex = 5,
   })
-  vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat,FloatBorder:Normal', { win = state.menu_win })
+  vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.menu_win })
   vim.api.nvim_buf_set_lines(state.menu_buf, 0, -1, false, { bar })
   for pos, key in bar:gmatch('()([%w<>]+):') do
     vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, pos - 1, pos - 1 + #key)
