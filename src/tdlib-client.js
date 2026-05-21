@@ -5,6 +5,7 @@ require('dotenv').config();
 const TG_API_ID = Number(process.env.TG_API_ID) || 1025907;
 const TG_API_HASH = process.env.TG_API_HASH || '452b0359b988148995f22ff0f4229750';
 const TG_TDLIB_PATH = process.env.TG_TDLIB_PATH;
+const TG_PROXY = process.env.TG_PROXY;
 const dataDir = process.env.TG_DATA_DIR || process.cwd();
 
 class TelegramLSPClient {
@@ -55,6 +56,23 @@ class TelegramLSPClient {
           throw new Error(`TDLib version ${verOption.value} is too old. Minimum required: 1.8.64`);
         }
         console.log(`TDLib version: ${verOption.value}`);
+      }
+
+      if (TG_PROXY) {
+        try {
+          const url = new URL(TG_PROXY);
+          const type = url.protocol === 'socks5:' || url.protocol === 'socks5h:'
+            ? { _: 'proxyTypeSocks5', username: url.username || '', password: url.password || '' }
+            : { _: 'proxyTypeHttp', username: url.username || '', password: url.password || '', http_only: false };
+          await this.client.invoke({
+            _: 'addProxy',
+            proxy: { _: 'proxy', server: url.hostname, port: parseInt(url.port) || 1080, type },
+            enable: true,
+          });
+          console.log(`Proxy enabled: ${url.protocol}//${url.host}`);
+        } catch (e) {
+          console.error('Failed to set proxy:', e.message);
+        }
       }
 
       await this.client.login({

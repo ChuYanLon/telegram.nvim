@@ -8,6 +8,7 @@ M.config = {
   tdlib_path = nil,
   api_id = nil,
   api_hash = nil,
+  proxy = nil,
 }
 
 local http_port = 8080
@@ -159,6 +160,7 @@ local function start_server()
   if M.config.tdlib_path then env.TG_TDLIB_PATH = M.config.tdlib_path end
   if M.config.api_id then env.TG_API_ID = tostring(M.config.api_id) end
   if M.config.api_hash then env.TG_API_HASH = M.config.api_hash end
+  if M.config.proxy then env.TG_PROXY = M.config.proxy end
 
   local server_script = plugin_root .. '/src/server.js'
 
