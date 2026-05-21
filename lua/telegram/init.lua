@@ -480,7 +480,7 @@ function M.open_chat(chat_id, chat_title)
     title = ' ' .. chat_title .. ' ',
     title_pos = 'center',
   })
-  vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat', { win = state.win })
+  vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat,FloatBorder:Normal', { win = state.win })
 
   state.menu_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
@@ -496,6 +496,7 @@ function M.open_chat(chat_id, chat_title)
     focusable = false,
     zindex = 5,
   })
+  vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat,FloatBorder:Normal', { win = state.menu_win })
   vim.api.nvim_buf_set_lines(state.menu_buf, 0, -1, false, { bar })
   for pos, key in bar:gmatch('()([%w<>]+):') do
     vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, pos - 1, pos - 1 + #key)
