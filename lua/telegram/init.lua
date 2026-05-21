@@ -320,7 +320,7 @@ local state = {
   last_chat = nil,
   menu_buf = nil,
   menu_win = nil,
-  menu_width = nil,
+  last_msg = nil,
 }
 
 local function set_lines(lines)
@@ -373,12 +373,20 @@ local function render()
   apply_highlights()
 end
 
+local function strvis(s) return vim.fn.strwidth(s) end
+
 local function update_title()
   if not state.menu_buf or not vim.api.nvim_buf_is_valid(state.menu_buf) then return end
-  local line = vim.api.nvim_buf_get_lines(state.menu_buf, 0, 1, false)[1]
-  if not line then return end
-  local clean = line:gsub('^  ◆ %d+  ', '')
-  vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { '  ◆ ' .. state.unread .. '  ' .. clean })
+  local w = vim.api.nvim_win_get_width(state.menu_win)
+  local count = '  ◆ ' .. state.unread .. '  '
+  local bar = state.last_msg or 'latest'
+  local avail = w - strvis(count)
+  if strvis(bar) > avail then
+    bar = vim.fn.strcharpart(bar, 0, avail - 3) .. '...'
+  end
+  bar = count .. bar
+  bar = bar .. string.rep(' ', math.max(w - strvis(bar), 0))
+  vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { bar })
 end
 
 local function close_chat()
@@ -468,8 +476,12 @@ local function refresh_messages()
   end
   render()
   if #state.messages > 0 then
+    local latest = state.messages[#state.messages]
+    local ts = os.date('%m-%d %H:%M', latest.date)
+    state.last_msg = '[' .. ts .. '] ' .. (latest.sender and latest.sender.name or '?') .. ': ' .. (latest.text or '')
     vim.api.nvim_win_set_cursor(state.win, { #state.messages, 0 })
   end
+  update_title()
 end
 
 function M.open_chat(chat_id, chat_title)
@@ -496,11 +508,7 @@ function M.open_chat(chat_id, chat_title)
   state.menu_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
-  local bar_text = 'i:reply    s:switch    r:refresh    Esc:back    q:quit'
-  local left = math.floor((width - #bar_text) / 2)
-  local bar = string.rep(' ', left) .. bar_text .. string.rep(' ', width - #bar_text - left)
-  state.menu_width = width
-  state.menu_bar = bar_text
+  state.menu_bar = 'i:reply s:switch r:refresh Esc:back q:quit'
   state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
@@ -510,10 +518,7 @@ function M.open_chat(chat_id, chat_title)
     zindex = 5,
   })
   vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.menu_win })
-  vim.api.nvim_buf_set_lines(state.menu_buf, 0, -1, false, { bar })
-  for pos, key in bar:gmatch('()([%w<>]+):') do
-    vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, pos - 1, pos - 1 + #key)
-  end
+  vim.api.nvim_win_set_option(state.menu_win, 'wrap', false)
   update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', close_chat_forget, { buffer = state.buf })
@@ -562,6 +567,9 @@ local function finish_init()
           local at_bottom = cur[1] >= total_before - 1
 
           if not at_bottom then state.unread = state.unread + 1 end
+          local ts = os.date('%m-%d %H:%M', msg.date)
+          local preview = '[' .. ts .. '] ' .. (msg.sender and msg.sender.name or '?') .. ': ' .. (msg.text or '')
+          state.last_msg = preview:sub(1, 60)
           update_title()
 
           table.insert(state.messages, {
