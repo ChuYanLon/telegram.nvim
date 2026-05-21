@@ -51,15 +51,14 @@ local function ensure_deps()
     vim.notify('[tg] See https://github.com/Bannerets/tdl#installation', vim.log.levels.INFO)
     return false
   end
-  local ws_bundle = plugin_root .. '/bin/tg-ws-helper.bundle.js'
-  if vim.fn.filereadable(ws_bundle) ~= 1 then
-    vim.notify('[tg] Missing bundled WS helper. Run bin/build.sh', vim.log.levels.ERROR)
+  local ws_helper = plugin_root .. '/bin/tg-ws-helper.js'
+  if vim.fn.filereadable(ws_helper) ~= 1 then
+    vim.notify('[tg] Missing ws helper', vim.log.levels.ERROR)
     return false
   end
-  local server_js = plugin_root .. '/dist/server.bundle.js'
   local server_src = plugin_root .. '/src/server.js'
-  if vim.fn.filereadable(server_js) ~= 1 and vim.fn.filereadable(server_src) ~= 1 then
-    vim.notify('[tg] Missing server source. Run bin/build.sh', vim.log.levels.ERROR)
+  if vim.fn.filereadable(server_src) ~= 1 then
+    vim.notify('[tg] Missing server source. Run npm install', vim.log.levels.ERROR)
     return false
   end
   return true
@@ -166,16 +165,7 @@ local function start_server()
   if M.config.api_id then env.TG_API_ID = tostring(M.config.api_id) end
   if M.config.api_hash then env.TG_API_HASH = M.config.api_hash end
 
-  local server_script
-  if vim.fn.filereadable(plugin_root .. '/src/server.js') == 1 then
-    server_script = plugin_root .. '/src/server.js'
-  elseif vim.fn.filereadable(plugin_root .. '/dist/server.bundle.js') == 1 then
-    server_script = plugin_root .. '/dist/server.bundle.js'
-    env.NODE_PATH = plugin_root .. '/dist/node_modules'
-  else
-    vim.notify('[tg] Missing server script', vim.log.levels.ERROR)
-    return false
-  end
+  local server_script = plugin_root .. '/src/server.js'
 
   server_job = vim.fn.jobstart({ 'node', server_script }, {
     cwd = plugin_root,
@@ -295,7 +285,7 @@ function M.ws_start(on_msg)
     vim.fn.jobstop(ws_job_id)
     ws_job_id = nil
   end
-  local helper = plugin_root .. '/bin/tg-ws-helper.bundle.js'
+  local helper = plugin_root .. '/bin/tg-ws-helper.js'
   ws_job_id = vim.fn.jobstart({ 'node', helper, ws_url() }, {
     on_stdout = function(_, data)
       if not data then return end
