@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const TG_API_ID = Number(process.env.TG_API_ID) || 1025907;
 const TG_API_HASH = process.env.TG_API_HASH || '452b0359b988148995f22ff0f4229750';
-const TG_TDLIB_PATH = process.env.TG_TDLIB_PATH || '/home/cyl/.local/lib/libtdjson.so';
+const TG_TDLIB_PATH = process.env.TG_TDLIB_PATH;
 const dataDir = process.env.TG_DATA_DIR || process.cwd();
 
 class TelegramLSPClient {
