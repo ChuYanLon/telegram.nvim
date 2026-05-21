@@ -316,9 +316,11 @@ local state = {
   messages = {},
   loading = false,
   exhausted = false,
+  unread = 0,
   last_chat = nil,
   menu_buf = nil,
   menu_win = nil,
+  menu_width = nil,
 }
 
 local function set_lines(lines)
@@ -369,6 +371,18 @@ local function render()
   end
   set_lines(lines)
   apply_highlights()
+end
+
+local function update_title()
+  if not state.menu_buf or not vim.api.nvim_buf_is_valid(state.menu_buf) then return end
+  local line = vim.api.nvim_buf_get_lines(state.menu_buf, 0, 1, false)[1]
+  if not line then return end
+  if state.unread > 0 then
+    local clean = line:gsub('^  ◆ %d+  ', '')
+    vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { '  ◆ ' .. state.unread .. '  ' .. clean })
+  elseif line:find('^  ◆ %d+  ') == 1 then
+    vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { (line:gsub('^  ◆ %d+  ', '')) })
+  end
 end
 
 local function close_chat()
@@ -489,6 +503,8 @@ function M.open_chat(chat_id, chat_title)
   local bar_text = 'i:reply    s:switch    r:refresh    Esc:back    q:quit'
   local left = math.floor((width - #bar_text) / 2)
   local bar = string.rep(' ', left) .. bar_text .. string.rep(' ', width - #bar_text - left)
+  state.menu_width = width
+  state.menu_bar = bar_text
   state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
@@ -507,8 +523,12 @@ function M.open_chat(chat_id, chat_title)
   vim.keymap.set('n', 's', function()
     M.list_groups(true)
   end, { buffer = state.buf })
-  vim.keymap.set('n', 'r', refresh_messages, { buffer = state.buf })
+  vim.keymap.set('n', 'r', function()
+    if state.unread > 0 then state.unread = 0; update_title() end
+    refresh_messages()
+  end, { buffer = state.buf })
   vim.keymap.set('n', 'i', function()
+    if state.unread > 0 then state.unread = 0; update_title() end
     vim.ui.input({ prompt = 'Message: ' }, function(text)
       if text and #text > 0 then
         local ok = M.send_message(state.chat_id, text)
@@ -523,6 +543,10 @@ function M.open_chat(chat_id, chat_title)
     callback = function()
       if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
       if vim.api.nvim_get_current_win() ~= state.win then return end
+      if state.unread > 0 and vim.api.nvim_win_get_cursor(state.win)[1] >= vim.api.nvim_buf_line_count(state.buf) - 1 then
+        state.unread = 0
+        update_title()
+      end
       if vim.api.nvim_win_get_cursor(state.win)[1] <= 1 and not state.exhausted then
         load_older()
       end
@@ -534,12 +558,34 @@ end
 local function finish_init()
   M.ws_start(function(msg)
     if msg.event == 'newMessage' then
-      vim.notify(string.format('[TG] %s: %s',
-        msg.sender and msg.sender.name or '?',
-        msg.text and msg.text:sub(1, 80) or '?'
-      ), vim.log.levels.INFO, { title = 'Telegram' })
       if state.chat_id and msg.chat and msg.chat.id == state.chat_id then
-        vim.schedule(refresh_messages)
+        vim.schedule(function()
+          local total_before = vim.api.nvim_buf_line_count(state.buf)
+          local cur = vim.api.nvim_win_get_cursor(state.win)
+          local at_bottom = cur[1] >= total_before - 1
+
+          if not at_bottom then state.unread = state.unread + 1 end
+          update_title()
+
+          table.insert(state.messages, {
+            id = msg.id or (os.time() .. math.random()),
+            date = msg.date,
+            sender = msg.sender,
+            text = msg.text,
+          })
+          render()
+
+          if at_bottom then
+            pcall(vim.api.nvim_win_set_cursor, state.win, { vim.api.nvim_buf_line_count(state.buf) - 1, cur[2] })
+          end
+          state.exhausted = false
+        end)
+      else
+        vim.notify(string.format('[%s] %s: %s',
+          msg.chat and msg.chat.title or '?',
+          msg.sender and msg.sender.name or '?',
+          msg.text and msg.text:sub(1, 80) or '?'
+        ), vim.log.levels.INFO, { title = 'Telegram' })
       end
     end
   end)

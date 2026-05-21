@@ -216,6 +216,7 @@ class TelegramLSPClient {
       const chat = this._chats.get(msg.chat_id);
       global.broadcast({
         event: 'newMessage',
+        id: msg.id,
         chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
         sender: await this._resolveSender(msg.sender_id),
         text: this._extractText(msg.content),
