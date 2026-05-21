@@ -378,15 +378,22 @@ local function strvis(s) return vim.fn.strwidth(s) end
 local function update_title()
   if not state.menu_buf or not vim.api.nvim_buf_is_valid(state.menu_buf) then return end
   local w = vim.api.nvim_win_get_width(state.menu_win)
-  local count = '  ◆ ' .. state.unread .. '  '
-  local bar = state.last_msg or 'latest'
-  local avail = w - strvis(count)
-  if strvis(bar) > avail then
-    bar = vim.fn.strcharpart(bar, 0, avail - 3) .. '...'
+  local left = '  ◆ ' .. state.unread .. '  '
+  local right = '  help(?)  '
+  local preview = (state.last_msg or 'latest'):gsub('\n', ' ')
+  local avail = w - strvis(left) - strvis(right)
+  if strvis(preview) > avail then
+    while strvis(preview) > avail - 3 do
+      preview = vim.fn.strcharpart(preview, 0, vim.fn.strchars(preview) - 1)
+    end
+    preview = preview .. '...'
   end
-  bar = count .. bar
-  bar = bar .. string.rep(' ', math.max(w - strvis(bar), 0))
+  local bar = left .. preview
+  bar = bar .. string.rep(' ', math.max(w - strvis(bar) - strvis(right), 0)) .. right
   vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { bar })
+  vim.api.nvim_buf_clear_namespace(state.menu_buf, hl_ns, 0, -1)
+  vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, 2, strvis(left))
+  vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, w - 9, w - 1)
 end
 
 local function close_chat()
@@ -522,6 +529,15 @@ function M.open_chat(chat_id, chat_title)
   update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', close_chat_forget, { buffer = state.buf })
+  vim.keymap.set('n', '?', function()
+    vim.notify([[
+ i  reply
+ s  switch group
+ r  refresh
+ ?  this help
+ Esc  close chat
+ q  quit telegram]], vim.log.levels.INFO, { title = 'Telegram' })
+  end, { buffer = state.buf })
   vim.keymap.set('n', 's', function()
     M.list_groups(true)
   end, { buffer = state.buf })
