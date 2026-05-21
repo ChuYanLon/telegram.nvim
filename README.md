@@ -38,14 +38,7 @@ cmake --build . --target install -j$(nproc)
 ldconfig 2>/dev/null || true
 ```
 
-Or rely on `prebuilt-tdlib` (listed as a dependency — the `.so` still needs to be on your system).
-
-The plugin auto-detects `libtdjson.so` at these paths:
-
-- `/usr/lib/libtdjson.so`
-- `/usr/lib/x86_64-linux-gnu/libtdjson.so`
-- `/usr/local/lib/libtdjson.so`
-- `~/.local/lib/libtdjson.so`
+Or rely on `prebuilt-tdlib` (listed as a dependency — the library still needs to be on your system).
 
 ## Installation
 
@@ -65,7 +58,8 @@ The plugin auto-detects `libtdjson.so` at these paths:
     "TgLogout",
   },
   opts = {
-    proxy = "socks5://127.0.0.1:7890",  -- optional, for regions where Telegram is blocked
+    tdlib_path = "/path/to/libtdjson.so",             -- REQUIRED: .so (Linux) / .dylib (macOS) / .dll (Windows)
+    proxy = "socks5://127.0.0.1:7890",                -- optional, for regions where Telegram is blocked
   },
 }
 ```

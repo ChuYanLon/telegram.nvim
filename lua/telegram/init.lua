@@ -23,21 +23,6 @@ function M.setup(opts)
   vim.api.nvim_set_hl(0, 'TgSender', { link = 'Identifier', default = true })
 end
 
-local function detect_tdlib()
-  if M.config.tdlib_path then return M.config.tdlib_path end
-  local candidates = {
-    '/usr/lib/libtdjson.so',
-    '/usr/lib/x86_64-linux-gnu/libtdjson.so',
-    '/usr/local/lib/libtdjson.so',
-    '/home/' .. vim.fn.expand('$USER') .. '/.local/lib/libtdjson.so',
-    '/opt/homebrew/lib/libtdjson.dylib',
-  }
-  for _, p in ipairs(candidates) do
-    if vim.fn.filereadable(p) == 1 then return p end
-  end
-  return nil
-end
-
 local function ensure_deps()
   if vim.fn.executable('node') ~= 1 then
     vim.notify('[tg] Node.js not found. Install nodejs first.', vim.log.levels.ERROR)
@@ -47,8 +32,8 @@ local function ensure_deps()
     vim.notify('[tg] curl not found.', vim.log.levels.ERROR)
     return false
   end
-  if not detect_tdlib() then
-    vim.notify('[tg] libtdjson.so not found. Set config.tdlib_path or install TDLib.', vim.log.levels.ERROR)
+  if not M.config.tdlib_path then
+    vim.notify('[tg] tdlib_path not set. Set config.tdlib_path in setup().', vim.log.levels.ERROR)
     vim.notify('[tg] See https://github.com/Bannerets/tdl#installation', vim.log.levels.INFO)
     return false
   end
