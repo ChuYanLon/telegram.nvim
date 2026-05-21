@@ -409,11 +409,22 @@ local function load_older()
   end
   local cursor = vim.api.nvim_win_get_cursor(state.win)
   local old_top = cursor[1]
-  for i = 1, #new_msgs do
-    table.insert(state.messages, 1, new_msgs[i])
+  local seen = {}
+  for _, m in ipairs(state.messages) do
+    seen[m.id] = true
   end
-  render()
-  vim.api.nvim_win_set_cursor(state.win, { old_top + #new_msgs, cursor[2] })
+  local added = 0
+  for i = 1, #new_msgs do
+    if not seen[new_msgs[i].id] then
+      seen[new_msgs[i].id] = true
+      table.insert(state.messages, 1, new_msgs[i])
+      added = added + 1
+    end
+  end
+  if added > 0 then
+    render()
+    vim.api.nvim_win_set_cursor(state.win, { old_top + added, cursor[2] })
+  end
   state.loading = false
 end
 
@@ -428,8 +439,13 @@ local function refresh_messages()
   end
   local raw = data.messages or {}
   state.messages = {}
+  local seen = {}
   for i = #raw, 1, -1 do
-    table.insert(state.messages, raw[i])
+    local msg = raw[i]
+    if not seen[msg.id] then
+      seen[msg.id] = true
+      table.insert(state.messages, msg)
+    end
   end
   render()
   vim.api.nvim_win_set_cursor(state.win, { #state.messages + 2, 0 })
