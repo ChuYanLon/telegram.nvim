@@ -21,6 +21,8 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend('force', M.config, opts or {})
   vim.api.nvim_set_hl(0, 'TgTimestamp', { link = 'Comment', default = true })
   vim.api.nvim_set_hl(0, 'TgSender', { link = 'Identifier', default = true })
+  vim.api.nvim_set_hl(0, 'TgSeparator', { link = 'NonText', default = true })
+  vim.api.nvim_set_hl(0, 'TgKey', { link = 'Keyword', default = true })
 end
 
 local function ensure_deps()
@@ -313,6 +315,8 @@ local state = {
   loading = false,
   exhausted = false,
   last_chat = nil,
+  menu_buf = nil,
+  menu_win = nil,
 }
 
 local function set_lines(lines)
@@ -337,31 +341,30 @@ local hl_ns = vim.api.nvim_create_namespace('TgChat')
 local function apply_highlights()
   vim.api.nvim_buf_clear_namespace(state.buf, hl_ns, 0, -1)
   local total = vim.api.nvim_buf_line_count(state.buf)
-  for line = 1, total - 2 do
-    local text = vim.api.nvim_buf_get_lines(state.buf, line - 1, line, false)[1]
+  for line = 0, total - 1 do
+    local text = vim.api.nvim_buf_get_lines(state.buf, line, line + 1, false)[1]
     if not text then break end
     local ts_end = text:match('^%[%d+%-%d+ %d+:%d+%] ')
     if ts_end then
       local ts_len = #ts_end
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line - 1, 0, ts_len)
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_len)
       local rest = text:sub(ts_len + 1)
       local _, se = rest:find('^[^:]+: ')
       if se then
-        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line - 1, ts_len, ts_len + se - 2)
+        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_len, ts_len + se - 2)
       end
     end
   end
 end
 
 local function render()
-  local lines = { '── ' .. state.chat_title .. ' ──' }
+  if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then return end
+  local lines = {}
   for _, msg in ipairs(state.messages) do
     for _, l in ipairs(fmt_msg(msg)) do
       table.insert(lines, l)
     end
   end
-  table.insert(lines, '')
-  table.insert(lines, ' i:reply  s:switch  r:refresh  <Esc>:back  q:quit ')
   set_lines(lines)
   apply_highlights()
 end
@@ -376,8 +379,16 @@ local function close_chat()
   if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
     vim.api.nvim_buf_delete(state.buf, { force = true })
   end
+  if state.menu_win and vim.api.nvim_win_is_valid(state.menu_win) then
+    vim.api.nvim_win_close(state.menu_win, true)
+  end
+  if state.menu_buf and vim.api.nvim_buf_is_valid(state.menu_buf) then
+    vim.api.nvim_buf_delete(state.menu_buf, { force = true })
+  end
   state.buf = nil
   state.win = nil
+  state.menu_buf = nil
+  state.menu_win = nil
   state.messages = {}
   state.loading = false
   state.exhausted = false
@@ -401,10 +412,6 @@ local function load_older()
   if #new_msgs == 0 or #new_msgs < DEFAULT_LIMIT then
     state.exhausted = true
     state.loading = false
-    local cur = vim.api.nvim_win_get_cursor(state.win)
-    if cur[1] == 1 then
-      pcall(vim.api.nvim_win_set_cursor, state.win, { 2, cur[2] })
-    end
     return
   end
   local cursor = vim.api.nvim_win_get_cursor(state.win)
@@ -448,7 +455,9 @@ local function refresh_messages()
     end
   end
   render()
-  vim.api.nvim_win_set_cursor(state.win, { #state.messages + 2, 0 })
+  if #state.messages > 0 then
+    vim.api.nvim_win_set_cursor(state.win, { #state.messages, 0 })
+  end
 end
 
 function M.open_chat(chat_id, chat_title)
@@ -463,12 +472,34 @@ function M.open_chat(chat_id, chat_title)
   local height = math.floor(vim.o.lines * 0.7)
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
-  state.win = vim.api.nvim_open_win(state.buf, true, {
-    relative = 'editor', width = width, height = height,
-    row = row, col = col, style = 'minimal', border = 'single',
-  })
 
+  local msg_h = height - 3
+  state.win = vim.api.nvim_open_win(state.buf, true, {
+    relative = 'editor', width = width, height = msg_h,
+    row = row, col = col, style = 'minimal', border = 'single',
+    title = ' ' .. chat_title .. ' ',
+    title_pos = 'center',
+  })
   vim.api.nvim_set_option_value('winhl', 'NormalFloat:NormalFloat', { win = state.win })
+
+  state.menu_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
+  local bar_text = 'i:reply    s:switch    r:refresh    Esc:back    q:quit'
+  local left = math.floor((width - #bar_text) / 2)
+  local bar = string.rep(' ', left) .. bar_text .. string.rep(' ', width - #bar_text - left)
+  state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
+    relative = 'editor', width = width, height = 1,
+    row = row + msg_h + 2, col = col,
+    style = 'minimal',
+    border = 'single',
+    focusable = false,
+    zindex = 5,
+  })
+  vim.api.nvim_buf_set_lines(state.menu_buf, 0, -1, false, { bar })
+  for pos, key in bar:gmatch('()([%w<>]+):') do
+    vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, pos - 1, pos - 1 + #key)
+  end
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', close_chat_forget, { buffer = state.buf })
   vim.keymap.set('n', 's', function()
@@ -490,14 +521,8 @@ function M.open_chat(chat_id, chat_title)
     callback = function()
       if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
       if vim.api.nvim_get_current_win() ~= state.win then return end
-      local cur = vim.api.nvim_win_get_cursor(state.win)[1]
-      if cur <= 2 then
-        if not state.exhausted then
-          load_older()
-        end
-        if state.exhausted then
-          pcall(vim.api.nvim_win_set_cursor, state.win, { 2, 0 })
-        end
+      if vim.api.nvim_win_get_cursor(state.win)[1] <= 1 and not state.exhausted then
+        load_older()
       end
     end,
   })
