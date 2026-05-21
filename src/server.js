@@ -25,7 +25,27 @@ wss.on('connection', (ws) => {
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
-  res.json({ ready: tgClient.isReady() });
+  res.json({
+    ready: tgClient.isReady(),
+    auth: tgClient.getAuthState(),
+  });
+});
+
+app.post('/auth/input', async (req, res) => {
+  try {
+    const { value } = req.body;
+    if (value === undefined || value === null) {
+      return res.status(400).json({ error: 'value is required' });
+    }
+    const ok = await tgClient.submitAuthInput(String(value));
+    if (ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ error: 'No pending auth input' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/groups', async (_req, res) => {

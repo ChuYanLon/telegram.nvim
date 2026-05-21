@@ -21,15 +21,74 @@ class TelegramLSPClient {
     this._ready = false;
     this._chats = new Map();
     this._users = new Map();
+    this._authState = 'initializing';
+    this._authResolve = null;
+    this._authHint = null;
+    this._authError = null;
+  }
+
+  getAuthState() {
+    return {
+      state: this._authState,
+      hint: this._authHint,
+      error: this._authError,
+      canInput: this._authResolve !== null,
+    };
+  }
+
+  async submitAuthInput(value) {
+    if (this._authResolve) {
+      const resolve = this._authResolve;
+      this._authResolve = null;
+      resolve(value);
+      return true;
+    }
+    return false;
   }
 
   async start() {
     try {
-      await this.client.login();
+      await this.client.login({
+        type: 'user',
+        getPhoneNumber: async (retry) => {
+          this._authState = 'waitPhone';
+          this._authError = retry ? '手机号无效，请重新输入' : null;
+          if (typeof global.broadcast === 'function') {
+            global.broadcast({ event: 'authNeeded', type: 'phoneNumber', retry });
+          }
+          return new Promise((resolve) => {
+            this._authResolve = resolve;
+          });
+        },
+        getAuthCode: async (retry) => {
+          this._authState = 'waitCode';
+          this._authError = retry ? '验证码错误，请重新输入' : null;
+          if (typeof global.broadcast === 'function') {
+            global.broadcast({ event: 'authNeeded', type: 'authCode', retry });
+          }
+          return new Promise((resolve) => {
+            this._authResolve = resolve;
+          });
+        },
+        getPassword: async (hint, retry) => {
+          this._authState = 'waitPassword';
+          this._authHint = hint || null;
+          this._authError = retry ? '密码错误，请重新输入' : null;
+          if (typeof global.broadcast === 'function') {
+            global.broadcast({ event: 'authNeeded', type: 'password', hint, retry });
+          }
+          return new Promise((resolve) => {
+            this._authResolve = resolve;
+          });
+        },
+      });
       this._ready = true;
+      this._authState = 'ready';
       this.listenUpdates();
       console.log('TDLib 客户端已就绪');
     } catch (err) {
+      this._authState = 'error';
+      this._authError = err.message;
       console.error('Error:', err.message);
     }
   }

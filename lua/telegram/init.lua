@@ -95,11 +95,28 @@ local function http_post(path, body)
   return data
 end
 
-local function server_ready()
-  local r = vim.fn.system({ 'curl', '-s', '--connect-timeout', '2', '--max-time', '3', '--fail-with-body', base_url() .. '/health' })
-  if vim.v.shell_error ~= 0 then return false end
+local function server_health()
+  local r = vim.fn.system({ 'curl', '-s', '--connect-timeout', '2', '--max-time', '3', base_url() .. '/health' })
+  if vim.v.shell_error ~= 0 then return nil end
   local ok, data = pcall(vim.json.decode, r)
-  return ok and data and data.ready == true
+  if not ok or type(data) ~= 'table' then return nil end
+  return data
+end
+
+local function server_ready()
+  local data = server_health()
+  return data and data.ready == true
+end
+
+local function post_auth_input(value)
+  local url = base_url() .. '/auth/input'
+  local encoded = vim.json.encode({ value = value })
+  vim.fn.system({
+    'curl', '-s', '-X', 'POST', url,
+    '-H', 'Content-Type: application/json',
+    '-d', encoded,
+  })
+  return vim.v.shell_error == 0
 end
 
 -- Returns "ready" | "ours" | "other" | "free"
@@ -114,14 +131,17 @@ local function check_port()
   return 'other'
 end
 
+local function server_wait_reachable()
+  for _ = 1, 20 do
+    if server_health() then return true end
+    vim.wait(500)
+  end
+  return false
+end
+
 local function start_server()
   local status = check_port()
   if status == 'ready' then return true end
-  if status == 'ours' then
-    local ok = vim.wait(25000, server_ready, 300)
-    if not ok then vim.notify('[tg] Server not ready', vim.log.levels.WARN) end
-    return ok
-  end
 
   while status == 'other' do
     http_port = http_port + 2
@@ -133,6 +153,10 @@ local function start_server()
     status = check_port()
   end
 
+  if status == 'ours' then
+    return server_wait_reachable()
+  end
+
   if http_port ~= 8080 then
     vim.notify('[tg] Using port ' .. http_port, vim.log.levels.INFO)
   end
@@ -142,32 +166,33 @@ local function start_server()
   if M.config.api_id then env.TG_API_ID = tostring(M.config.api_id) end
   if M.config.api_hash then env.TG_API_HASH = M.config.api_hash end
 
-  local server_script = plugin_root .. '/dist/server.bundle.js'
-  local use_dist = vim.fn.filereadable(server_script) == 1
-  if not use_dist then
+  local server_script
+  if vim.fn.filereadable(plugin_root .. '/src/server.js') == 1 then
     server_script = plugin_root .. '/src/server.js'
-  else
+  elseif vim.fn.filereadable(plugin_root .. '/dist/server.bundle.js') == 1 then
+    server_script = plugin_root .. '/dist/server.bundle.js'
     env.NODE_PATH = plugin_root .. '/dist/node_modules'
+  else
+    vim.notify('[tg] Missing server script', vim.log.levels.ERROR)
+    return false
   end
 
-  local stderr_lines = {}
   server_job = vim.fn.jobstart({ 'node', server_script }, {
     cwd = plugin_root,
     env = env,
     on_stderr = function(_, data)
       if not data then return end
       for _, line in ipairs(data) do
-        if line and #line > 0 then table.insert(stderr_lines, line) end
+        if line and #line > 0 then
+          if line:find('Error:') or line:find('MODULE_NOT_FOUND') then
+            vim.notify('[tg] ' .. line, vim.log.levels.ERROR)
+          end
+        end
       end
     end,
     on_exit = function(_, code)
-      if code ~= 0 and code ~= -9 and #stderr_lines > 0 then
-        local msg = ''
-        for _, l in ipairs(stderr_lines) do
-          if l:find('Error:') or l:find('MODULE_NOT_FOUND') then msg = l; break end
-        end
-        if msg == '' then msg = stderr_lines[#stderr_lines] end
-        vim.notify('[tg] ' .. msg, vim.log.levels.ERROR)
+      if code > 0 then
+        vim.notify('[tg] Server exited with code ' .. code, vim.log.levels.ERROR)
       end
       server_job = nil
     end,
@@ -178,13 +203,65 @@ local function start_server()
     return false
   end
 
-  local ok = vim.wait(15000, server_ready, 300)
-  if not ok then
-    local msg = #stderr_lines > 0 and stderr_lines[#stderr_lines] or 'timeout'
-    vim.notify('[tg] Server: ' .. msg, vim.log.levels.ERROR)
-    return false
+  return server_wait_reachable()
+end
+
+-- Async auth: polls /health, shows input via vim.ui.input, calls on_done(success)
+local function auth_poll(on_done)
+  local function poll()
+    local health = server_health()
+    if not health then
+      vim.defer_fn(poll, 500)
+      return
+    end
+    if health.ready == true then
+      on_done(true)
+      return
+    end
+
+    local a = health.auth
+    if not a or a.state == 'initializing' then
+      vim.defer_fn(poll, 500)
+      return
+    end
+
+    if a.state == 'error' then
+      vim.notify('[tg] 认证失败: ' .. (type(a.error) == 'string' and a.error or 'unknown'), vim.log.levels.ERROR)
+      on_done(false)
+      return
+    end
+
+    if (a.state == 'waitPhone' or a.state == 'waitCode' or a.state == 'waitPassword') and a.canInput then
+      local prompt
+      if a.state == 'waitPhone' then
+        prompt = '请输入手机号'
+        if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
+      elseif a.state == 'waitCode' then
+        prompt = '请输入验证码'
+        if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
+      else
+        prompt = '2FA密码'
+        if type(a.hint) == 'string' then prompt = prompt .. ' (提示: ' .. a.hint .. ')' end
+        if type(a.error) == 'string' then prompt = prompt .. ' (' .. a.error .. ')' end
+      end
+
+      vim.ui.input({ prompt = prompt .. ': ' }, function(val)
+        if val and #val > 0 then
+          post_auth_input(val)
+        else
+          vim.notify('[tg] 认证已取消', vim.log.levels.INFO)
+          on_done(false)
+          return
+        end
+        vim.defer_fn(poll, 500)
+      end)
+      return
+    end
+
+    vim.defer_fn(poll, 500)
   end
-  return true
+
+  poll()
 end
 
 local function stop_server()
@@ -420,13 +497,8 @@ function M.open_chat(chat_id, chat_title)
   refresh_messages()
 end
 
-function M.list_groups(force_picker)
-  force_picker = force_picker == true
-  if not initialized then
-    if not ensure_deps() then return end
-    vim.notify('[tg] Starting server...', vim.log.levels.INFO)
-    if not start_server() then return end
-    M.ws_start(function(msg)
+local function finish_init()
+  M.ws_start(function(msg)
     if msg.event == 'newMessage' then
       vim.notify(string.format('[TG] %s: %s',
         msg.sender and msg.sender.name or '?',
@@ -437,7 +509,35 @@ function M.list_groups(force_picker)
       end
     end
   end)
-    initialized = true
+  initialized = true
+end
+
+function M.list_groups(force_picker)
+  force_picker = force_picker == true
+  if not initialized then
+    if not ensure_deps() then return end
+    vim.notify('[tg] Starting server...', vim.log.levels.INFO)
+    if not start_server() then return end
+
+    local health = server_health()
+    if health and health.ready == true then
+      finish_init()
+    else
+      vim.notify('[tg] 等待认证...', vim.log.levels.INFO)
+      auth_poll(function(success)
+        if success then
+          finish_init()
+          vim.schedule(function() M.list_groups(force_picker) end)
+        else
+          stop_server()
+          local db = M.config.data_dir .. '/tdlib_db'
+          local files = M.config.data_dir .. '/tdlib_files'
+          vim.fn.delete(db, 'rf')
+          vim.fn.delete(files, 'rf')
+        end
+      end)
+      return
+    end
   end
 
   -- If chat window is already open, reopen to refresh
@@ -501,6 +601,19 @@ vim.api.nvim_create_autocmd('VimLeavePre', {
 })
 
 vim.api.nvim_create_user_command('Tg', M.list_groups, {})
+
+function M.logout()
+  vim.notify('[tg] 正在登出并清除认证数据...', vim.log.levels.INFO)
+  stop_server()
+  local db_dir = M.config.data_dir .. '/tdlib_db'
+  local files_dir = M.config.data_dir .. '/tdlib_files'
+  vim.fn.delete(db_dir, 'rf')
+  vim.fn.delete(files_dir, 'rf')
+  initialized = false
+  vim.notify('[tg] 已登出，下次 :Tg 重新认证', vim.log.levels.INFO)
+end
+
+vim.api.nvim_create_user_command('TgLogout', M.logout, {})
 vim.api.nvim_create_user_command('TgGroups', M.list_groups, {})
 vim.api.nvim_create_user_command('TgSend', function(opts)
   local args = vim.fn.split(opts.args)
