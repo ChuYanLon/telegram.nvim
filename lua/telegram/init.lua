@@ -50,6 +50,7 @@ local function finish_init()
             date = msg.date,
             sender = msg.sender,
             text = msg.text,
+            own = msg.own,
             replyTo = msg.replyTo,
           })
           ui.render()

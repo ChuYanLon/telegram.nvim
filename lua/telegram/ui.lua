@@ -9,6 +9,7 @@ local server = require('telegram.server')
 ---@field date integer
 ---@field sender TgSender|nil
 ---@field text string|nil
+---@field own boolean|nil
 ---@field replyTo {id:any, sender:TgSender|nil, text:string|nil}|nil
 
 ---@class TgState
@@ -165,7 +166,8 @@ local function show_help()
   local lines = {
     ' i          new message',
     ' e          edit message under cursor',
-    ' d          delete (recall) message under cursor',
+    ' d          delete message under cursor',
+    ' R          recall (revoke) your message under cursor',
     ' Enter      reply to message under cursor',
     ' s          switch to another group',
     ' r          refresh messages',
@@ -380,6 +382,10 @@ function M.open_chat(chat_id, chat_title)
     if not idx then return end
     local target = state.messages[idx]
     if not target or not target.id then return end
+    if not target.own then
+      vim.notify('[tg] Can only edit your own messages', vim.log.levels.WARN)
+      return
+    end
     vim.ui.input({ prompt = 'Edit: ', default = target.text or '' }, function(text)
       if text and #text > 0 then
         local ok = server.edit_message(state.chat_id, target.id, text)
@@ -395,6 +401,38 @@ function M.open_chat(chat_id, chat_title)
     local sender = target.sender and target.sender.name or '?'
     vim.ui.select({ 'Yes', 'No' }, {
       prompt = 'Delete message from ' .. sender .. '?',
+    }, function(choice)
+      if choice == 'Yes' then
+        local ok = server.delete_message(state.chat_id, target.id)
+        if ok then
+          for i = #state.messages, 1, -1 do
+            if state.messages[i].id == target.id then
+              table.remove(state.messages, i)
+              break
+            end
+          end
+          vim.schedule(function()
+            render()
+            local last = state.messages[#state.messages]
+            state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
+            update_title()
+          end)
+        end
+      end
+    end)
+  end, { buffer = state.buf })
+  vim.keymap.set('n', 'R', function()
+    local idx = message_at_cursor()
+    if not idx then return end
+    local target = state.messages[idx]
+    if not target or not target.id then return end
+    if not target.own then
+      vim.notify('[tg] Can only recall your own messages', vim.log.levels.WARN)
+      return
+    end
+    local sender = target.sender and target.sender.name or '?'
+    vim.ui.select({ 'Yes', 'No' }, {
+      prompt = 'Recall message from ' .. sender .. '?',
     }, function(choice)
       if choice == 'Yes' then
         local ok = server.delete_message(state.chat_id, target.id)

@@ -287,6 +287,7 @@ class TelegramLSPClient {
       text: this._extractText(msg.content),
       sender: await this._resolveSender(msg.sender_id),
       date: msg.date,
+      own: msg.is_outgoing || false,
     };
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
