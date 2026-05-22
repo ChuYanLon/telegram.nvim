@@ -488,9 +488,8 @@ function M.open_chat(chat_id, chat_title)
   vim.keymap.set('n', 'i', function()
     if state.unread > 0 then state.unread = 0; update_title() end
     multi_line_input('Message', nil, function(text)
-      if text then
-        local ok = server.send_message(state.chat_id, text)
-        if ok then vim.schedule(refresh_messages) end
+      if text and server.send_message(state.chat_id, text) then
+        vim.notify('[tg] Message sent', vim.log.levels.INFO)
       end
     end)
   end, { buffer = state.buf })
@@ -506,9 +505,8 @@ function M.open_chat(chat_id, chat_title)
       return
     end
     multi_line_input('Reply to ' .. (target.sender and target.sender.name or '?'), nil, function(text)
-      if text then
-        local ok = server.send_message(state.chat_id, text, target.id)
-        if ok then vim.schedule(refresh_messages) end
+      if text and server.send_message(state.chat_id, text, target.id) then
+        vim.notify('[tg] Reply sent', vim.log.levels.INFO)
       end
     end)
   end, { buffer = state.buf })
@@ -524,10 +522,10 @@ function M.open_chat(chat_id, chat_title)
     end
     multi_line_input('Edit', target.text or '', function(text)
       if not text then return end
-      local ok = server.edit_message(state.chat_id, target.id, text)
-      if ok then
+      if server.edit_message(state.chat_id, target.id, text) then
         target.text = text
         render()
+        vim.notify('[tg] Message edited', vim.log.levels.INFO)
       end
     end)
   end, { buffer = state.buf })
@@ -565,8 +563,7 @@ function M.open_chat(chat_id, chat_title)
       prompt = 'Delete message from ' .. sender .. '?',
     }, function(choice)
       if choice == 'Yes' then
-        local ok = server.delete_message(state.chat_id, target.id)
-        if ok then
+        if server.delete_message(state.chat_id, target.id) then
           for i = #state.messages, 1, -1 do
             if state.messages[i].id == target.id then
               table.remove(state.messages, i)
@@ -579,6 +576,7 @@ function M.open_chat(chat_id, chat_title)
             state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
             update_title()
           end)
+          vim.notify('[tg] Message deleted', vim.log.levels.INFO)
         end
       end
     end)
@@ -597,8 +595,7 @@ function M.open_chat(chat_id, chat_title)
       prompt = 'Recall message from ' .. sender .. '?',
     }, function(choice)
       if choice == 'Yes' then
-        local ok = server.delete_message(state.chat_id, target.id)
-        if ok then
+        if server.delete_message(state.chat_id, target.id) then
           for i = #state.messages, 1, -1 do
             if state.messages[i].id == target.id then
               table.remove(state.messages, i)
@@ -611,6 +608,7 @@ function M.open_chat(chat_id, chat_title)
             state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
             update_title()
           end)
+          vim.notify('[tg] Message recalled', vim.log.levels.INFO)
         end
       end
     end)
