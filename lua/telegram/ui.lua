@@ -208,21 +208,21 @@ local function show_help()
   vim.api.nvim_buf_set_option(help_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(help_buf, 'bufhidden', 'wipe')
   local lines = {
-    ' i          new message',
-    ' e          edit message under cursor',
-    ' f          forward message to another group',
-    ' d          delete message under cursor',
-    ' R          recall (revoke) your message under cursor',
-    ' Enter      reply to message under cursor',
-    ' s          switch to another group',
-    ' r          refresh messages',
-    ' ?          show this help',
-    ' Esc        close chat window',
-    ' q          quit telegram (close all)',
+    ' i       new message',
+    ' e       edit',
+    ' Enter   reply',
+    ' d       delete',
+    ' R       recall',
+    ' f       forward',
+    ' s       switch',
+    ' r       refresh',
+    ' ?       help / Esc close / q quit',
   }
   vim.api.nvim_buf_set_lines(help_buf, 0, -1, false, lines)
-  local width = 36
-  local height = #lines + 2
+  local maxw = 0
+  for _, l in ipairs(lines) do maxw = math.max(maxw, strvis(l)) end
+  local width = maxw + 4
+  local height = #lines
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
   help_win = vim.api.nvim_open_win(help_buf, true, {
