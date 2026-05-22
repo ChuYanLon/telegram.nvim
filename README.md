@@ -140,6 +140,10 @@ A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` direct
 **Q: Port conflict?**
 A: Default ports are 8080/8081. If occupied, the plugin auto-increments until it finds a free port.
 
+## Contributing
+
+All contributions are welcome! Just open a pull request.
+
 ## License
 
 MIT
