@@ -523,8 +523,19 @@ class TelegramLSPClient {
     };
   }
 
+  async getMessage(chatId, messageId) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const msg = await this.client.invoke({
+      _: 'getMessage',
+      chat_id: chatId,
+      message_id: messageId,
+    });
+    return this._formatMessage(msg);
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
+
     const fromMessageId = before || 0;
     const offset = before ? -1 : 0;
     const result = await this.client.invoke({

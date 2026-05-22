@@ -90,6 +90,19 @@ app.post('/chat/close', async (req, res) => {
   }
 });
 
+app.get('/message', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.query;
+    if (!chatId || !messageId) {
+      return res.status(400).json({ error: 'chatId and messageId are required' });
+    }
+    const msg = await tgClient.getMessage(Number(chatId), Number(messageId));
+    res.json(msg);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/searchMessages', async (req, res) => {
   try {
     const { chatId, query, limit } = req.query;

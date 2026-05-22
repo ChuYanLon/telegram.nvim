@@ -311,6 +311,41 @@ end
 ---@return table|nil
 local function curr_msg() local i = message_at_cursor(); return i and state.messages[i] end
 
+local function jump_to_message(target_id)
+  local function line_of()
+    for i, m in ipairs(state.messages) do
+      if m.id == target_id then
+        local line = 1
+        for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
+        return line
+      end
+    end
+  end
+  local l = line_of()
+  if not l then
+    local ctx = server.get_messages(state.chat_id, 100, target_id)
+    if ctx and ctx.messages then
+      local oldest = state.messages[1] and state.messages[1].id or 0
+      for _, m in ipairs(ctx.messages) do
+        if m.id < oldest then table.insert(state.messages, 1, m); oldest = m.id end
+      end
+    end
+    local single = server.get_message(state.chat_id, target_id)
+    if single then
+      local seen = {}
+      for _, m in ipairs(state.messages) do seen[m.id] = true end
+      if not seen[target_id] then table.insert(state.messages, 1, single) end
+    end
+    l = line_of()
+  end
+  if l then
+    render()
+    pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+    return true
+  end
+  return false
+end
+
 local function close_chat()
   close_help()
   if state.chat_id then
@@ -496,25 +531,7 @@ function M.open_chat(chat_id, chat_title)
     local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
     if text and text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
       if target.replyTo then
-        local function scroll_to_msg()
-          for i, m in ipairs(state.messages) do
-            if m.id == target.replyTo.id then
-              local line = 1
-              for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
-              vim.api.nvim_win_set_cursor(state.win, { line, 0 })
-              return true
-            end
-          end
-        end
-        if not scroll_to_msg() then
-          local function load_until_found()
-            if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
-            if state.exhausted or scroll_to_msg() then return end
-            load_older()
-            vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-          end
-          vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-        end
+        jump_to_message(target.replyTo.id)
       end
       return
     end
@@ -543,25 +560,7 @@ function M.open_chat(chat_id, chat_title)
         format_item = function(item) return item.label end,
       }, function(choice)
         if not choice then return end
-        local function scroll_to()
-          for i, m in ipairs(state.messages) do
-            if m.id == choice.msg.id then
-              local line = 1
-              for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
-              vim.api.nvim_win_set_cursor(state.win, { line, 0 })
-              return true
-            end
-          end
-        end
-        if not scroll_to() then
-          local function load_until_found()
-            if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
-            if state.exhausted or scroll_to() then return end
-            load_older()
-            vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-          end
-          vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-        end
+        jump_to_message(choice.msg.id)
       end)
     end)
   end, { buffer = state.buf })
@@ -673,25 +672,7 @@ function M.open_chat(chat_id, chat_title)
   local restore = state.saved_cursors[state.chat_id]
   if restore then
     state.saved_cursors[state.chat_id] = nil
-    local function scroll_to()
-      for i, msg in ipairs(state.messages) do
-        if msg.id == restore then
-          local line = 1
-          for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
-          pcall(vim.api.nvim_win_set_cursor, state.win, { line, 0 })
-          return true
-        end
-      end
-    end
-    if not scroll_to() then
-      local function load_until_found()
-        if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
-        if state.exhausted or scroll_to() then return end
-        load_older()
-        vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-      end
-      vim.fn.timer_start(30, load_until_found, vim.empty_dict())
-    end
+    jump_to_message(restore)
   end
 end
 

@@ -198,6 +198,13 @@ function M.get_groups()
 end
 
 ---@param chat_id any
+---@param message_id any
+---@return table|nil
+function M.get_message(chat_id, message_id)
+  return http_get('/message?chatId=' .. chat_id .. '&messageId=' .. message_id)
+end
+
+---@param chat_id any
 ---@param query string
 ---@return table|nil
 function M.search_messages(chat_id, query)
