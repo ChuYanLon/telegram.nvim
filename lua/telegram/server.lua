@@ -11,6 +11,8 @@ local function ws_url_internal() return 'ws://localhost:' .. ws_port end
 
 function M.ws_url() return ws_url_internal() end
 
+---@param path string
+---@return table|nil
 local function http_get(path)
   local url = base_url() .. path
   local result = vim.fn.system({ 'curl', '-s', '--fail-with-body', url })
@@ -20,6 +22,9 @@ local function http_get(path)
   return data
 end
 
+---@param path string
+---@param body table
+---@return table|nil
 local function http_post(path, body)
   local url = base_url() .. path
   local encoded = vim.json.encode(body)
@@ -38,6 +43,7 @@ local function http_post(path, body)
   return data
 end
 
+---@return table|nil
 function M.server_health()
   local r = vim.fn.system({ 'curl', '-s', '--connect-timeout', '2', '--max-time', '3', base_url() .. '/health' })
   if vim.v.shell_error ~= 0 then return nil end
@@ -46,6 +52,8 @@ function M.server_health()
   return data
 end
 
+---@param value string
+---@return boolean
 function M.post_auth_input(value)
   local url = base_url() .. '/auth/input'
   local encoded = vim.json.encode({ value = value })
@@ -57,6 +65,7 @@ function M.post_auth_input(value)
   return vim.v.shell_error == 0
 end
 
+---@return '"free"'|'"ready"'|'"ours"'|'"other"'
 local function check_port()
   local r = vim.fn.system({ 'curl', '-s', '--connect-timeout', '1', '--max-time', '2', base_url() .. '/health' })
   if vim.v.shell_error ~= 0 then return 'free' end
@@ -68,6 +77,7 @@ local function check_port()
   return 'other'
 end
 
+---@return boolean
 local function server_wait_reachable()
   for _ = 1, 20 do
     if M.server_health() then return true end
@@ -76,6 +86,7 @@ local function server_wait_reachable()
   return false
 end
 
+---@return boolean
 function M.start_server()
   local status = check_port()
   if status == 'ready' then return true end
@@ -138,18 +149,27 @@ function M.stop_server()
   end
 end
 
+---@type integer
 M.DEFAULT_LIMIT = 10
 
+---@return table|nil
 function M.get_groups()
   return http_get('/groups')
 end
 
+---@param chat_id any
+---@param limit integer|nil
+---@param before any|nil
+---@return table|nil
 function M.get_messages(chat_id, limit, before)
   local path = '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or M.DEFAULT_LIMIT)
   if before then path = path .. '&before=' .. before end
   return http_get(path)
 end
 
+---@param chat_id any
+---@param text string
+---@return boolean
 function M.send_message(chat_id, text)
   return http_post('/sendMessage', { chatId = chat_id, text = text })
 end

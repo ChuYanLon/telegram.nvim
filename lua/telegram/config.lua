@@ -1,8 +1,16 @@
+---@class TgConfig
+---@field data_dir string
+---@field tdlib_path string|nil
+---@field api_id integer|nil
+---@field api_hash string|nil
+---@field proxy string|nil
+
 local info = debug.getinfo(1, 'S')
 local plugin_root = vim.fn.fnamemodify(info.source:match('@(.+)'), ':h:h:h')
 
 local M = {}
 
+---@type TgConfig
 M.config = {
   data_dir = plugin_root,
   tdlib_path = nil,
@@ -11,6 +19,7 @@ M.config = {
   proxy = nil,
 }
 
+---@param opts TgConfig|nil
 function M.setup(opts)
   M.config = vim.tbl_deep_extend('force', M.config, opts or {})
   vim.api.nvim_set_hl(0, 'TgTimestamp', { link = 'Comment', default = true })
@@ -21,8 +30,10 @@ function M.setup(opts)
   vim.api.nvim_set_hl(0, 'TgBorder', { fg = bfg, bg = 'NONE', default = true })
 end
 
+---@type string
 M.plugin_root = plugin_root
 
+---@return boolean
 function M.ensure_deps()
   if vim.fn.executable('node') ~= 1 then
     vim.notify('[tg] Node.js not found. Install nodejs first.', vim.log.levels.ERROR)

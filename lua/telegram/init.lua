@@ -1,3 +1,19 @@
+---@class TgHealth
+---@field ready boolean
+---@field auth TgAuth|nil
+
+---@class TgAuth
+---@field state string
+---@field error string|nil
+---@field hint string|nil
+---@field canInput boolean|nil
+
+---@class TgChat
+---@field id any
+---@field title string
+---@field lastMessage TgMessage|nil
+---@field memberCount integer|nil
+
 local config = require('telegram.config')
 local server = require('telegram.server')
 local auth = require('telegram.auth')
@@ -8,6 +24,7 @@ local M = {}
 
 local initialized = false
 
+---@param v boolean
 function M.set_initialized(v)
   initialized = v
 end
@@ -52,6 +69,7 @@ local function finish_init()
   initialized = true
 end
 
+---@param force_picker boolean|nil
 function M.list_groups(force_picker)
   force_picker = force_picker == true
   if not initialized then

@@ -4,6 +4,7 @@ local M = {}
 
 local ws_job_id = nil
 
+---@param on_msg fun(msg: table)
 function M.ws_start(on_msg)
   if ws_job_id then
     vim.fn.jobstop(ws_job_id)

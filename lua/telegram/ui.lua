@@ -1,7 +1,32 @@
 local server = require('telegram.server')
 
+---@class TgSender
+---@field id any
+---@field name string
+
+---@class TgMessage
+---@field id any
+---@field date integer
+---@field sender TgSender|nil
+---@field text string|nil
+
+---@class TgState
+---@field buf integer|nil
+---@field win integer|nil
+---@field chat_id any|nil
+---@field chat_title string
+---@field messages TgMessage[]
+---@field loading boolean
+---@field exhausted boolean
+---@field unread integer
+---@field last_chat {id:any, title:string}|nil
+---@field menu_buf integer|nil
+---@field menu_win integer|nil
+---@field last_msg string|nil
+
 local M = {}
 
+---@type TgState
 local state = {
   buf = nil,
   win = nil,
@@ -19,12 +44,15 @@ local state = {
 
 M.state = state
 
+---@param lines string[]
 local function set_lines(lines)
   pcall(vim.api.nvim_buf_set_option, state.buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, lines)
   pcall(vim.api.nvim_buf_set_option, state.buf, 'modifiable', false)
 end
 
+---@param msg TgMessage
+---@return string[]
 local function fmt_msg(msg)
   local date_str = os.date('%m-%d %H:%M', msg.date)
   local sender = msg.sender and msg.sender.name or 'unknown'
@@ -71,6 +99,8 @@ end
 
 M.render = render
 
+---@param s string
+---@return integer
 local function strvis(s) return vim.fn.strwidth(s) end
 
 local function update_title()
@@ -238,6 +268,8 @@ end
 
 M.refresh_messages = refresh_messages
 
+---@param chat_id any
+---@param chat_title string
 function M.open_chat(chat_id, chat_title)
   close_chat()
   state.chat_id = chat_id

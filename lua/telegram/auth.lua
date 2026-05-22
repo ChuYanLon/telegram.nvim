@@ -2,6 +2,7 @@ local server = require('telegram.server')
 
 local M = {}
 
+---@param on_done fun(success: boolean)
 function M.auth_poll(on_done)
   local function poll()
     local health = server.server_health()
