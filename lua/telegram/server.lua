@@ -190,7 +190,7 @@ function M.send_chat_action(chat_id, action)
 end
 
 ---@type integer
-M.DEFAULT_LIMIT = 10
+M.DEFAULT_LIMIT = 50
 
 ---@return table|nil
 function M.get_groups()

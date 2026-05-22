@@ -46,6 +46,7 @@ local state = {
   last_msg = nil,
   online_count = nil,
   typing_users = {},
+  saved_cursor_msg_id = nil,
 }
 
 M.state = state
@@ -321,9 +322,27 @@ end
 
 --- Chat window management
 
+---@return integer|nil
+local function message_at_cursor()
+  local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+  local line = 1
+  for idx, msg in ipairs(state.messages) do
+    local n = #fmt_msg(msg)
+    if cursor_line >= line and cursor_line < line + n then
+      return idx
+    end
+    line = line + n
+  end
+  return nil
+end
+
 local function close_chat()
   close_help()
   if state.chat_id then
+    if state.win and vim.api.nvim_win_is_valid(state.win) then
+      local idx = message_at_cursor()
+      if idx then state.saved_cursor_msg_id = state.messages[idx].id end
+    end
     state.last_chat = { id = state.chat_id, title = state.chat_title }
     server.close_chat(state.chat_id)
   end
@@ -409,36 +428,13 @@ local function refresh_messages()
     local latest = state.messages[#state.messages]
     local ts = os.date('%m-%d %H:%M', latest.date)
     state.last_msg = '[' .. ts .. '] ' .. (latest.sender and latest.sender.name or '?') .. ': ' .. (latest.text or '')
-    vim.api.nvim_win_set_cursor(state.win, { #state.messages, 0 })
   end
   update_title()
 end
 
 M.refresh_messages = refresh_messages
 
----@return integer|nil
-local function message_at_cursor()
-  local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
-  local line = 1
-  for idx, msg in ipairs(state.messages) do
-    local n = #fmt_msg(msg)
-    if cursor_line >= line and cursor_line < line + n then
-      return idx
-    end
-    line = line + n
-  end
-  return nil
-end
-
----@param chat_id any
----@param chat_title string
-function M.open_chat(chat_id, chat_title)
-  close_chat()
-  state.chat_id = chat_id
-  state.chat_title = chat_title or 'Chat'
-  state.buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(state.buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(state.buf, 'bufhidden', 'wipe')
+local function open_windows(chat_title)
   local width = math.floor(vim.o.columns * 0.7)
   local height = math.floor(vim.o.lines * 0.7)
   local row = math.floor((vim.o.lines - height) / 2)
@@ -451,10 +447,6 @@ function M.open_chat(chat_id, chat_title)
     title_pos = 'center',
   })
   vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.win })
-  state.menu_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
-  state.menu_bar = 'i:msg e:edit Enter:reply/original s:switch r:refresh Esc:back q:quit'
   state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
@@ -465,6 +457,28 @@ function M.open_chat(chat_id, chat_title)
   })
   vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.menu_win })
   vim.api.nvim_win_set_option(state.menu_win, 'wrap', false)
+end
+
+---@param chat_id any
+---@param chat_title string
+function M.open_chat(chat_id, chat_title)
+  chat_title = chat_title or 'Chat'
+  if state.chat_id == chat_id and state.buf and vim.api.nvim_buf_is_valid(state.buf) and not state.win then
+    open_windows(chat_title)
+    update_title()
+    return
+  end
+  close_chat()
+  state.chat_id = chat_id
+  state.chat_title = chat_title
+  state.buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(state.buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(state.buf, 'bufhidden', 'wipe')
+  state.menu_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
+  state.menu_bar = 'i:msg e:edit Enter:reply/original s:switch r:refresh Esc:back q:quit'
+  open_windows(chat_title)
   server.open_chat(state.chat_id)
   update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
@@ -484,6 +498,11 @@ function M.open_chat(chat_id, chat_title)
   vim.keymap.set('n', 'r', function()
     if state.unread > 0 then state.unread = 0; update_title() end
     refresh_messages()
+    if #state.messages > 0 then
+      local total = 1
+      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
+      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
+    end
   end, { buffer = state.buf })
   vim.keymap.set('n', 'i', function()
     if state.unread > 0 then state.unread = 0; update_title() end
@@ -629,6 +648,29 @@ function M.open_chat(chat_id, chat_title)
     end,
   })
   refresh_messages()
+  if state.saved_cursor_msg_id then
+    local restore = state.saved_cursor_msg_id
+    state.saved_cursor_msg_id = nil
+    local function scroll_to()
+      for i, msg in ipairs(state.messages) do
+        if msg.id == restore then
+          local line = 1
+          for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
+          pcall(vim.api.nvim_win_set_cursor, state.win, { line, 0 })
+          return true
+        end
+      end
+    end
+    if not scroll_to() then
+      local function load_until_found()
+        if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
+        if state.exhausted or scroll_to() then return end
+        load_older()
+        vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+      end
+      vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+    end
+  end
 end
 
 return M
