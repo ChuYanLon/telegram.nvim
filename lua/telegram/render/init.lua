@@ -11,7 +11,7 @@ local function get_renderer(msg)
   local t = msg.type or 'messageText'
   if t == 'messageText' then
     local txt = msg.text or ''
-    if txt:find('```') or txt:find('`[^`]+`') then
+    if txt:find('```') or txt:find('`[^`]+`') or txt:find('%$%{') then
       return code
     end
     if txt:find('https?://') or txt:find('www%.[%w_-]+%.') then
@@ -38,7 +38,12 @@ function M.render(msg)
     end
   else
     local first = content[1] or ''
-    table.insert(out, string.format('[%s] %s: %s', date_str, sender, first))
+    if first:match('^```') then
+      table.insert(out, string.format('[%s] %s:', date_str, sender))
+      table.insert(out, '  ' .. first)
+    else
+      table.insert(out, string.format('[%s] %s: %s', date_str, sender, first))
+    end
     for i = 2, #content do
       table.insert(out, '  ' .. content[i])
     end
