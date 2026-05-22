@@ -72,13 +72,44 @@ ldconfig 2>/dev/null || true
 | `:Tg`       | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
 | `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 
-## Keymaps
+## Neovim Keymaps
 
 ```lua
 -- Configure inside lazy.nvim `keys`, or map manually:
 vim.keymap.set("n", "<leader>tt", "<cmd>Tg<Cr>")
 vim.keymap.set("n", "<leader>tL", "<cmd>TgLogout<Cr>")
 ```
+
+### Chat Keymaps
+
+Inside a chat window:
+
+| Key  | Action                                          |
+|------|-------------------------------------------------|
+| `i`  | New message (opens multi-line input)            |
+| `/`  | Search messages (opens search input → picker)   |
+| `e`  | Edit own message at cursor                      |
+| `Enter` | Reply to message / jump to original message |
+| `d`  | Delete message (with confirmation)              |
+| `R`  | Recall/delete own message (with confirmation)   |
+| `f`  | Forward message to another group                |
+| `s`  | Switch to another group                         |
+| `r`  | Refresh and scroll to latest messages           |
+| `?`  | Show help popup                                 |
+| `Esc` | Close chat (preserves cursor position)         |
+| `q`  | Quit (stop server, full exit)                   |
+
+## Features
+
+- **Online member count** — shows `N online` in the menu bar when a group is open
+- **Typing indicators** — displays when another user is typing/recording/etc.
+- **Own typing broadcast** — sends `typing...` indicator while composing, cancels on close
+- **Cursor position persistence** — Esc saves cursor position, reopening restores it
+- **Jump to original message** — `Enter` on a reply reference (`┃` line) navigates to the original message
+- **Search messages** — `/` to search, pick a result to jump to it
+- **Auto-load on scroll up** — loads older messages when reaching the top
+- **Operation feedback** — success notifications for send/reply/edit/delete/recall
+- **Async UI** — message operations don't block the UI or cause scroll jumps
 
 ## Auth Flow
 
