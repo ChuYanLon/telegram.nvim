@@ -8,7 +8,7 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 
 - **Node.js** (>= 18)
 - **curl**
-- **libtdjson** — TDLib shared library (minimum version **1.8.64**)
+- **libtdjson** — TDLib shared library (minimum version **1.8.64**) — `libtdjson.so` (Linux), `libtdjson.dylib` (macOS), `tdjson.dll` (Windows)
 
 ### Installing libtdjson
 
@@ -58,8 +58,8 @@ Or rely on `prebuilt-tdlib` (listed as a dependency — the library still needs 
     "TgLogout",
   },
   opts = {
-    tdlib_path = "/path/to/libtdjson.so",             -- REQUIRED: .so (Linux) / .dylib (macOS) / .dll (Windows)
-    proxy = "socks5://127.0.0.1:7890",                -- optional, for regions where Telegram is blocked
+    -- tdlib_path = "/path/to/libtdjson.so",         -- optional: .so (Linux) / .dylib (macOS) / .dll (Windows)
+    -- proxy = "socks5://127.0.0.1:7890",             -- optional: for regions where Telegram is blocked
   },
 }
 ```
@@ -99,9 +99,17 @@ Pass options via `setup()`:
 
 ```lua
 require("telegram").setup({
-  proxy = "socks5://127.0.0.1:7890",  -- proxy for TDLib connections
+  -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
+  -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
 })
 ```
+
+The server auto-detects `libtdjson` on startup via:
+- **Linux**: `ldconfig -p`, common paths (`/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/lib64`, `/opt/lib`), `LD_LIBRARY_PATH`, and `find`
+- **macOS**: `mdfind` and common paths (`/opt/homebrew/lib`, `/usr/local/lib`)
+- **Windows**: `where tdjson.dll` and common paths (`%LOCALAPPDATA%`, `%PROGRAMFILES%`)
+
+Override with `setup({ tdlib_path = "..." })` or the `TG_TDLIB_PATH` env var.
 
 > **Note on `proxy`:** In regions where Telegram is blocked (e.g. China), TDLib cannot connect to Telegram's servers directly. Set a SOCKS5 or HTTP proxy here. Supported formats:
 > - `socks5://127.0.0.1:7890`
@@ -121,8 +129,8 @@ require("telegram").setup({
 
 Your proxy needs to support SOCKS5 (e.g. ClashX, V2Ray, Shadowsocks). On Windows, a system-level VPN/proxy may already cover TDLib's traffic; on macOS, TDLib ignores system proxy settings and must be configured explicitly.
 
-**Q: "libtdjson.so not found"**
-A: Install TDLib (see "Installing libtdjson" above), or set a custom path via `setup({ tdlib_path = "..." })`.
+**Q: "libtdjson.so not found" / "Cannot find libtdjson"**
+A: The server auto-detects the library on startup. If auto-detection fails, install TDLib (see "Installing libtdjson" above) or set a custom path via `setup({ tdlib_path = "..." })` or the `TG_TDLIB_PATH` env var.
 
 **Q: Do I need to re-authenticate every time Neovim restarts?**
 A: No. TDLib caches session state in `tdlib_db/`. Auth persists across restarts.
