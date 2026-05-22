@@ -57,6 +57,39 @@ app.get('/groups', async (_req, res) => {
   }
 });
 
+app.post('/chat/open', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ error: 'chatId is required' });
+    await tgClient.openChat(chatId);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/chat/action', async (req, res) => {
+  try {
+    const { chatId, action } = req.body;
+    if (!chatId || !action) return res.status(400).json({ error: 'chatId and action are required' });
+    await tgClient.sendChatAction(chatId, action);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/chat/close', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ error: 'chatId is required' });
+    await tgClient.closeChat(chatId);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/messages', async (req, res) => {
   try {
     const { chatId, limit, before } = req.query;

@@ -165,6 +165,25 @@ function M.stop_server()
   end
 end
 
+---@param chat_id any
+---@return boolean
+function M.open_chat(chat_id)
+  return http_post('/chat/open', { chatId = chat_id })
+end
+
+---@param chat_id any
+---@return boolean
+function M.close_chat(chat_id)
+  return http_post('/chat/close', { chatId = chat_id })
+end
+
+---@param chat_id any
+---@param action string  e.g. 'chatActionTyping'
+---@return boolean
+function M.send_chat_action(chat_id, action)
+  return http_post('/chat/action', { chatId = chat_id, action = action })
+end
+
 ---@type integer
 M.DEFAULT_LIMIT = 10
 

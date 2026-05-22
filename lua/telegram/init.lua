@@ -70,6 +70,23 @@ local function finish_init()
           msg.text and msg.text:sub(1, 80) or '?'
         ), vim.log.levels.INFO, { title = 'Telegram' })
       end
+    elseif msg.event == 'userAction' then
+      local state = ui.state
+      if state.chat_id and msg.chat_id == state.chat_id then
+        vim.schedule(function()
+          if msg.action._ == 'chatActionCancel' then
+            ui.set_typing(msg.chat_id, msg.user_id, nil, nil, false)
+          else
+            ui.set_typing(msg.chat_id, msg.user_id, msg.user_name, msg.action._, true)
+          end
+        end)
+      end
+    elseif msg.event == 'chatOnlineMemberCount' then
+      if ui.state.chat_id and msg.chat_id == ui.state.chat_id then
+        vim.schedule(function()
+          ui.set_online_count(msg.online_member_count)
+        end)
+      end
     end
   end)
   initialized = true

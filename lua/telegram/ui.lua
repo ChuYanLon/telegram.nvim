@@ -25,6 +25,8 @@ local server = require('telegram.server')
 ---@field menu_buf integer|nil
 ---@field menu_win integer|nil
 ---@field last_msg string|nil
+---@field online_count integer|nil
+---@field typing_users table<number, {name:string, action_desc:string}>
 
 local M = {}
 
@@ -42,6 +44,8 @@ local state = {
   menu_buf = nil,
   menu_win = nil,
   last_msg = nil,
+  online_count = nil,
+  typing_users = {},
 }
 
 M.state = state
@@ -57,6 +61,7 @@ end
 ---@param default string|nil
 ---@param callback fun(text:string|nil)
 local function multi_line_input(prompt, default, callback)
+  if state.chat_id then server.send_chat_action(state.chat_id, 'chatActionTyping') end
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = 'nofile'
   vim.bo[buf].bufhidden = 'wipe'
@@ -77,6 +82,7 @@ local function multi_line_input(prompt, default, callback)
   vim.api.nvim_win_set_option(win, 'winhl', 'Normal:TgNoBg,FloatBorder:TgBorder')
 
   local function close()
+    if state.chat_id then server.send_chat_action(state.chat_id, 'chatActionCancel') end
     if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
   end
 
@@ -161,20 +167,52 @@ M.render = render
 ---@return integer
 local function strvis(s) return vim.fn.strwidth(s) end
 
+local action_descriptions = {
+  chatActionTyping = 'typing...',
+  chatActionRecordingVideo = 'recording video...',
+  chatActionRecordingVoiceNote = 'recording voice...',
+  chatActionUploadingVideo = 'uploading video...',
+  chatActionUploadingVoiceNote = 'uploading voice...',
+  chatActionUploadingPhoto = 'uploading photo...',
+  chatActionUploadingDocument = 'uploading document...',
+  chatActionChoosingSticker = 'choosing sticker...',
+  chatActionChoosingLocation = 'choosing location...',
+  chatActionChoosingContact = 'choosing contact...',
+  chatActionStartPlayingGame = 'playing game...',
+  chatActionRecordingVideoNote = 'recording video note...',
+  chatActionUploadingVideoNote = 'uploading video note...',
+  chatActionWatchingAnimations = 'watching animations...',
+}
+
 local function update_title()
   if not state.menu_buf or not vim.api.nvim_buf_is_valid(state.menu_buf) then return end
   local w = vim.api.nvim_win_get_width(state.menu_win)
   local left = '  ◆ ' .. state.unread .. '  '
   local right = '  help(?)  '
-  local preview = (state.last_msg or 'latest'):gsub('\n', ' ')
-  local avail = w - strvis(left) - strvis(right)
-  if strvis(preview) > avail then
-    while strvis(preview) > avail - 3 do
-      preview = vim.fn.strcharpart(preview, 0, vim.fn.strchars(preview) - 1)
-    end
-    preview = preview .. '...'
+
+  local middle = ''
+  local typing_items = {}
+  for _, info in pairs(state.typing_users) do
+    table.insert(typing_items, info)
   end
-  local bar = left .. preview
+  if #typing_items > 0 then
+    if #typing_items == 1 then
+      middle = typing_items[1].name .. ' ' .. typing_items[1].action_desc
+    else
+      middle = typing_items[1].name .. ' +' .. (#typing_items - 1) .. ' ' .. typing_items[1].action_desc
+    end
+  elseif state.online_count and state.online_count > 0 then
+    middle = state.online_count .. ' online'
+  end
+
+  local avail = w - strvis(left) - strvis(right)
+  if strvis(middle) > avail then
+    while strvis(middle) > avail - 3 do
+      middle = vim.fn.strcharpart(middle, 0, vim.fn.strchars(middle) - 1)
+    end
+    middle = middle .. '...'
+  end
+  local bar = left .. middle
   bar = bar .. string.rep(' ', math.max(w - strvis(bar) - strvis(right), 0)) .. right
   vim.api.nvim_buf_set_lines(state.menu_buf, 0, 1, false, { bar })
   vim.api.nvim_buf_clear_namespace(state.menu_buf, hl_ns, 0, -1)
@@ -183,6 +221,21 @@ local function update_title()
 end
 
 M.update_title = update_title
+
+function M.set_typing(chat_id, user_id, user_name, action_type, active)
+  if chat_id ~= state.chat_id then return end
+  if active then
+    state.typing_users[user_id] = { name = user_name, action_desc = action_descriptions[action_type] or 'typing...' }
+  else
+    state.typing_users[user_id] = nil
+  end
+  update_title()
+end
+
+function M.set_online_count(count)
+  state.online_count = count
+  update_title()
+end
 
 --- Help window
 
@@ -243,6 +296,7 @@ local function close_chat()
   close_help()
   if state.chat_id then
     state.last_chat = { id = state.chat_id, title = state.chat_title }
+    server.close_chat(state.chat_id)
   end
   if state.win and vim.api.nvim_win_is_valid(state.win) then
     vim.api.nvim_win_close(state.win, true)
@@ -263,6 +317,8 @@ local function close_chat()
   state.messages = {}
   state.loading = false
   state.exhausted = false
+  state.online_count = nil
+  state.typing_users = {}
 end
 
 M.close_chat = close_chat
@@ -380,6 +436,7 @@ function M.open_chat(chat_id, chat_title)
   })
   vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.menu_win })
   vim.api.nvim_win_set_option(state.menu_win, 'wrap', false)
+  server.open_chat(state.chat_id)
   update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', function()

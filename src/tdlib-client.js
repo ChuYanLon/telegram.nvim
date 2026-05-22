@@ -337,6 +337,13 @@ class TelegramLSPClient {
         case 'updateNewMessage':
           await this.handleNewMessage(update.message);
           break;
+        case 'updateUserChatAction':
+        case 'updateChatAction':
+          await this.handleUserChatAction(update);
+          break;
+        case 'updateChatOnlineMemberCount':
+          this.handleChatOnlineMemberCount(update);
+          break;
         default:
           console.log(update);
       }
@@ -351,6 +358,29 @@ class TelegramLSPClient {
         event: 'newMessage',
         chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
         ...formatted,
+      });
+    }
+  }
+
+  async handleUserChatAction(update) {
+    if (typeof global.broadcast === 'function') {
+      const userName = update.user_id ? await this._getUserName(update.user_id) : 'unknown';
+      global.broadcast({
+        event: 'userAction',
+        chat_id: update.chat_id,
+        user_id: update.user_id,
+        user_name: userName,
+        action: update.action,
+      });
+    }
+  }
+
+  handleChatOnlineMemberCount(update) {
+    if (typeof global.broadcast === 'function') {
+      global.broadcast({
+        event: 'chatOnlineMemberCount',
+        chat_id: update.chat_id,
+        online_member_count: update.online_member_count,
       });
     }
   }
@@ -453,6 +483,31 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
+  async openChat(chatId) {
+    if (!this._ready) return;
+    try {
+      await this.client.invoke({ _: 'openChat', chat_id: chatId });
+    } catch {}
+  }
+
+  async closeChat(chatId) {
+    if (!this._ready) return;
+    try {
+      await this.client.invoke({ _: 'closeChat', chat_id: chatId });
+    } catch {}
+  }
+
+  async sendChatAction(chatId, action) {
+    if (!this._ready) return;
+    try {
+      await this.client.invoke({
+        _: 'sendChatAction',
+        chat_id: chatId,
+        action: { _: action },
+      });
+    } catch {}
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;
@@ -471,6 +526,7 @@ class TelegramLSPClient {
       messages: await Promise.all((result.messages || []).map(m => this._formatMessage(m))),
     };
   }
+
 }
 
 module.exports = TelegramLSPClient;
