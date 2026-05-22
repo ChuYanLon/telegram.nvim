@@ -414,6 +414,20 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
+  async editMessage(chatId, messageId, text) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'editMessageText',
+      chat_id: chatId,
+      message_id: messageId,
+      input_message_content: {
+        _: 'inputMessageText',
+        text: { _: 'formattedText', text, entities: [] },
+      },
+    });
+    return { ok: true };
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;

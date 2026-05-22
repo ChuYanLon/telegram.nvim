@@ -160,6 +160,7 @@ end
 M.get_groups = server.get_groups
 M.get_messages = server.get_messages
 M.send_message = server.send_message
+M.edit_message = server.edit_message
 M.ws_start = ws.ws_start
 M.ws_stop = ws.ws_stop
 M.open_chat = ui.open_chat

@@ -164,6 +164,7 @@ local function show_help()
   vim.api.nvim_buf_set_option(help_buf, 'bufhidden', 'wipe')
   local lines = {
     ' i          new message',
+    ' e          edit message under cursor',
     ' Enter      reply to message under cursor',
     ' s          switch to another group',
     ' r          refresh messages',
@@ -282,6 +283,20 @@ end
 
 M.refresh_messages = refresh_messages
 
+---@return integer|nil
+local function message_at_cursor()
+  local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+  local line = 1
+  for idx, msg in ipairs(state.messages) do
+    local n = #fmt_msg(msg)
+    if cursor_line >= line and cursor_line < line + n then
+      return idx
+    end
+    line = line + n
+  end
+  return nil
+end
+
 ---@param chat_id any
 ---@param chat_title string
 function M.open_chat(chat_id, chat_title)
@@ -306,7 +321,7 @@ function M.open_chat(chat_id, chat_title)
   state.menu_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(state.menu_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
-  state.menu_bar = 'i:reply s:switch r:refresh Esc:back q:quit'
+  state.menu_bar = 'i:msg e:edit Enter:reply s:switch r:refresh Esc:back q:quit'
   state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
@@ -358,6 +373,19 @@ function M.open_chat(chat_id, chat_title)
       end
     end)
   end, { buffer = state.buf })
+  vim.keymap.set('n', 'e', function()
+    if state.unread > 0 then state.unread = 0; update_title() end
+    local idx = message_at_cursor()
+    if not idx then return end
+    local target = state.messages[idx]
+    if not target or not target.id then return end
+    vim.ui.input({ prompt = 'Edit: ', default = target.text or '' }, function(text)
+      if text and #text > 0 then
+        local ok = server.edit_message(state.chat_id, target.id, text)
+        if ok then vim.schedule(refresh_messages) end
+      end
+    end)
+  end, { buffer = state.buf })
   vim.api.nvim_create_autocmd('CursorMoved', {
     group = vim.api.nvim_create_augroup('TgChatScroll', { clear = true }),
     buffer = state.buf,
@@ -374,20 +402,6 @@ function M.open_chat(chat_id, chat_title)
     end,
   })
   refresh_messages()
-end
-
----@return integer|nil
-local function message_at_cursor()
-  local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
-  local line = 1
-  for idx, msg in ipairs(state.messages) do
-    local n = #fmt_msg(msg)
-    if cursor_line >= line and cursor_line < line + n then
-      return idx
-    end
-    line = line + n
-  end
-  return nil
 end
 
 return M

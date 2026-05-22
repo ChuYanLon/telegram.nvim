@@ -177,4 +177,12 @@ function M.send_message(chat_id, text, replyTo)
   return http_post('/sendMessage', body)
 end
 
+---@param chat_id any
+---@param message_id any
+---@param text string
+---@return boolean
+function M.edit_message(chat_id, message_id, text)
+  return http_post('/editMessage', { chatId = chat_id, messageId = message_id, text = text })
+end
+
 return M

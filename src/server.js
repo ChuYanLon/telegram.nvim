@@ -87,6 +87,19 @@ app.post('/sendMessage', async (req, res) => {
   }
 });
 
+app.post('/editMessage', async (req, res) => {
+  try {
+    const { chatId, messageId, text } = req.body;
+    if (!chatId || !messageId || !text) {
+      return res.status(400).json({ error: 'chatId, messageId and text are required' });
+    }
+    const result = await tgClient.editMessage(chatId, messageId, text);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);
