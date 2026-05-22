@@ -59,15 +59,17 @@ local function fmt_msg(msg)
   local date_str = os.date('%m-%d %H:%M', msg.date)
   local sender = msg.sender and msg.sender.name or 'unknown'
   local out = {}
+  local parts = vim.split(msg.text or '', '\n')
   if msg.replyTo then
     local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or '?'
     local r_text = msg.replyTo.text and msg.replyTo.text:gsub('\n', ' ') or ''
     if #r_text > 50 then r_text = r_text:sub(1, 50) .. '...' end
-    table.insert(out, '\xE2\x95\xAD\xE2\x94\x80 to ' .. r_sender .. ' \xE2\x94\x80\xE2\x95\xAE')
-    table.insert(out, '  \xE2\x94\x82 ' .. r_text)
+    table.insert(out, string.format('[%s] %s:', date_str, sender))
+    table.insert(out, '  \xE2\x94\x83 ' .. r_sender .. ': ' .. r_text)
+    table.insert(out, '  ' .. parts[1])
+  else
+    table.insert(out, string.format('[%s] %s: %s', date_str, sender, parts[1]))
   end
-  local parts = vim.split(msg.text or '', '\n')
-  table.insert(out, string.format('[%s] %s: %s', date_str, sender, parts[1]))
   for i = 2, #parts do
     table.insert(out, '  ' .. parts[i])
   end
@@ -82,18 +84,16 @@ local function apply_highlights()
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(state.buf, line, line + 1, false)[1]
     if not text then break end
-    if text:byte(1) == 0xE2 and text:byte(2) == 0x95 and text:byte(3) == 0xAD then
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 0, #text)
-    elseif text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 6)
-    else
-      local _, ts_end = text:find('%[%d+%-%d+ %d+:%d+%] ')
-      if ts_end then
-        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_end)
-        local _, se = text:find('[^:]+: ', ts_end + 1)
-        if se then
-          vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_end, se - 2)
-        end
+    if text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 5)
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyBg', line, 5, -1)
+    end
+    local _, ts_end = text:find('%[%d+%-%d+ %d+:%d+%] ')
+    if ts_end then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_end)
+      local _, se = text:find('%S+:', ts_end + 1)
+      if se then
+        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_end, se)
       end
     end
   end

@@ -26,6 +26,7 @@ function M.setup(opts)
   vim.api.nvim_set_hl(0, 'TgSender', { link = 'Identifier', default = true })
   vim.api.nvim_set_hl(0, 'TgKey', { link = 'Keyword', default = true })
   vim.api.nvim_set_hl(0, 'TgReplyIndicator', { bold = true, default = true })
+  vim.api.nvim_set_hl(0, 'TgReplyBg', { bg = '#2e3a4e', default = true })
   vim.api.nvim_set_hl(0, 'TgNoBg', { fg = 'NONE', bg = 'NONE', default = true })
   local bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name('FloatBorder') }) or {}).fg or '#6c6c6c'
   vim.api.nvim_set_hl(0, 'TgBorder', { fg = bfg, bg = 'NONE', default = true })
