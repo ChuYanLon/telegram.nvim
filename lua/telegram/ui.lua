@@ -230,7 +230,7 @@ local function load_older()
   local data = server.get_messages(state.chat_id, server.DEFAULT_LIMIT, oldest_id)
   if not data then state.loading = false; return end
   local new_msgs = data.messages or {}
-  if #new_msgs == 0 or #new_msgs < server.DEFAULT_LIMIT then
+  if #new_msgs == 0 then
     state.exhausted = true
     state.loading = false
     return
