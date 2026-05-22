@@ -256,35 +256,6 @@ end
 
 M.close_help = close_help
 
-local function show_replied_message(reply_to)
-  close_help()
-  help_buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[help_buf].buftype = 'nofile'
-  vim.bo[help_buf].bufhidden = 'wipe'
-  local sender = reply_to.sender and reply_to.sender.name or 'Unknown'
-  local text = reply_to.text or ''
-  local lines = { '', 'From: ' .. sender }
-  for _, l in ipairs(vim.split(text, '\n')) do
-    table.insert(lines, l)
-  end
-  vim.api.nvim_buf_set_lines(help_buf, 0, -1, false, lines)
-  local maxw = 0
-  for _, l in ipairs(lines) do maxw = math.max(maxw, strvis(l)) end
-  local width = math.max(40, math.min(maxw + 4, math.floor(vim.o.columns * 0.8)))
-  local height = math.max(3, #lines)
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
-  help_win = vim.api.nvim_open_win(help_buf, true, {
-    relative = 'editor', width = width, height = height,
-    row = row, col = col, style = 'minimal', border = 'rounded',
-    title = ' Original Message ',
-    title_pos = 'center',
-  })
-  vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = help_win })
-  vim.keymap.set('n', '<Esc>', close_help, { buffer = help_buf, nowait = true })
-  vim.keymap.set('n', 'q', close_help, { buffer = help_buf, nowait = true })
-end
-
 local function show_help()
   close_help()
   help_buf = vim.api.nvim_create_buf(false, true)
@@ -293,7 +264,7 @@ local function show_help()
   local lines = {
     ' i       new message',
     ' e       edit own',
-    ' Enter   reply / show original',
+    ' Enter   reply / jump to original',
     ' d       delete own',
     ' R       recall own',
     ' f       forward',
@@ -520,7 +491,27 @@ function M.open_chat(chat_id, chat_title)
     local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
     local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
     if text and text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
-      if target.replyTo then show_replied_message(target.replyTo) end
+      if target.replyTo then
+        local function scroll_to_msg()
+          for i, m in ipairs(state.messages) do
+            if m.id == target.replyTo.id then
+              local line = 1
+              for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
+              vim.api.nvim_win_set_cursor(state.win, { line, 0 })
+              return true
+            end
+          end
+        end
+        if not scroll_to_msg() then
+          local function load_until_found()
+            if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
+            if state.exhausted or scroll_to_msg() then return end
+            load_older()
+            vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+          end
+          vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+        end
+      end
       return
     end
     multi_line_input('Reply to ' .. (target.sender and target.sender.name or '?'), nil, function(text)
