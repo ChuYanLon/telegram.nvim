@@ -396,7 +396,52 @@ local function update_title()
   vim.api.nvim_buf_add_highlight(state.menu_buf, hl_ns, 'TgKey', 0, w - 9, w - 1)
 end
 
+local help_win = nil
+local help_buf = nil
+
+local function close_help()
+  if help_win and vim.api.nvim_win_is_valid(help_win) then
+    vim.api.nvim_win_close(help_win, true)
+  end
+  if help_buf and vim.api.nvim_buf_is_valid(help_buf) then
+    vim.api.nvim_buf_delete(help_buf, { force = true })
+  end
+  help_win = nil
+  help_buf = nil
+end
+
+local function show_help()
+  close_help()
+  help_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(help_buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(help_buf, 'bufhidden', 'wipe')
+  local lines = {
+    ' i          reply to last message',
+    ' s          switch to another group',
+    ' r          refresh messages',
+    ' ?          show this help',
+    ' Esc        close chat window',
+    ' q          quit telegram (close all)',
+  }
+  vim.api.nvim_buf_set_lines(help_buf, 0, -1, false, lines)
+  local width = 36
+  local height = #lines + 2
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+  help_win = vim.api.nvim_open_win(help_buf, true, {
+    relative = 'editor', width = width, height = height,
+    row = row, col = col, style = 'minimal', border = 'rounded',
+    title = ' Help ',
+    title_pos = 'center',
+  })
+  vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = help_win })
+  vim.keymap.set('n', '<Esc>', close_help, { buffer = help_buf, nowait = true })
+  vim.keymap.set('n', 'q', close_help, { buffer = help_buf, nowait = true })
+  vim.keymap.set('n', '?', close_help, { buffer = help_buf, nowait = true })
+end
+
 local function close_chat()
+  close_help()
   if state.chat_id then
     state.last_chat = { id = state.chat_id, title = state.chat_title }
   end
@@ -530,13 +575,7 @@ function M.open_chat(chat_id, chat_title)
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', close_chat_forget, { buffer = state.buf })
   vim.keymap.set('n', '?', function()
-    vim.notify([[
- i  reply
- s  switch group
- r  refresh
- ?  this help
- Esc  close chat
- q  quit telegram]], vim.log.levels.INFO, { title = 'Telegram' })
+    show_help()
   end, { buffer = state.buf })
   vim.keymap.set('n', 's', function()
     M.list_groups(true)
