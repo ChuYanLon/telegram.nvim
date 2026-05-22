@@ -50,6 +50,7 @@ local function finish_init()
             date = msg.date,
             sender = msg.sender,
             text = msg.text,
+            replyTo = msg.replyTo,
           })
           ui.render()
           if at_bottom then

@@ -169,9 +169,12 @@ end
 
 ---@param chat_id any
 ---@param text string
+---@param replyTo any|nil
 ---@return boolean
-function M.send_message(chat_id, text)
-  return http_post('/sendMessage', { chatId = chat_id, text = text })
+function M.send_message(chat_id, text, replyTo)
+  local body = { chatId = chat_id, text = text }
+  if replyTo then body.replyTo = replyTo end
+  return http_post('/sendMessage', body)
 end
 
 return M

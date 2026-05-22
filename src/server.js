@@ -76,11 +76,11 @@ app.get('/messages', async (req, res) => {
 
 app.post('/sendMessage', async (req, res) => {
   try {
-    const { chatId, text } = req.body;
+    const { chatId, text, replyTo } = req.body;
     if (!chatId || !text) {
       return res.status(400).json({ error: 'chatId and text are required' });
     }
-    const result = await tgClient.sendMessage(chatId, text);
+    const result = await tgClient.sendMessage(chatId, text, replyTo);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

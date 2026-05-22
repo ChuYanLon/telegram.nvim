@@ -256,14 +256,41 @@ class TelegramLSPClient {
     return content._;
   }
 
+  async _formatReplyTo(msg) {
+    if (!msg.reply_to || msg.reply_to._ !== 'messageReplyToMessage') return null;
+    const r = msg.reply_to;
+    const replyTo = { id: r.message_id };
+    if (r.origin_sender_id) {
+      replyTo.sender = await this._resolveSender(r.origin_sender_id);
+    }
+    if (!replyTo.sender && r.origin_sender_name) {
+      replyTo.sender = { id: null, name: r.origin_sender_name };
+    }
+    if (r.chat_id === msg.chat_id) {
+      try {
+        const orig = await this.client.invoke({ _: 'getMessage', chat_id: msg.chat_id, message_id: r.message_id });
+        if (orig) {
+          replyTo.text = this._extractText(orig.content);
+          if (!replyTo.sender) {
+            replyTo.sender = await this._resolveSender(orig.sender_id);
+          }
+        }
+      } catch {}
+    }
+    return replyTo;
+  }
+
   async _formatMessage(msg) {
     if (!msg) return null;
-    return {
+    const formatted = {
       id: msg.id,
       text: this._extractText(msg.content),
       sender: await this._resolveSender(msg.sender_id),
       date: msg.date,
     };
+    const replyTo = await this._formatReplyTo(msg);
+    if (replyTo) formatted.replyTo = replyTo;
+    return formatted;
   }
 
   async _enrichGroup(chat) {
@@ -318,13 +345,11 @@ class TelegramLSPClient {
   async handleNewMessage(msg) {
     if (typeof global.broadcast === 'function') {
       const chat = this._chats.get(msg.chat_id);
+      const formatted = await this._formatMessage(msg);
       global.broadcast({
         event: 'newMessage',
-        id: msg.id,
         chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
-        sender: await this._resolveSender(msg.sender_id),
-        text: this._extractText(msg.content),
-        date: msg.date,
+        ...formatted,
       });
     }
   }
@@ -372,16 +397,20 @@ class TelegramLSPClient {
     return Promise.all(groups.map(g => this._enrichGroup(g)));
   }
 
-  async sendMessage(chatId, text) {
+  async sendMessage(chatId, text, replyTo) {
     if (!this._ready) throw new Error('Client not ready yet');
-    await this.client.invoke({
+    const params = {
       _: 'sendMessage',
       chat_id: chatId,
       input_message_content: {
         _: 'inputMessageText',
         text: { _: 'formattedText', text, entities: [] },
       },
-    });
+    };
+    if (replyTo) {
+      params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
+    }
+    await this.client.invoke(params);
     return { ok: true };
   }
 

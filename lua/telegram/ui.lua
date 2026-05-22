@@ -9,6 +9,7 @@ local server = require('telegram.server')
 ---@field date integer
 ---@field sender TgSender|nil
 ---@field text string|nil
+---@field replyTo {id:any, sender:TgSender|nil, text:string|nil}|nil
 
 ---@class TgState
 ---@field buf integer|nil
@@ -56,8 +57,16 @@ end
 local function fmt_msg(msg)
   local date_str = os.date('%m-%d %H:%M', msg.date)
   local sender = msg.sender and msg.sender.name or 'unknown'
+  local out = {}
+  if msg.replyTo then
+    local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or '?'
+    local r_text = msg.replyTo.text and msg.replyTo.text:gsub('\n', ' ') or ''
+    if #r_text > 50 then r_text = r_text:sub(1, 50) .. '...' end
+    table.insert(out, '\xE2\x95\xAD\xE2\x94\x80 to ' .. r_sender .. ' \xE2\x94\x80\xE2\x95\xAE')
+    table.insert(out, '  \xE2\x94\x82 ' .. r_text)
+  end
   local parts = vim.split(msg.text or '', '\n')
-  local out = { string.format('[%s] %s: %s', date_str, sender, parts[1]) }
+  table.insert(out, string.format('[%s] %s: %s', date_str, sender, parts[1]))
   for i = 2, #parts do
     table.insert(out, '  ' .. parts[i])
   end
@@ -72,14 +81,18 @@ local function apply_highlights()
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(state.buf, line, line + 1, false)[1]
     if not text then break end
-    local ts_end = text:match('^%[%d+%-%d+ %d+:%d+%] ')
-    if ts_end then
-      local ts_len = #ts_end
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_len)
-      local rest = text:sub(ts_len + 1)
-      local _, se = rest:find('^[^:]+: ')
-      if se then
-        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_len, ts_len + se - 2)
+    if text:byte(1) == 0xE2 and text:byte(2) == 0x95 and text:byte(3) == 0xAD then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 0, #text)
+    elseif text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 6)
+    else
+      local _, ts_end = text:find('%[%d+%-%d+ %d+:%d+%] ')
+      if ts_end then
+        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_end)
+        local _, se = text:find('[^:]+: ', ts_end + 1)
+        if se then
+          vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_end, se - 2)
+        end
       end
     end
   end
@@ -150,7 +163,8 @@ local function show_help()
   vim.api.nvim_buf_set_option(help_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(help_buf, 'bufhidden', 'wipe')
   local lines = {
-    ' i          reply to last message',
+    ' i          new message',
+    ' Enter      reply to message under cursor',
     ' s          switch to another group',
     ' r          refresh messages',
     ' ?          show this help',
@@ -331,6 +345,19 @@ function M.open_chat(chat_id, chat_title)
       end
     end)
   end, { buffer = state.buf })
+  vim.keymap.set('n', '<CR>', function()
+    if state.unread > 0 then state.unread = 0; update_title() end
+    local idx = message_at_cursor()
+    if not idx then return end
+    local target = state.messages[idx]
+    local prompt = 'Reply to ' .. (target.sender and target.sender.name or '?') .. ': '
+    vim.ui.input({ prompt = prompt }, function(text)
+      if text and #text > 0 then
+        local ok = server.send_message(state.chat_id, text, target.id)
+        if ok then vim.schedule(refresh_messages) end
+      end
+    end)
+  end, { buffer = state.buf })
   vim.api.nvim_create_autocmd('CursorMoved', {
     group = vim.api.nvim_create_augroup('TgChatScroll', { clear = true }),
     buffer = state.buf,
@@ -347,6 +374,20 @@ function M.open_chat(chat_id, chat_title)
     end,
   })
   refresh_messages()
+end
+
+---@return integer|nil
+local function message_at_cursor()
+  local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+  local line = 1
+  for idx, msg in ipairs(state.messages) do
+    local n = #fmt_msg(msg)
+    if cursor_line >= line and cursor_line < line + n then
+      return idx
+    end
+    line = line + n
+  end
+  return nil
 end
 
 return M
