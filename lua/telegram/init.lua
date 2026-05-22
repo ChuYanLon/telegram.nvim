@@ -51,6 +51,7 @@ local function finish_init()
           end
           table.insert(state.messages, {
             id = mid,
+            type = msg.type,
             date = msg.date,
             sender = msg.sender,
             text = msg.text,

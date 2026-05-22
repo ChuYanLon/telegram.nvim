@@ -1,4 +1,5 @@
 local server = require('telegram.server')
+local render_msg = require('telegram.render').render
 
 ---@class TgSender
 ---@field id any
@@ -6,6 +7,7 @@ local server = require('telegram.server')
 
 ---@class TgMessage
 ---@field id any
+---@field type string
 ---@field date integer
 ---@field sender TgSender|nil
 ---@field text string|nil
@@ -107,24 +109,7 @@ end
 ---@param msg TgMessage
 ---@return string[]
 local function fmt_msg(msg)
-  local date_str = os.date('%m-%d %H:%M', msg.date)
-  local sender = msg.sender and msg.sender.name or 'unknown'
-  local out = {}
-  local parts = vim.split(msg.text or '', '\n')
-  if msg.replyTo then
-    local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or '?'
-    local r_text = msg.replyTo.text and msg.replyTo.text:gsub('\n', ' ') or ''
-    if #r_text > 50 then r_text = r_text:sub(1, 50) .. '...' end
-    table.insert(out, string.format('[%s] %s:', date_str, sender))
-    table.insert(out, '  \xE2\x94\x83 ' .. r_sender .. ': ' .. r_text)
-    table.insert(out, '  ' .. parts[1])
-  else
-    table.insert(out, string.format('[%s] %s: %s', date_str, sender, parts[1]))
-  end
-  for i = 2, #parts do
-    table.insert(out, '  ' .. parts[i])
-  end
-  return out
+  return render_msg(msg)
 end
 
 local hl_ns = vim.api.nvim_create_namespace('TgChat')

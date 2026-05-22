@@ -284,6 +284,7 @@ class TelegramLSPClient {
     if (!msg) return null;
     const formatted = {
       id: msg.id,
+      type: msg.content ? msg.content._ : 'unknown',
       text: this._extractText(msg.content),
       sender: await this._resolveSender(msg.sender_id),
       date: msg.date,
