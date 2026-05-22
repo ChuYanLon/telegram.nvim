@@ -36,11 +36,11 @@ local function ensure_deps()
     vim.notify('[tg] curl not found.', vim.log.levels.ERROR)
     return false
   end
-  if not M.config.tdlib_path then
-    vim.notify('[tg] tdlib_path not set. Set config.tdlib_path in setup().', vim.log.levels.ERROR)
-    vim.notify('[tg] See https://github.com/tdlib/td.git', vim.log.levels.INFO)
-    return false
+
+  if M.config.tdlib_path then
+    vim.notify('[tg] tdlib_path: ' .. M.config.tdlib_path, vim.log.levels.INFO)
   end
+
   local ws_helper = plugin_root .. '/bin/tg-ws-helper.js'
   if vim.fn.filereadable(ws_helper) ~= 1 then
     vim.notify('[tg] Missing ws helper', vim.log.levels.ERROR)
