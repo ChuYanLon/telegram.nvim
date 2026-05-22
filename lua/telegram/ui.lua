@@ -53,6 +53,50 @@ local function set_lines(lines)
   pcall(vim.api.nvim_buf_set_option, state.buf, 'modifiable', false)
 end
 
+---@param prompt string
+---@param default string|nil
+---@param callback fun(text:string|nil)
+local function multi_line_input(prompt, default, callback)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = 'nofile'
+  vim.bo[buf].bufhidden = 'wipe'
+  if default and #default > 0 then
+    local lines = vim.split(default, '\n')
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  end
+  local width = math.floor(vim.o.columns * 0.6)
+  local height = 6
+  local row = math.floor((vim.o.lines - height) / 2) - 2
+  local col = math.floor((vim.o.columns - width) / 2)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = 'editor', width = width, height = height,
+    row = row, col = col, style = 'minimal', border = 'rounded',
+    title = ' ' .. prompt .. ' ',
+    title_pos = 'center',
+  })
+  vim.api.nvim_win_set_option(win, 'winhl', 'Normal:TgNoBg,FloatBorder:TgBorder')
+
+  local function close()
+    if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
+  end
+
+  vim.keymap.set('n', '<Esc>', function()
+    close(); callback(nil)
+  end, { buffer = buf, nowait = true })
+
+  vim.keymap.set('n', 'q', function()
+    close(); callback(nil)
+  end, { buffer = buf, nowait = true })
+
+  vim.keymap.set('n', '<CR>', function()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local text = table.concat(lines, '\n'):gsub('[\n ]+$', '')
+    close(); callback(#text > 0 and text or nil)
+  end, { buffer = buf, nowait = true })
+
+  vim.cmd('startinsert!')
+end
+
 ---@param msg TgMessage
 ---@return string[]
 local function fmt_msg(msg)
@@ -357,8 +401,8 @@ function M.open_chat(chat_id, chat_title)
   end, { buffer = state.buf })
   vim.keymap.set('n', 'i', function()
     if state.unread > 0 then state.unread = 0; update_title() end
-    vim.ui.input({ prompt = 'Message: ' }, function(text)
-      if text and #text > 0 then
+    multi_line_input('Message', nil, function(text)
+      if text then
         local ok = server.send_message(state.chat_id, text)
         if ok then vim.schedule(refresh_messages) end
       end
@@ -369,9 +413,8 @@ function M.open_chat(chat_id, chat_title)
     local idx = message_at_cursor()
     if not idx then return end
     local target = state.messages[idx]
-    local prompt = 'Reply to ' .. (target.sender and target.sender.name or '?') .. ': '
-    vim.ui.input({ prompt = prompt }, function(text)
-      if text and #text > 0 then
+    multi_line_input('Reply to ' .. (target.sender and target.sender.name or '?'), nil, function(text)
+      if text then
         local ok = server.send_message(state.chat_id, text, target.id)
         if ok then vim.schedule(refresh_messages) end
       end
@@ -387,10 +430,12 @@ function M.open_chat(chat_id, chat_title)
       vim.notify('[tg] Can only edit your own messages', vim.log.levels.WARN)
       return
     end
-    vim.ui.input({ prompt = 'Edit: ', default = target.text or '' }, function(text)
-      if text and #text > 0 then
-        local ok = server.edit_message(state.chat_id, target.id, text)
-        if ok then vim.schedule(refresh_messages) end
+    multi_line_input('Edit', target.text or '', function(text)
+      if not text then return end
+      local ok = server.edit_message(state.chat_id, target.id, text)
+      if ok then
+        target.text = text
+        render()
       end
     end)
   end, { buffer = state.buf })
