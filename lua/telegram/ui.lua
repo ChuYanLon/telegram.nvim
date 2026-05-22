@@ -224,9 +224,9 @@ end
 M.update_title = update_title
 
 function M.set_typing(chat_id, user_id, user_name, action_type, active)
-  if chat_id ~= state.chat_id then return end
+  if chat_id ~= state.chat_id or not user_id then return end
   if active then
-    state.typing_users[user_id] = { name = user_name, action_desc = action_descriptions[action_type] or 'typing...' }
+    state.typing_users[user_id] = { name = user_name or 'Unknown', action_desc = action_descriptions[action_type] or 'typing...' }
   else
     state.typing_users[user_id] = nil
   end
