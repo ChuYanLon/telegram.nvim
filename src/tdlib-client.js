@@ -440,6 +440,17 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
+  async forwardMessages(fromChatId, messageIds, toChatId) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'forwardMessages',
+      from_chat_id: fromChatId,
+      message_ids: Array.isArray(messageIds) ? messageIds : [messageIds],
+      chat_id: toChatId,
+    });
+    return { ok: true };
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;

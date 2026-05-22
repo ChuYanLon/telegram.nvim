@@ -113,6 +113,19 @@ app.post('/deleteMessage', async (req, res) => {
   }
 });
 
+app.post('/forwardMessages', async (req, res) => {
+  try {
+    const { fromChatId, messageIds, toChatId } = req.body;
+    if (!fromChatId || !messageIds || !toChatId) {
+      return res.status(400).json({ error: 'fromChatId, messageIds and toChatId are required' });
+    }
+    const result = await tgClient.forwardMessages(fromChatId, messageIds, toChatId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);

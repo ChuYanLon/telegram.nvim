@@ -192,4 +192,12 @@ function M.delete_message(chat_id, message_id)
   return http_post('/deleteMessage', { chatId = chat_id, messageId = message_id })
 end
 
+---@param from_chat_id any
+---@param message_ids any|any[]
+---@param to_chat_id any
+---@return boolean
+function M.forward_messages(from_chat_id, message_ids, to_chat_id)
+  return http_post('/forwardMessages', { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
+end
+
 return M

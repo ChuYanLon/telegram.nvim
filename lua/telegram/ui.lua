@@ -166,6 +166,7 @@ local function show_help()
   local lines = {
     ' i          new message',
     ' e          edit message under cursor',
+    ' f          forward message to another group',
     ' d          delete message under cursor',
     ' R          recall (revoke) your message under cursor',
     ' Enter      reply to message under cursor',
@@ -390,6 +391,30 @@ function M.open_chat(chat_id, chat_title)
       if text and #text > 0 then
         local ok = server.edit_message(state.chat_id, target.id, text)
         if ok then vim.schedule(refresh_messages) end
+      end
+    end)
+  end, { buffer = state.buf })
+  vim.keymap.set('n', 'f', function()
+    local idx = message_at_cursor()
+    if not idx then return end
+    local target = state.messages[idx]
+    if not target or not target.id then return end
+    local groups = server.get_groups()
+    if not groups or #groups == 0 then
+      vim.notify('[tg] No groups to forward to', vim.log.levels.WARN)
+      return
+    end
+    local items = {}
+    for _, g in ipairs(groups) do
+      table.insert(items, { id = g.id, label = g.title })
+    end
+    vim.ui.select(items, {
+      prompt = 'Forward to:',
+      format_item = function(item) return item.label end,
+    }, function(choice)
+      if choice then
+        local ok = server.forward_messages(state.chat_id, target.id, choice.id)
+        if ok then vim.notify('[tg] Forwarded to ' .. choice.label, vim.log.levels.INFO) end
       end
     end)
   end, { buffer = state.buf })
