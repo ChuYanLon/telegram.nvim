@@ -38,7 +38,7 @@ local function ensure_deps()
   end
   if not M.config.tdlib_path then
     vim.notify('[tg] tdlib_path not set. Set config.tdlib_path in setup().', vim.log.levels.ERROR)
-    vim.notify('[tg] See https://github.com/Bannerets/tdl#installation', vim.log.levels.INFO)
+    vim.notify('[tg] See https://github.com/tdlib/td.git', vim.log.levels.INFO)
     return false
   end
   local ws_helper = plugin_root .. '/bin/tg-ws-helper.js'
