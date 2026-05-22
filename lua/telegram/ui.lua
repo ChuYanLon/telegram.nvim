@@ -46,7 +46,7 @@ local state = {
   last_msg = nil,
   online_count = nil,
   typing_users = {},
-  saved_cursor_msg_id = nil,
+  saved_cursors = {},
 }
 
 M.state = state
@@ -316,7 +316,7 @@ local function close_chat()
   if state.chat_id then
     if state.win and vim.api.nvim_win_is_valid(state.win) then
       local idx = message_at_cursor()
-      if idx then state.saved_cursor_msg_id = state.messages[idx].id end
+      if idx then state.saved_cursors[state.chat_id] = state.messages[idx].id end
     end
     state.last_chat = { id = state.chat_id, title = state.chat_title }
     server.close_chat(state.chat_id)
@@ -342,7 +342,6 @@ local function close_chat()
   state.exhausted = false
   state.online_count = nil
   state.typing_users = {}
-  state.saved_cursor_msg_id = nil
 end
 
 M.close_chat = close_chat
@@ -461,6 +460,7 @@ function M.open_chat(chat_id, chat_title)
   vim.keymap.set('n', 'q', function()
     close_chat()
     state.last_chat = nil
+    state.saved_cursors = {}
     require('telegram.ws').ws_stop()
     server.stop_server()
     require('telegram').set_initialized(false)
@@ -670,9 +670,9 @@ function M.open_chat(chat_id, chat_title)
     end,
   })
   refresh_messages()
-  if state.saved_cursor_msg_id then
-    local restore = state.saved_cursor_msg_id
-    state.saved_cursor_msg_id = nil
+  local restore = state.saved_cursors[state.chat_id]
+  if restore then
+    state.saved_cursors[state.chat_id] = nil
     local function scroll_to()
       for i, msg in ipairs(state.messages) do
         if msg.id == restore then
