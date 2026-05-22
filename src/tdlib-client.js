@@ -393,7 +393,9 @@ class TelegramLSPClient {
     const chats = await this.getChats();
     const groups = chats.filter((c) => {
       const t = c.type._;
-      return t === 'chatTypeBasicGroup' || t === 'chatTypeSupergroup';
+      if (t === 'chatTypeBasicGroup') return true;
+      if (t !== 'chatTypeSupergroup') return false;
+      return !c.type.is_channel;
     });
     return Promise.all(groups.map(g => this._enrichGroup(g)));
   }
