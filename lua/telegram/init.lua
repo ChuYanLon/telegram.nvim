@@ -45,8 +45,12 @@ local function finish_init()
           local preview = '[' .. ts .. '] ' .. (msg.sender and msg.sender.name or '?') .. ': ' .. (msg.text or '')
           state.last_msg = preview:sub(1, 60)
           ui.update_title()
+          local mid = msg.id or (os.time() .. math.random())
+          for _, m in ipairs(state.messages) do
+            if m.id == mid then return end
+          end
           table.insert(state.messages, {
-            id = msg.id or (os.time() .. math.random()),
+            id = mid,
             date = msg.date,
             sender = msg.sender,
             text = msg.text,
