@@ -399,17 +399,17 @@ local function load_older()
   for _, m in ipairs(state.messages) do
     seen[m.id] = true
   end
-  local added = 0
+  local new_lines = 0
   for i = 1, #new_msgs do
     if not seen[new_msgs[i].id] then
       seen[new_msgs[i].id] = true
       table.insert(state.messages, 1, new_msgs[i])
-      added = added + 1
+      new_lines = new_lines + #fmt_msg(new_msgs[i])
     end
   end
-  if added > 0 then
+  if new_lines > 0 then
     render()
-    vim.api.nvim_win_set_cursor(state.win, { old_top + added, cursor[2] })
+    vim.api.nvim_win_set_cursor(state.win, { old_top + new_lines, cursor[2] })
   end
   state.loading = false
 end
