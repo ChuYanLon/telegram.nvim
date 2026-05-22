@@ -90,8 +90,7 @@ Inside a chat window:
 | `/`  | Search messages (opens search input → picker)   |
 | `e`  | Edit own message at cursor                      |
 | `Enter` | Reply to message / jump to original message |
-| `d`  | Delete message (with confirmation)              |
-| `R`  | Recall/delete own message (with confirmation)   |
+| `d`  | Delete / recall message (with confirmation)     |
 | `f`  | Forward message to another group                |
 | `s`  | Switch to another group                         |
 | `r`  | Refresh and scroll to latest messages           |

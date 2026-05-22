@@ -264,10 +264,9 @@ local function show_help()
   local lines = {
     ' i       new message',
     ' /       search / clear search',
+    ' d       delete / recall own',
     ' e       edit own',
     ' Enter   reply / jump to original',
-    ' d       delete own',
-    ' R       recall own',
     ' f       forward',
     ' s       switch group',
     ' r       refresh',
@@ -622,33 +621,6 @@ function M.open_chat(chat_id, chat_title)
             update_title()
           end)
           vim.notify('[tg] Message deleted', vim.log.levels.INFO)
-        end
-      end
-    end)
-  end, { buffer = state.buf })
-  vim.keymap.set('n', 'R', function()
-    local target = curr_msg()
-    if not target or not target.id then return end
-    if not target.own then
-      vim.notify('[tg] Can only recall your own messages', vim.log.levels.WARN)
-      return
-    end
-    local sender = target.sender and target.sender.name or '?'
-    vim.ui.select({ 'Yes', 'No' }, {
-      prompt = 'Recall message from ' .. sender .. '?',
-    }, function(choice)
-      if choice == 'Yes' then
-        if server.delete_message(state.chat_id, target.id) then
-          for i = #state.messages, 1, -1 do
-            if state.messages[i].id == target.id then table.remove(state.messages, i); break end
-          end
-          vim.schedule(function()
-            render()
-            local last = state.messages[#state.messages]
-            state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
-            update_title()
-          end)
-          vim.notify('[tg] Message recalled', vim.log.levels.INFO)
         end
       end
     end)
