@@ -113,7 +113,7 @@ local function fmt_msg(msg)
 end
 
 local hl_ns = vim.api.nvim_create_namespace('TgChat')
-vim.api.nvim_set_hl(0, 'TgCode', { fg = '#c0c0c0', bg = '#2a2a3a', default = true })
+vim.api.nvim_set_hl(0, 'TgCode', { link = 'String', default = true })
 vim.api.nvim_set_hl(0, 'TgCodeFence', { link = 'Special', default = true })
 
 local function apply_highlights()

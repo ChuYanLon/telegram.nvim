@@ -11,7 +11,7 @@ local function get_renderer(msg)
   local t = msg.type or 'messageText'
   if t == 'messageText' then
     local txt = msg.text or ''
-    if txt:find('```') or txt:find('`[^`]+`') or txt:find('%$%{') then
+    if txt:find('`[^`]+`') or txt:find('%$%{') then
       return code
     end
     if txt:find('https?://') or txt:find('www%.[%w_-]+%.') then
