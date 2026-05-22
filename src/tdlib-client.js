@@ -428,6 +428,17 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
+  async deleteMessage(chatId, messageId) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'deleteMessages',
+      chat_id: chatId,
+      message_ids: [messageId],
+      revoke: true,
+    });
+    return { ok: true };
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;

@@ -100,6 +100,19 @@ app.post('/editMessage', async (req, res) => {
   }
 });
 
+app.post('/deleteMessage', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.body;
+    if (!chatId || !messageId) {
+      return res.status(400).json({ error: 'chatId and messageId are required' });
+    }
+    const result = await tgClient.deleteMessage(chatId, messageId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);

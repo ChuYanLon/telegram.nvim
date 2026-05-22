@@ -165,6 +165,7 @@ local function show_help()
   local lines = {
     ' i          new message',
     ' e          edit message under cursor',
+    ' d          delete (recall) message under cursor',
     ' Enter      reply to message under cursor',
     ' s          switch to another group',
     ' r          refresh messages',
@@ -383,6 +384,34 @@ function M.open_chat(chat_id, chat_title)
       if text and #text > 0 then
         local ok = server.edit_message(state.chat_id, target.id, text)
         if ok then vim.schedule(refresh_messages) end
+      end
+    end)
+  end, { buffer = state.buf })
+  vim.keymap.set('n', 'd', function()
+    local idx = message_at_cursor()
+    if not idx then return end
+    local target = state.messages[idx]
+    if not target or not target.id then return end
+    local sender = target.sender and target.sender.name or '?'
+    vim.ui.select({ 'Yes', 'No' }, {
+      prompt = 'Delete message from ' .. sender .. '?',
+    }, function(choice)
+      if choice == 'Yes' then
+        local ok = server.delete_message(state.chat_id, target.id)
+        if ok then
+          for i = #state.messages, 1, -1 do
+            if state.messages[i].id == target.id then
+              table.remove(state.messages, i)
+              break
+            end
+          end
+          vim.schedule(function()
+            render()
+            local last = state.messages[#state.messages]
+            state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
+            update_title()
+          end)
+        end
       end
     end)
   end, { buffer = state.buf })

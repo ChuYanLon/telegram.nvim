@@ -185,4 +185,11 @@ function M.edit_message(chat_id, message_id, text)
   return http_post('/editMessage', { chatId = chat_id, messageId = message_id, text = text })
 end
 
+---@param chat_id any
+---@param message_id any
+---@return boolean
+function M.delete_message(chat_id, message_id)
+  return http_post('/deleteMessage', { chatId = chat_id, messageId = message_id })
+end
+
 return M
