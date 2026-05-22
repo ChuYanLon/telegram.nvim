@@ -488,6 +488,18 @@ function M.open_chat(chat_id, chat_title)
   vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
   state.menu_bar = 'i:msg e:edit Enter:reply/original s:switch r:refresh Esc:back q:quit'
   open_windows(chat_title)
+  do
+    local win_w = vim.api.nvim_win_get_width(state.win)
+    local win_h = vim.api.nvim_win_get_height(state.win)
+    local text = '◇ Loading...'
+    local text_w = vim.fn.strwidth(text)
+    local pad = math.max(0, math.floor((win_w - text_w) / 2))
+    local top = math.max(0, math.floor(win_h / 2))
+    local lines = {}
+    for _ = 1, top do table.insert(lines, '') end
+    table.insert(lines, string.rep(' ', pad) .. text)
+    set_lines(lines)
+  end
   server.open_chat(state.chat_id)
   update_title()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
@@ -640,12 +652,18 @@ function M.open_chat(chat_id, chat_title)
       end
     end,
   })
-  refresh_messages()
-  local restore = state.saved_cursors[state.chat_id]
-  if restore then
-    state.saved_cursors[state.chat_id] = nil
-    jump_to_message(restore)
-  end
+  vim.defer_fn(function()
+    refresh_messages()
+    local restore = state.saved_cursors[state.chat_id]
+    if restore then
+      state.saved_cursors[state.chat_id] = nil
+      jump_to_message(restore)
+    elseif #state.messages > 0 then
+      local total = 1
+      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
+      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
+    end
+  end, 300)
 end
 
 return M
