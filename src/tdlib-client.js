@@ -508,6 +508,21 @@ class TelegramLSPClient {
     } catch {}
   }
 
+  async searchMessages(chatId, query, limit = 50) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'searchChatMessages',
+      chat_id: chatId,
+      query,
+      limit,
+    });
+    const chat = this._chats.get(chatId);
+    return {
+      chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
+      messages: await Promise.all((result.messages || []).map(m => this._formatMessage(m))),
+    };
+  }
+
   async getMessages(chatId, limit = 50, before) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;

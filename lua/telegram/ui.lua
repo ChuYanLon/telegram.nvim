@@ -263,6 +263,7 @@ local function show_help()
   vim.api.nvim_buf_set_option(help_buf, 'bufhidden', 'wipe')
   local lines = {
     ' i       new message',
+    ' /       search / clear search',
     ' e       edit own',
     ' Enter   reply / jump to original',
     ' d       delete own',
@@ -307,6 +308,9 @@ local function message_at_cursor()
   return nil
 end
 
+---@return table|nil
+local function curr_msg() local i = message_at_cursor(); return i and state.messages[i] end
+
 local function close_chat()
   close_help()
   if state.chat_id then
@@ -338,6 +342,7 @@ local function close_chat()
   state.exhausted = false
   state.online_count = nil
   state.typing_users = {}
+  state.saved_cursor_msg_id = nil
 end
 
 M.close_chat = close_chat
@@ -485,9 +490,8 @@ function M.open_chat(chat_id, chat_title)
   end, { buffer = state.buf })
   vim.keymap.set('n', '<CR>', function()
     if state.unread > 0 then state.unread = 0; update_title() end
-    local idx = message_at_cursor()
-    if not idx then return end
-    local target = state.messages[idx]
+    local target = curr_msg()
+    if not target then return end
     local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
     local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
     if text and text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
@@ -520,11 +524,50 @@ function M.open_chat(chat_id, chat_title)
       end
     end)
   end, { buffer = state.buf })
+  vim.keymap.set('n', '/', function()
+    multi_line_input('Search', nil, function(text)
+      if not text or #text == 0 then return end
+      local data = server.search_messages(state.chat_id, text)
+      if not data or not data.messages or #data.messages == 0 then
+        vim.notify('[tg] No results for "' .. text .. '"', vim.log.levels.INFO)
+        return
+      end
+      local items = {}
+      for _, m in ipairs(data.messages) do
+        local name = m.sender and m.sender.name or '?'
+        local preview = (m.text or ''):gsub('\n', ' '):sub(1, 80)
+        table.insert(items, { msg = m, label = name .. ': ' .. preview })
+      end
+      vim.ui.select(items, {
+        prompt = 'Search: ' .. text,
+        format_item = function(item) return item.label end,
+      }, function(choice)
+        if not choice then return end
+        local function scroll_to()
+          for i, m in ipairs(state.messages) do
+            if m.id == choice.msg.id then
+              local line = 1
+              for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
+              vim.api.nvim_win_set_cursor(state.win, { line, 0 })
+              return true
+            end
+          end
+        end
+        if not scroll_to() then
+          local function load_until_found()
+            if not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
+            if state.exhausted or scroll_to() then return end
+            load_older()
+            vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+          end
+          vim.fn.timer_start(30, load_until_found, vim.empty_dict())
+        end
+      end)
+    end)
+  end, { buffer = state.buf })
   vim.keymap.set('n', 'e', function()
     if state.unread > 0 then state.unread = 0; update_title() end
-    local idx = message_at_cursor()
-    if not idx then return end
-    local target = state.messages[idx]
+    local target = curr_msg()
     if not target or not target.id then return end
     if not target.own then
       vim.notify('[tg] Can only edit your own messages', vim.log.levels.WARN)
@@ -540,9 +583,7 @@ function M.open_chat(chat_id, chat_title)
     end)
   end, { buffer = state.buf })
   vim.keymap.set('n', 'f', function()
-    local idx = message_at_cursor()
-    if not idx then return end
-    local target = state.messages[idx]
+    local target = curr_msg()
     if not target or not target.id then return end
     local groups = server.get_groups()
     if not groups or #groups == 0 then
@@ -564,9 +605,7 @@ function M.open_chat(chat_id, chat_title)
     end)
   end, { buffer = state.buf })
   vim.keymap.set('n', 'd', function()
-    local idx = message_at_cursor()
-    if not idx then return end
-    local target = state.messages[idx]
+    local target = curr_msg()
     if not target or not target.id then return end
     local sender = target.sender and target.sender.name or '?'
     vim.ui.select({ 'Yes', 'No' }, {
@@ -575,10 +614,7 @@ function M.open_chat(chat_id, chat_title)
       if choice == 'Yes' then
         if server.delete_message(state.chat_id, target.id) then
           for i = #state.messages, 1, -1 do
-            if state.messages[i].id == target.id then
-              table.remove(state.messages, i)
-              break
-            end
+            if state.messages[i].id == target.id then table.remove(state.messages, i); break end
           end
           vim.schedule(function()
             render()
@@ -592,9 +628,7 @@ function M.open_chat(chat_id, chat_title)
     end)
   end, { buffer = state.buf })
   vim.keymap.set('n', 'R', function()
-    local idx = message_at_cursor()
-    if not idx then return end
-    local target = state.messages[idx]
+    local target = curr_msg()
     if not target or not target.id then return end
     if not target.own then
       vim.notify('[tg] Can only recall your own messages', vim.log.levels.WARN)
@@ -607,10 +641,7 @@ function M.open_chat(chat_id, chat_title)
       if choice == 'Yes' then
         if server.delete_message(state.chat_id, target.id) then
           for i = #state.messages, 1, -1 do
-            if state.messages[i].id == target.id then
-              table.remove(state.messages, i)
-              break
-            end
+            if state.messages[i].id == target.id then table.remove(state.messages, i); break end
           end
           vim.schedule(function()
             render()

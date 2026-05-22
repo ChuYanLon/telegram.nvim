@@ -198,6 +198,13 @@ function M.get_groups()
 end
 
 ---@param chat_id any
+---@param query string
+---@return table|nil
+function M.search_messages(chat_id, query)
+  return http_get('/searchMessages?chatId=' .. chat_id .. '&query=' .. query:gsub(' ', '+'))
+end
+
+---@param chat_id any
 ---@param limit integer|nil
 ---@param before any|nil
 ---@return table|nil
