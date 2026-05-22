@@ -14,62 +14,14 @@ importers:
       express:
         specifier: ^4.19.0
         version: 4.22.2
-      prebuilt-tdlib:
-        specifier: ^0.1008064.0
-        version: 0.1008064.0
       tdl:
         specifier: ^8.1.0
         version: 8.1.0
-      tdl-tdlib-addon:
-        specifier: ^1.2.2
-        version: 1.2.2(tdl@8.1.0)
       ws:
         specifier: ^8.18.0
         version: 8.20.1
 
 packages:
-
-  '@prebuilt-tdlib/darwin-arm64@0.1008064.0':
-    resolution: {integrity: sha512-Oq5us+o0g68Jag74RIV3LdLkZxQxJMcOdrVbgmyE7Unk+WcifqTb/gZw1rS6BrW+2SX2LNeGY4zQqqBTNDr17Q==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@prebuilt-tdlib/darwin-x64@0.1008064.0':
-    resolution: {integrity: sha512-Pz11xjET2Y3uUJKxkWKBc0dmOtlykmBdZ9D6Ahh+EsoLDLIWHm7M91p6nZT396YZ4n2BL+FtDYK65Ae3LDIA5g==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@prebuilt-tdlib/linux-arm64-glibc@0.1008064.0':
-    resolution: {integrity: sha512-1kML9+RCfTOTWLzxq2klCN962/XwYhd+SGd4BxOwcmvPniYDNRUXtgMi3qRyV/Flola8dchGFrqZJU4kNZNLuQ==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@prebuilt-tdlib/linux-arm64-musl@0.1008064.0':
-    resolution: {integrity: sha512-tN9FJOR8VDfmOoTHMivAqBfQ/d9Bry9T/9cGSTcms3H4ORun/WO5U5zT8VqadAsqjuiQ8Y9HaUqqz65xBDtcgw==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
-
-  '@prebuilt-tdlib/linux-x64-glibc@0.1008064.0':
-    resolution: {integrity: sha512-7fyCp2uk0BdeHKJ9PyQOCditC9vBXeeIjYPAKKBcrkum5bi1e9txy2g5kkGjqwUkN0ntIniS5QfHEyr17Idr9g==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
-  '@prebuilt-tdlib/linux-x64-musl@0.1008064.0':
-    resolution: {integrity: sha512-e2zRucrRrrK6M04iQWMfwtrts+VvVtyUwtTP1hF2g3a6jW+AHMzFoB9Wu8fWr+vuJflLIQ6sG9r3lI07Q8NenQ==}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
-  '@prebuilt-tdlib/types@0.1008064.0':
-    resolution: {integrity: sha512-eqr1+fiHZ+Gj4lwcITzMp6FwPg8UrxlxxaFjhiJRHL9BlbmD2QkCRHac4wW1Sx8Dzwzd7f+xO21Pgi7TBRSwmw==}
-
-  '@prebuilt-tdlib/win32-x64@0.1008064.0':
-    resolution: {integrity: sha512-rkacZWexQw52/EUaLAmbsu2+P3C1/AtinlCjfiX07oQAEg3327BCEZqrcY0ER83D8+MMf2pfwMPCDJKytr4hcg==}
-    cpu: [x64]
-    os: [win32]
 
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
@@ -260,9 +212,6 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  node-addon-api@6.1.0:
-    resolution: {integrity: sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA==}
-
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
@@ -284,9 +233,6 @@ packages:
 
   path-to-regexp@0.1.13:
     resolution: {integrity: sha512-A/AGNMFN3c8bOlvV9RreMdrv7jsmF9XIfDeCd87+I8RNg6s78BhJxMu69NEMHBSJFxKidViTEdruRwEk/WIKqA==}
-
-  prebuilt-tdlib@0.1008064.0:
-    resolution: {integrity: sha512-jJLowKZoH4slXYrkTkKlEgyGsIGv61AWjDZcxxVxJYu21X3kmukGwbCpk4ML99cJp2CwRsD41GCEQBkKJAwCUg==}
 
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
@@ -341,16 +287,6 @@ packages:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
 
-  tdl-shared@0.10.0:
-    resolution: {integrity: sha512-MWkHaB4zp1NjuDQFSjB6SiDqesCjQPXhHwdP+V5G5AWijnNlDUYOatEUagn4pOaulBm+7VDZsGfof8HUZIgeag==}
-    deprecated: Use tdl >= 7.3.0
-
-  tdl-tdlib-addon@1.2.2:
-    resolution: {integrity: sha512-Mo7iCVNRmWld6+JVRRox3dIT98x/D9Em3gcodJQdQ0m46b0OFgONEdkE1enfzaAo8ptN611bW5Lm8Fw01t81tg==}
-    deprecated: Use tdl >= 7.3.0 instead. Works with tdl < 8.0 only
-    peerDependencies:
-      tdl: '>= 7.0.0'
-
   tdl@8.1.0:
     resolution: {integrity: sha512-idpw60gjJdiJALQg0+6UbxtJTMxVhzZAgCO6QzL81gqBYCkEFjm9zM9HwTTQGeOaAavw4yRHymR68yUUiCoKrA==}
     engines: {node: '>=16.14.0'}
@@ -388,30 +324,6 @@ packages:
         optional: true
 
 snapshots:
-
-  '@prebuilt-tdlib/darwin-arm64@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/darwin-x64@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/linux-arm64-glibc@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/linux-arm64-musl@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/linux-x64-glibc@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/linux-x64-musl@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/types@0.1008064.0':
-    optional: true
-
-  '@prebuilt-tdlib/win32-x64@0.1008064.0':
-    optional: true
 
   accepts@1.3.8:
     dependencies:
@@ -613,8 +525,6 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  node-addon-api@6.1.0: {}
-
   node-addon-api@7.1.1: {}
 
   node-gyp-build@4.8.4: {}
@@ -628,17 +538,6 @@ snapshots:
   parseurl@1.3.3: {}
 
   path-to-regexp@0.1.13: {}
-
-  prebuilt-tdlib@0.1008064.0:
-    optionalDependencies:
-      '@prebuilt-tdlib/darwin-arm64': 0.1008064.0
-      '@prebuilt-tdlib/darwin-x64': 0.1008064.0
-      '@prebuilt-tdlib/linux-arm64-glibc': 0.1008064.0
-      '@prebuilt-tdlib/linux-arm64-musl': 0.1008064.0
-      '@prebuilt-tdlib/linux-x64-glibc': 0.1008064.0
-      '@prebuilt-tdlib/linux-x64-musl': 0.1008064.0
-      '@prebuilt-tdlib/types': 0.1008064.0
-      '@prebuilt-tdlib/win32-x64': 0.1008064.0
 
   proxy-addr@2.0.7:
     dependencies:
@@ -720,17 +619,6 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   statuses@2.0.2: {}
-
-  tdl-shared@0.10.0: {}
-
-  tdl-tdlib-addon@1.2.2(tdl@8.1.0):
-    dependencies:
-      debug: 4.4.3
-      node-addon-api: 6.1.0
-      tdl: 8.1.0
-      tdl-shared: 0.10.0
-    transitivePeerDependencies:
-      - supports-color
 
   tdl@8.1.0:
     dependencies:

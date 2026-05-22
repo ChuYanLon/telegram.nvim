@@ -38,7 +38,6 @@ cmake --build . --target install -j$(nproc)
 ldconfig 2>/dev/null || true
 ```
 
-Or rely on `prebuilt-tdlib` (listed as a dependency — the library still needs to be on your system).
 
 ## Installation
 
