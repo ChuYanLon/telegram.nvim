@@ -179,9 +179,14 @@ end
 
 ---@param chat_id any
 ---@param action string  e.g. 'chatActionTyping'
----@return boolean
 function M.send_chat_action(chat_id, action)
-  return http_post('/chat/action', { chatId = chat_id, action = action })
+  local url = base_url() .. '/chat/action'
+  local body = vim.json.encode({ chatId = chat_id, action = action })
+  vim.fn.jobstart({
+    'curl', '-s', '-X', 'POST', url,
+    '-H', 'Content-Type: application/json',
+    '-d', body,
+  })
 end
 
 ---@type integer
