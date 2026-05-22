@@ -16,9 +16,17 @@ function M.ws_url() return ws_url_internal() end
 local function http_get(path)
   local url = base_url() .. path
   local result = vim.fn.system({ 'curl', '-s', '--fail-with-body', url })
-  if vim.v.shell_error ~= 0 then return nil end
+  if vim.v.shell_error ~= 0 then
+    local ok, data = pcall(vim.json.decode, result)
+    local err = (ok and type(data) == 'table' and data.error) or result or 'request failed'
+    vim.notify('[tg] ' .. err, vim.log.levels.ERROR)
+    return nil
+  end
   local ok, data = pcall(vim.json.decode, result)
-  if not ok then return nil end
+  if not ok then
+    vim.notify('[tg] Invalid response from server', vim.log.levels.ERROR)
+    return nil
+  end
   return data
 end
 
@@ -33,9 +41,17 @@ local function http_post(path, body)
     '-H', 'Content-Type: application/json',
     '-d', encoded,
   })
-  if vim.v.shell_error ~= 0 then return nil end
+  if vim.v.shell_error ~= 0 then
+    local ok, data = pcall(vim.json.decode, result)
+    local err = (ok and type(data) == 'table' and data.error) or result or 'request failed'
+    vim.notify('[tg] ' .. err, vim.log.levels.ERROR)
+    return nil
+  end
   local ok, data = pcall(vim.json.decode, result)
-  if not ok then return nil end
+  if not ok then
+    vim.notify('[tg] Invalid response from server', vim.log.levels.ERROR)
+    return nil
+  end
   if type(data) == 'table' and data.error then
     vim.notify('[tg] ' .. data.error, vim.log.levels.ERROR)
     return nil
