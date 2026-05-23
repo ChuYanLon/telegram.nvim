@@ -105,24 +105,17 @@ end
 local function apply_group_highlights()
   if not state.group_popup then return end
   local buf = state.group_popup.bufnr
+  local win = state.group_popup.winid
   vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
   local total = vim.api.nvim_buf_line_count(buf)
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
     if not text then break end
-    local cur = state.group_cursor
-    if cur and line + 1 == cur then
+    if line + 1 == state.group_cursor then
       vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgBorder', line, 0, -1)
     end
-    local us, ue = text:find('\xE2\x97\x86')
-    if us then
-      vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgKey', line, us - 1, ue)
-    end
-    local os, oe = text:find('%d+on$')
-    if os then
-      vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgTimestamp', line, os - 1, oe)
-    end
   end
+  pcall(vim.api.nvim_win_set_cursor, win, { state.group_cursor, 0 })
 end
 
 local function update_input_title()
