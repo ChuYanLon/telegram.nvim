@@ -128,7 +128,7 @@ local function apply_highlights()
     local _, ts_start = text:find('%[%d+%-%d+ %d+:%d+%] ')
     if ts_start then
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_start)
-      local _, se = text:find('%S.*', ts_start + 1)
+      local _, se = text:find('%S.-:', ts_start + 1)
       if se then
         vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_start, se)
       end

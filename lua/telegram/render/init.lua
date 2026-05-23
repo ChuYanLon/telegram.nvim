@@ -31,7 +31,6 @@ function M.render(msg)
   local content = get_renderer(msg).render(msg)
   local out = {}
   if msg.own then
-    table.insert(out, string.format('You [%s]', date_str))
     if msg.replyTo then
       local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or '?'
       local r_text = msg.replyTo.text and msg.replyTo.text:gsub('\n', ' ') or ''
@@ -39,20 +38,29 @@ function M.render(msg)
       table.insert(out, '  \xE2\x94\x83 ' .. r_sender .. ': ' .. r_text)
     end
     local first = content[1] or ''
-    table.insert(out, first)
-    for i = 2, #content do
-      table.insert(out, content[i])
+    if #content > 1 or vim.fn.strwidth(first) > 50 then
+      table.insert(out, string.format(':You [%s]', date_str))
+      table.insert(out, first)
+      for i = 2, #content do
+        table.insert(out, content[i])
+      end
+    else
+      table.insert(out, string.format('%s :You [%s]', first, date_str))
     end
   elseif msg.replyTo then
-    table.insert(out, string.format('[%s] %s', date_str, sender))
+    table.insert(out, string.format('[%s] %s:', date_str, sender))
     reply.render(msg, out)
     for _, l in ipairs(content) do
       table.insert(out, '  ' .. l)
     end
   else
     local first = content[1] or ''
-    table.insert(out, string.format('[%s] %s', date_str, sender))
-    table.insert(out, '  ' .. first)
+    if first:match('^```') or #content > 1 or vim.fn.strwidth(first) > 50 then
+      table.insert(out, string.format('[%s] %s:', date_str, sender))
+      table.insert(out, '  ' .. first)
+    else
+      table.insert(out, string.format('[%s] %s: %s', date_str, sender, first))
+    end
     for i = 2, #content do
       table.insert(out, '  ' .. content[i])
     end
