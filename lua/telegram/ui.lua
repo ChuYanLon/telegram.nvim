@@ -1,5 +1,6 @@
 local NuiLayout = require("nui.layout")
 local NuiPopup = require("nui.popup")
+local Editor = require("telegram.editor")
 local server = require("telegram.server")
 local render_msg = require("telegram.render").render
 
@@ -314,20 +315,9 @@ local function show_help()
   vim.keymap.set('n', '?', close_help, { buffer = help_popup.bufnr, nowait = true })
 end
 
-local function input_cancel()
-  if not state.input_popup then return end
-  vim.api.nvim_buf_set_lines(state.input_popup.bufnr, 0, -1, false, { '' })
-  state.input_mode = 'send'
-  state.reply_to = nil
-  state.edit_target = nil
-  vim.cmd('stopinsert')
-end
-
 local function input_send()
-  if not state.input_popup then return end
-  local buf = state.input_popup.bufnr
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local text = table.concat(lines, '\n'):gsub('^[\n ]+', ''):gsub('[\n ]+$', '')
+  if not state.editor then return end
+  local text = state.editor:get_text()
   if #text == 0 then return end
   if state.input_mode == 'edit' and state.edit_target then
     local target = state.edit_target
@@ -345,7 +335,7 @@ local function input_send()
       vim.notify('[tg] Message sent', vim.log.levels.INFO)
     end
   end
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
+  state.editor:clear()
   state.input_mode = 'send'
   state.reply_to = nil
   state.edit_target = nil
@@ -358,8 +348,7 @@ local function focus_msg()
 end
 
 local function focus_input()
-  if not state.input_popup then return end
-  pcall(vim.api.nvim_set_current_win, state.input_popup.winid)
+  if state.editor then state.editor:focus() end
 end
 
 local function focus_groups()
@@ -369,7 +358,7 @@ end
 local function cur_area()
   local win = vim.api.nvim_get_current_win()
   if state.msg_popup and win == state.msg_popup.winid then return 'msg' end
-  if state.input_popup and win == state.input_popup.winid then return 'input' end
+  if state.editor and win == state.editor:winid() then return 'input' end
   if state.group_popup and win == state.group_popup.winid then return 'group' end
   return 'msg'
 end
@@ -509,8 +498,8 @@ local function setup_msg_keymaps()
     end
     state.input_mode = 'edit'
     state.edit_target = target
-    pcall(vim.api.nvim_set_current_win, state.input_popup.winid)
-    vim.api.nvim_buf_set_lines(state.input_popup.bufnr, 0, -1, false, vim.split(target.text or '', '\n'))
+    state.editor:set_text(target.text or '')
+    state.editor:focus()
     vim.cmd('startinsert!')
   end, { buffer = buf })
   vim.keymap.set('n', 'd', function()
@@ -584,7 +573,7 @@ local function setup_group_keymaps()
 end
 
 local function setup_input_keymaps()
-  local buf = state.input_popup.bufnr
+  local buf = state.editor:bufnr()
   setup_nav_keymaps(buf)
   vim.keymap.set('n', '<CR>', input_send, { buffer = buf, nowait = true })
 end
@@ -622,19 +611,10 @@ function M.open_chat(chat_id, chat_title)
     },
   })
 
-  state.input_popup = NuiPopup({
-    enter = false,
-    focusable = true,
-    zindex = 100,
-    border = {
-      style = 'rounded',
-      text = { top = '', top_align = 'center' },
-    },
-    buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
-    win_options = {
-      winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder',
-    },
+  state.editor = Editor.new({
+    input_lines = 4,
   })
+  state.input_popup = state.editor.popup
 
   state.group_popup = NuiPopup({
     enter = false,
@@ -727,6 +707,7 @@ function M.close_chat()
   end
   state.msg_popup = nil
   state.input_popup = nil
+  state.editor = nil
   state.group_popup = nil
   state.buf = nil
   state.win = nil
