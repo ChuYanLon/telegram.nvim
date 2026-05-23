@@ -80,23 +80,42 @@ vim.keymap.set("n", "<leader>tt", "<cmd>Tg<Cr>")
 vim.keymap.set("n", "<leader>tL", "<cmd>TgLogout<Cr>")
 ```
 
-### Chat Keymaps
+### Keymaps
 
 Inside a chat window:
 
-| Key  | Action                                          |
-|------|-------------------------------------------------|
-| `i`  | New message (opens multi-line input)            |
-| `/`  | Search messages (opens search input → picker)   |
-| `e`  | Edit own message at cursor                      |
-| `Enter` | Reply to message / jump to original message |
-| `d`  | Delete / recall message (with confirmation)     |
-| `f`  | Forward message to another group                |
-| `s`  | Switch to another group                         |
-| `r`  | Refresh and scroll to latest messages           |
-| `?`  | Show help popup                                 |
-| `Esc` | Close chat (preserves cursor position)         |
-| `q`  | Quit (stop server, full exit)                   |
+| Key | Action |
+|-----|--------|
+| `?` | Show help popup |
+| `<C-h>` | Focus groups panel |
+| `<C-l>` | Focus message panel |
+| `<C-j>` | Focus input editor |
+| `<C-k>` | Focus message panel |
+| `i` | Focus input editor |
+| `/` | Search messages (opens search input → picker) |
+| `<CR>` | Reply to message / jump to original |
+| `e` | Edit own message at cursor |
+| `d` | Delete / recall message (with confirmation) |
+| `f` | Forward message to another group |
+| `r` | Refresh and scroll to latest messages |
+| `Esc Esc` | Close chat (preserves cursor position) |
+| `q` | Quit (stop server, full exit) |
+
+In the input editor:
+
+| Key | Action |
+|-----|--------|
+| `<CR>` | Send message / confirm edit |
+| `Esc` | Cancel reply/edit mode |
+| `<C-h/j/k/l>` | Navigate panels |
+
+In the groups panel:
+
+| Key | Action |
+|-----|--------|
+| `j/k` | Move cursor |
+| `<CR>` | Open selected chat |
+| `<C-h/j/k/l>` | Navigate panels |
 
 ## Features
 
@@ -104,11 +123,13 @@ Inside a chat window:
 - **Typing indicators** — displays when another user is typing/recording/etc.
 - **Own typing broadcast** — sends `typing...` indicator while composing, cancels on close
 - **Cursor position persistence** — Esc saves cursor position, reopening restores it
-- **Jump to original message** — `Enter` on a reply reference (`┃` line) navigates to the original message
+- **Multi-line input editor** — NuiPopup-based editor with placeholder, reply/edit mode indicators
+- **Jump to original message** — `Enter` on a reply reference navigates to the original message
 - **Search messages** — `/` to search, pick a result to jump to it
 - **Auto-load on scroll up** — loads older messages when reaching the top
 - **Operation feedback** — success notifications for send/reply/edit/delete/recall
 - **Async UI** — message operations don't block the UI or cause scroll jumps
+- **Read-only message window** — main chat buffer is not modifiable
 
 ## Auth Flow
 
