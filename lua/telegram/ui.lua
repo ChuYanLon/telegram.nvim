@@ -576,6 +576,11 @@ local function setup_input_keymaps()
   local buf = state.editor:bufnr()
   setup_nav_keymaps(buf)
   vim.keymap.set('n', '<CR>', input_send, { buffer = buf, nowait = true })
+  vim.keymap.set('n', 'p', function()
+    if not state.editor then return end
+    state.editor:hide_placeholder()
+    vim.cmd('normal! P')
+  end, { buffer = buf })
 end
 
 ---@param chat_id any
@@ -612,7 +617,7 @@ function M.open_chat(chat_id, chat_title)
   })
 
   state.editor = Editor.new({
-    input_lines = 4,
+    placeholder = '  Type a message...',
   })
   state.input_popup = state.editor.popup
 
@@ -636,13 +641,14 @@ function M.open_chat(chat_id, chat_title)
     NuiLayout.Box({
       NuiLayout.Box({
         NuiLayout.Box(state.msg_popup, { grow = 1 }),
-        NuiLayout.Box(state.input_popup, { size = { height = 4 } }),
+        NuiLayout.Box(state.input_popup, { size = { height = 6 } }),
       }, { dir = 'col', grow = 1 }),
       NuiLayout.Box(state.group_popup, { size = { width = 36 } }),
     }, { dir = 'row' })
   )
 
   state.layout:mount()
+  state.editor:setup()
 
   state.buf = state.msg_popup.bufnr
   state.win = state.msg_popup.winid
