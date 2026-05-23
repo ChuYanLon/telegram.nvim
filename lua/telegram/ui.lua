@@ -292,7 +292,8 @@ local function show_help()
   help_popup = NuiPopup({
     relative = 'editor',
     position = { row = '50%', col = '50%' },
-    size = { width = 40, height = 9 },
+    size = { width = 32, height = 21 },
+    zindex = 200,
     border = { style = 'rounded', text = { top = ' Help ', top_align = 'center' } },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = { winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder' },
@@ -300,22 +301,34 @@ local function show_help()
     focusable = true,
   })
   local lines = {
-    ' i       new message / focus input',
-    ' /       search / clear search',
-    ' d       delete / recall own',
-    ' e       edit own',
-    ' Enter   reply / jump to original',
-    ' f       forward',
-    ' s       switch group / focus group list',
-    ' r       refresh',
-    ' ?       help | Esc close | q quit',
+    ' <C-h>    go to groups',
+    ' <C-l>    go to msg',
+    ' <C-j>    go to input',
+    ' <C-k>    go to msg',
+    '',
+    ' i        focus input',
+    ' <CR>     send / reply',
+    ' /        search history',
+    ' d        delete / recall',
+    ' e        edit own',
+    ' f        forward',
+    ' r        refresh',
+    '',
+    ' j/k      groups: move cursor',
+    ' <CR>     groups: open chat',
+    '',
+    ' ?        help',
+    ' Esc Esc  close chat',
+    ' q        quit plugin',
   }
-  vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
   help_popup:mount()
+  vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
   vim.keymap.set('n', '<Esc>', close_help, { buffer = help_popup.bufnr, nowait = true })
   vim.keymap.set('n', 'q', close_help, { buffer = help_popup.bufnr, nowait = true })
   vim.keymap.set('n', '?', close_help, { buffer = help_popup.bufnr, nowait = true })
 end
+
+M.show_help = show_help
 
 local function input_send()
   if not state.editor then return end
@@ -430,7 +443,7 @@ local function setup_msg_keymaps()
     server.stop_server()
     require('telegram').set_initialized(false)
   end, { buffer = buf })
-  vim.keymap.set('n', '?', show_help, { buffer = buf })
+  vim.keymap.set('n', '?', '<Cmd>lua require("telegram.ui").show_help()<CR>', { buffer = buf, nowait = true })
   vim.keymap.set('n', 'i', focus_input, { buffer = buf })
   local no_insert = { 'I', 'a', 'A', 'o', 'O', 's', 'S' }
   for _, k in ipairs(no_insert) do
