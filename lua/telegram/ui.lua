@@ -659,10 +659,6 @@ function M.open_chat(chat_id, chat_title)
 
   server.open_chat(state.chat_id)
   server.clear_groups_cache()
-  local chat_data = server.get_chat(state.chat_id)
-  if chat_data and state.groups[state.chat_id] then
-    state.groups[state.chat_id].unread_count = chat_data.unreadCount or 0
-  end
   update_input_title()
   M.render_groups()
   M.refresh_messages()
