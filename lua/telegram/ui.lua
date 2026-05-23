@@ -113,23 +113,13 @@ local function fmt_msg(msg)
 end
 
 local hl_ns = vim.api.nvim_create_namespace('TgChat')
-vim.api.nvim_set_hl(0, 'TgCode', { link = 'String', default = true })
-vim.api.nvim_set_hl(0, 'TgCodeFence', { link = 'Special', default = true })
 
 local function apply_highlights()
   vim.api.nvim_buf_clear_namespace(state.buf, hl_ns, 0, -1)
   local total = vim.api.nvim_buf_line_count(state.buf)
-  local in_code = false
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(state.buf, line, line + 1, false)[1]
     if not text then break end
-    local _, fence_end = text:find('```')
-    if fence_end then
-      in_code = not in_code
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgCodeFence', line, 0, -1)
-    elseif in_code then
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgCode', line, 0, -1)
-    end
     if text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 5)
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyBg', line, 5, -1)

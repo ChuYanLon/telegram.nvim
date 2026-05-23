@@ -38,7 +38,7 @@ function M.render(msg)
     end
   else
     local first = content[1] or ''
-    if first:match('^```') then
+    if first:match('^```') or #content > 1 then
       table.insert(out, string.format('[%s] %s:', date_str, sender))
       table.insert(out, '  ' .. first)
     else
