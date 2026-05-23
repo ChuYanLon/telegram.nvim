@@ -33,6 +33,7 @@ local state = {
   input_mode = 'send',
   reply_to = nil,
   edit_target = nil,
+  esc_count = 0,
 }
 
 M.state = state
@@ -332,26 +333,71 @@ local function input_send()
   state.edit_target = nil
 end
 
+local function focus_msg()
+  if not state.msg_popup then return end
+  vim.cmd('stopinsert')
+  pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
+end
+
 local function focus_input()
   if not state.input_popup then return end
   pcall(vim.api.nvim_set_current_win, state.input_popup.winid)
-  if state.input_mode == 'send' then
-    state.reply_to = nil
-    state.edit_target = nil
-    vim.api.nvim_buf_set_lines(state.input_popup.bufnr, 0, -1, false, { '' })
-  end
-  vim.cmd('startinsert!')
 end
 
 local function focus_groups()
-  if not state.group_popup then return end
-  pcall(vim.api.nvim_set_current_win, state.group_popup.winid)
+  if state.group_popup then pcall(vim.api.nvim_set_current_win, state.group_popup.winid) end
+end
+
+local function cur_area()
+  local win = vim.api.nvim_get_current_win()
+  if state.msg_popup and win == state.msg_popup.winid then return 'msg' end
+  if state.input_popup and win == state.input_popup.winid then return 'input' end
+  if state.group_popup and win == state.group_popup.winid then return 'group' end
+  return 'msg'
+end
+
+local function nav_h()
+  if cur_area() == 'msg' then focus_groups() else focus_msg() end
+end
+
+local function nav_l()
+  if cur_area() == 'group' then focus_msg() else focus_groups() end
+end
+
+local function nav_j()
+  if cur_area() == 'msg' then focus_input() else focus_msg() end
+end
+
+local function nav_k()
+  if cur_area() == 'input' then focus_msg() else focus_input() end
+end
+
+---@param buf integer
+local function setup_nav_keymaps(buf)
+  vim.keymap.set('n', '<C-h>', nav_h, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<C-j>', nav_j, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<C-k>', nav_k, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<C-l>', nav_l, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<C-h>', nav_h, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<C-j>', nav_j, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<C-k>', nav_k, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<C-l>', nav_l, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<C-w>', '<Nop>', { buffer = buf })
 end
 
 --- Chat message popup keymaps
 local function setup_msg_keymaps()
   local buf = state.msg_popup.bufnr
-  vim.keymap.set('n', '<Esc>', M.close_chat, { buffer = buf })
+  setup_nav_keymaps(buf)
+  vim.keymap.set('n', '<Esc>', function()
+    state.esc_count = state.esc_count + 1
+    if state.esc_count >= 2 then
+      state.esc_count = 0
+      M.close_chat()
+    else
+      vim.defer_fn(function() state.esc_count = 0 end, 300)
+    end
+  end, { buffer = buf })
   vim.keymap.set('n', 'q', function()
     M.close_chat()
     state.last_chat = nil
@@ -362,7 +408,6 @@ local function setup_msg_keymaps()
   end, { buffer = buf })
   vim.keymap.set('n', '?', show_help, { buffer = buf })
   vim.keymap.set('n', 'i', focus_input, { buffer = buf })
-  vim.keymap.set('n', 's', focus_groups, { buffer = buf })
   vim.keymap.set('n', 'r', function()
     if state.unread > 0 then state.unread = 0 end
     M.refresh_messages()
@@ -494,6 +539,7 @@ end
 
 local function setup_group_keymaps()
   local buf = state.group_popup.bufnr
+  setup_nav_keymaps(buf)
   local function move_group_cursor(delta)
     local new = state.group_cursor + delta
     if new < 1 or new > #state.group_ids then return end
@@ -513,33 +559,16 @@ local function setup_group_keymaps()
     if not g then return end
     M.open_chat(id, g.title)
   end, { buffer = buf })
-  vim.keymap.set('n', '<Esc>', function()
-    if state.msg_popup then
-      pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
-    end
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('n', 's', function()
-    if state.msg_popup then
-      pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
-    end
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('n', 'i', function()
-    if state.msg_popup then
-      pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
-      focus_input()
-    end
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('n', '?', show_help, { buffer = buf })
 end
 
 local function setup_input_keymaps()
   local buf = state.input_popup.bufnr
+  setup_nav_keymaps(buf)
   vim.keymap.set('n', '<CR>', input_send, { buffer = buf, nowait = true })
-  vim.keymap.set('n', '<Esc>', function()
-    if state.msg_popup then
-      pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
-    end
-  end, { buffer = buf, nowait = true })
+  local nop_keys = { 'x', 'X', 'dd', 'D', 'p', 'P', 'u', '<C-r>', 'J', 's', 'S', 'c', 'C', '.', 'r', 'R', 'a', 'A', 'o', 'O', 'v', 'V', '<C-v>', '<Space>', '\\' }
+  for _, k in ipairs(nop_keys) do
+    pcall(vim.keymap.set, 'n', k, '<Nop>', { buffer = buf, nowait = true })
+  end
 end
 
 ---@param chat_id any
@@ -560,6 +589,7 @@ function M.open_chat(chat_id, chat_title)
   state.msg_popup = NuiPopup({
     enter = true,
     focusable = true,
+    zindex = 100,
     border = {
       style = 'rounded',
       text = { top = '', top_align = 'center' },
@@ -574,6 +604,7 @@ function M.open_chat(chat_id, chat_title)
   state.input_popup = NuiPopup({
     enter = false,
     focusable = true,
+    zindex = 100,
     border = { style = 'rounded' },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
@@ -584,6 +615,7 @@ function M.open_chat(chat_id, chat_title)
   state.group_popup = NuiPopup({
     enter = false,
     focusable = true,
+    zindex = 100,
     border = { style = 'rounded', text = { top = ' Groups ', top_align = 'center' } },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
