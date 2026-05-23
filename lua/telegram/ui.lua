@@ -147,17 +147,27 @@ local function update_input_title()
   if state.msg_popup and state.msg_popup.border then
     state.msg_popup.border:set_text('top', title)
   end
-  if state.input_popup and state.input_popup.border and #typing_items > 0 then
-    local input_title
-    if #typing_items == 1 then
-      input_title = ' ' .. typing_items[1].name .. ' ' .. typing_items[1].action_desc .. ' '
-    else
-      input_title = ' ' .. typing_items[1].name .. ' +' .. (#typing_items - 1) .. ' ' .. typing_items[1].action_desc .. ' '
+end
+
+local function update_input_border()
+  if not state.input_popup then return end
+  local text
+  if state.input_mode == 'edit' and state.edit_target then
+    local name = (state.edit_target.sender and state.edit_target.sender.name) or 'Unknown'
+    text = ' Editing ' .. name .. ' '
+  elseif state.input_mode == 'reply' and state.reply_to then
+    local target = nil
+    for _, msg in ipairs(state.messages) do
+      if msg.id == state.reply_to then target = msg; break end
     end
-    pcall(function()
-      state.input_popup.border:set_text('top', input_title)
-    end)
+    local name = (target and target.sender and target.sender.name) or 'Unknown'
+    text = ' Replying to ' .. name .. ' '
+  else
+    text = ' Message '
   end
+  pcall(function()
+    state.input_popup.border:set_text('top', text)
+  end)
 end
 
 M.update_title = update_input_title
@@ -292,7 +302,7 @@ local function show_help()
   help_popup = NuiPopup({
     relative = 'editor',
     position = { row = '50%', col = '50%' },
-    size = { width = 32, height = 21 },
+    size = { width = 36, height = 28 },
     zindex = 200,
     border = { style = 'rounded', text = { top = ' Help ', top_align = 'center' } },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
@@ -301,25 +311,31 @@ local function show_help()
     focusable = true,
   })
   local lines = {
+    '-- Global --',
+    ' ?        help',
     ' <C-h>    go to groups',
     ' <C-l>    go to msg',
     ' <C-j>    go to input',
     ' <C-k>    go to msg',
     '',
+    '-- Main window --',
     ' i        focus input',
-    ' <CR>     send / reply',
     ' /        search history',
-    ' d        delete / recall',
-    ' e        edit own',
-    ' f        forward',
+    ' <CR>     reply / jump to original',
+    ' e        edit own message',
+    ' d        delete / recall own',
+    ' f        forward message',
     ' r        refresh',
-    '',
-    ' j/k      groups: move cursor',
-    ' <CR>     groups: open chat',
-    '',
-    ' ?        help',
     ' Esc Esc  close chat',
     ' q        quit plugin',
+    '',
+    '-- Groups --',
+    ' j/k      move cursor',
+    ' <CR>     open chat',
+    '',
+    '-- Input --',
+    ' <CR>     send message',
+    ' Esc      cancel reply/edit',
   }
   help_popup:mount()
   vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
@@ -354,6 +370,7 @@ local function input_send()
   state.input_mode = 'send'
   state.reply_to = nil
   state.edit_target = nil
+  update_input_border()
 end
 
 local function focus_msg()
@@ -516,6 +533,7 @@ local function setup_msg_keymaps()
     end
     state.input_mode = 'reply'
     state.reply_to = target.id
+    update_input_border()
     focus_input()
   end, { buffer = buf })
   vim.keymap.set('n', 'e', function()
@@ -528,6 +546,7 @@ local function setup_msg_keymaps()
     end
     state.input_mode = 'edit'
     state.edit_target = target
+    update_input_border()
     state.editor:set_text(target.text or '')
     state.editor:focus()
     vim.cmd('startinsert!')
@@ -606,6 +625,16 @@ local function setup_input_keymaps()
   local buf = state.editor:bufnr()
   setup_nav_keymaps(buf)
   vim.keymap.set('n', '<CR>', input_send, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<Esc>', function()
+    if state.input_mode ~= 'send' then
+      state.input_mode = 'send'
+      state.reply_to = nil
+      state.edit_target = nil
+      state.editor:clear()
+      update_input_border()
+      focus_msg()
+    end
+  end, { buffer = buf })
   vim.keymap.set('n', 'p', function()
     if not state.editor then return end
     state.editor:hide_placeholder()
@@ -682,6 +711,7 @@ function M.open_chat(chat_id, chat_title)
 
   state.layout:mount()
   state.editor:setup()
+  update_input_border()
 
   state.buf = state.msg_popup.bufnr
   state.win = state.msg_popup.winid
