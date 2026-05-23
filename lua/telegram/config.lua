@@ -22,7 +22,12 @@ M.config = {
 ---@param opts TgConfig|nil
 function M.setup(opts)
   M.config = vim.tbl_deep_extend('force', M.config, opts or {})
-  vim.api.nvim_set_hl(0, 'TgTimestamp', { link = 'Comment', default = true })
+  local ok, comment_hl = pcall(vim.api.nvim_get_hl, 0, { name = 'Comment' })
+  if ok and comment_hl then
+    vim.api.nvim_set_hl(0, 'TgTimestamp', { fg = comment_hl.fg, italic = false, default = true })
+  else
+    vim.api.nvim_set_hl(0, 'TgTimestamp', { link = 'Comment', default = true })
+  end
   vim.api.nvim_set_hl(0, 'TgPlaceholder', { link = 'Comment', default = true })
   vim.api.nvim_set_hl(0, 'TgSender', { link = 'Identifier', default = true })
   vim.api.nvim_set_hl(0, 'TgKey', { link = 'Keyword', default = true })

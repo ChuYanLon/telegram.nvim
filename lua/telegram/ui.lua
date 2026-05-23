@@ -277,6 +277,7 @@ local function render()
     for _, l in ipairs(msg_lines) do
       table.insert(lines, l)
     end
+    table.insert(lines, '')
   end
   set_lines(lines)
   apply_highlights()
