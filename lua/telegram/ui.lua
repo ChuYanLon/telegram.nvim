@@ -451,15 +451,13 @@ local function refresh_messages()
       if not ok or not data then return end
       if state.chat_id ~= chat_id then return end
       local raw = data.messages or {}
+      state.messages = {}
       local seen = {}
-      for _, m in ipairs(state.messages) do
-        seen[m.id] = true
-      end
-      for i = 1, #raw do
+      for i = #raw, 1, -1 do
         local msg = raw[i]
         if not seen[msg.id] then
           seen[msg.id] = true
-          table.insert(state.messages, 1, msg)
+          table.insert(state.messages, msg)
         end
       end
       vim.schedule(function()
