@@ -187,22 +187,16 @@ function M.view_messages(chat_id, message_id)
 end
 
 ---@param chat_id any
+---@return boolean
 function M.close_chat(chat_id)
-  local url = base_url() .. '/chat/close'
-  local body = vim.json.encode({ chatId = chat_id })
-  vim.fn.jobstart({ 'curl', '-s', '-X', 'POST', url, '-H', 'Content-Type: application/json', '-d', body })
+  return http_post('/chat/close', { chatId = chat_id }) ~= nil
 end
 
 ---@param chat_id any
 ---@param action string  e.g. 'chatActionTyping'
+---@return boolean
 function M.send_chat_action(chat_id, action)
-  local url = base_url() .. '/chat/action'
-  local body = vim.json.encode({ chatId = chat_id, action = action })
-  vim.fn.jobstart({
-    'curl', '-s', '-X', 'POST', url,
-    '-H', 'Content-Type: application/json',
-    '-d', body,
-  })
+  return http_post('/chat/action', { chatId = chat_id, action = action }) ~= nil
 end
 
 ---@type integer
@@ -248,6 +242,34 @@ function M.get_messages(chat_id, limit, before)
   local path = '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or M.DEFAULT_LIMIT)
   if before then path = path .. '&before=' .. before end
   return http_get(path)
+end
+
+---@param chat_id any
+---@param limit integer|nil
+---@param before any|nil
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_messages_async(chat_id, limit, before, on_ok, on_err)
+  local path = '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or M.DEFAULT_LIMIT)
+  if before then path = path .. '&before=' .. before end
+  local url = base_url() .. path
+  local stdout = {}
+  vim.fn.jobstart({ 'curl', '-s', '--connect-timeout', '3', '--max-time', '15', '--fail-with-body', url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      local ok, data = pcall(vim.json.decode, table.concat(stdout))
+      if not ok or not data then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      if on_ok then vim.schedule(function() on_ok(data) end) end
+    end,
+  })
 end
 
 ---@param chat_id any
