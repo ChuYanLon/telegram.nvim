@@ -30,7 +30,16 @@ function M.render(msg)
   local sender = msg.sender and msg.sender.name or 'unknown'
   local content = get_renderer(msg).render(msg)
   local out = {}
-  if msg.replyTo then
+  if msg.own then
+    if msg.replyTo then
+      reply.render(msg, out)
+    end
+    local first = content[1] or ''
+    table.insert(out, string.format('%s :You [%s]', first, date_str))
+    for i = 2, #content do
+      table.insert(out, '  ' .. content[i])
+    end
+  elseif msg.replyTo then
     table.insert(out, string.format('[%s] %s:', date_str, sender))
     reply.render(msg, out)
     for _, l in ipairs(content) do

@@ -124,12 +124,21 @@ local function apply_highlights()
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 5)
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyBg', line, 5, -1)
     end
-    local _, ts_end = text:find('%[%d+%-%d+ %d+:%d+%] ')
-    if ts_end then
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_end)
-      local _, se = text:find('%S+:', ts_end + 1)
+    local _, ts_start = text:find('%[%d+%-%d+ %d+:%d+%] ')
+    if ts_start then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_start)
+      local _, se = text:find('%S+:', ts_start + 1)
       if se then
-        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_end, se)
+        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_start, se)
+      end
+    end
+    local ts_s, ts_e = text:find('%[%d+%-%d+ %d+:%d+%]$')
+    if ts_s then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, ts_s - 1, ts_e)
+      local pre = text:sub(1, ts_s - 1)
+      local ss, se = pre:find(':%S+%s*$')
+      if ss then
+        vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ss - 1, se)
       end
     end
   end
@@ -139,7 +148,14 @@ local function render()
   if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then return end
   local lines = {}
   for _, msg in ipairs(state.messages) do
-    for _, l in ipairs(fmt_msg(msg)) do
+    local msg_lines = fmt_msg(msg)
+    if msg.own and state.win and vim.api.nvim_win_is_valid(state.win) then
+      local win_w = vim.api.nvim_win_get_width(state.win)
+      for i, l in ipairs(msg_lines) do
+        msg_lines[i] = string.rep(' ', math.max(0, win_w - vim.fn.strwidth(l) - 1)) .. l
+      end
+    end
+    for _, l in ipairs(msg_lines) do
       table.insert(lines, l)
     end
   end
