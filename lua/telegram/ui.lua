@@ -43,7 +43,9 @@ M.state = state
 local function set_lines(lines)
   if not state.msg_popup then return end
   local buf = state.msg_popup.bufnr
-  pcall(vim.api.nvim_buf_set_lines, buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
 end
 
 ---@param msg TgMessage
@@ -436,7 +438,7 @@ local function setup_msg_keymaps()
       position = { row = '50%', col = '50%' },
       size = { width = 50, height = 3 },
       border = { style = 'rounded', text = { top = ' Search ', top_align = 'center' } },
-      buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
+    buf_options = { buftype = 'nofile', bufhidden = 'wipe', modifiable = false },
       win_options = { winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder' },
       enter = true,
       focusable = true,
