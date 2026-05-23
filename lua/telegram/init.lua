@@ -37,6 +37,7 @@ local function finish_init()
       local state = ui.state
       if state.chat_id and msg.chat and msg.chat.id == state.chat_id then
         vim.schedule(function()
+          if not state.buf or not state.win or not vim.api.nvim_buf_is_valid(state.buf) or not vim.api.nvim_win_is_valid(state.win) then return end
           local total_before = vim.api.nvim_buf_line_count(state.buf)
           local cur = vim.api.nvim_win_get_cursor(state.win)
           local at_bottom = cur[1] >= total_before - 1

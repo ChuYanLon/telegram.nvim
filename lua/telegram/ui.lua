@@ -392,62 +392,88 @@ M.close_chat = close_chat
 local function load_older()
   if state.loading or state.exhausted or #state.messages == 0 then return end
   state.loading = true
+  local chat_id = state.chat_id
   local oldest_id = state.messages[1].id
-  local data = server.get_messages(state.chat_id, server.DEFAULT_LIMIT, oldest_id)
-  if not data then state.loading = false; return end
-  local new_msgs = data.messages or {}
-  if #new_msgs == 0 then
-    state.exhausted = true
-    state.loading = false
-    return
-  end
   local cursor = vim.api.nvim_win_get_cursor(state.win)
   local old_top = cursor[1]
-  local seen = {}
-  for _, m in ipairs(state.messages) do
-    seen[m.id] = true
-  end
-  local new_lines = 0
-  for i = 1, #new_msgs do
-    if not seen[new_msgs[i].id] then
-      seen[new_msgs[i].id] = true
-      table.insert(state.messages, 1, new_msgs[i])
-      new_lines = new_lines + #fmt_msg(new_msgs[i])
-    end
-  end
-  if new_lines > 0 then
-    render()
-    vim.api.nvim_win_set_cursor(state.win, { old_top + new_lines, cursor[2] })
-  end
-  state.loading = false
+  local url = 'http://localhost:' .. server.http_port .. '/messages?chatId=' .. chat_id .. '&limit=' .. server.DEFAULT_LIMIT .. '&before=' .. oldest_id
+  local stdout = {}
+  vim.fn.jobstart({ 'curl', '-s', '--connect-timeout', '3', '--max-time', '15', '--fail-with-body', url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      if code ~= 0 then state.loading = false; return end
+      local ok, data = pcall(vim.json.decode, table.concat(stdout))
+      if not ok or not data then state.loading = false; return end
+      if state.chat_id ~= chat_id then state.loading = false; return end
+      local new_msgs = data.messages or {}
+      if #new_msgs == 0 then state.exhausted = true; state.loading = false; return end
+      local seen = {}
+      for _, m in ipairs(state.messages) do seen[m.id] = true end
+      local new_lines = 0
+      for i = 1, #new_msgs do
+        if not seen[new_msgs[i].id] then
+          seen[new_msgs[i].id] = true
+          table.insert(state.messages, 1, new_msgs[i])
+          new_lines = new_lines + #fmt_msg(new_msgs[i])
+        end
+      end
+      vim.schedule(function()
+        if state.chat_id ~= chat_id then return end
+        if new_lines > 0 then
+          render()
+          pcall(vim.api.nvim_win_set_cursor, state.win, { old_top + new_lines, cursor[2] })
+        end
+        state.loading = false
+      end)
+    end,
+  })
 end
 
 local function refresh_messages()
   if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then return end
   state.loading = false
   state.exhausted = false
-  local data = server.get_messages(state.chat_id)
-  if not data then
-    vim.notify('[tg] Failed to load messages', vim.log.levels.ERROR)
-    return
-  end
-  local raw = data.messages or {}
-  state.messages = {}
-  local seen = {}
-  for i = #raw, 1, -1 do
-    local msg = raw[i]
-    if not seen[msg.id] then
-      seen[msg.id] = true
-      table.insert(state.messages, msg)
-    end
-  end
-  render()
-  if #state.messages > 0 then
-    local latest = state.messages[#state.messages]
-    local ts = os.date('%m-%d %H:%M', latest.date)
-    state.last_msg = '[' .. ts .. '] ' .. (latest.sender and latest.sender.name or '?') .. ': ' .. (latest.text or '')
-  end
-  update_title()
+  local chat_id = state.chat_id
+  local url = 'http://localhost:' .. server.http_port .. '/messages?chatId=' .. chat_id .. '&limit=10'
+  local stdout = {}
+  vim.fn.jobstart({ 'curl', '-s', '--connect-timeout', '3', '--max-time', '15', '--fail-with-body', url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      stdout = data
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        vim.notify('[tg] Failed to load messages', vim.log.levels.ERROR)
+        return
+      end
+      local ok, data = pcall(vim.json.decode, table.concat(stdout))
+      if not ok or not data then return end
+      if state.chat_id ~= chat_id then return end
+      local raw = data.messages or {}
+      local seen = {}
+      for _, m in ipairs(state.messages) do
+        seen[m.id] = true
+      end
+      for i = 1, #raw do
+        local msg = raw[i]
+        if not seen[msg.id] then
+          seen[msg.id] = true
+          table.insert(state.messages, 1, msg)
+        end
+      end
+      vim.schedule(function()
+        if state.chat_id ~= chat_id then return end
+        render()
+        if #state.messages > 0 then
+          local latest = state.messages[#state.messages]
+          local ts = os.date('%m-%d %H:%M', latest.date)
+          state.last_msg = '[' .. ts .. '] ' .. (latest.sender and latest.sender.name or '?') .. ': ' .. (latest.text or '')
+        end
+        update_title()
+      end)
+    end,
+  })
 end
 
 M.refresh_messages = refresh_messages
@@ -498,20 +524,9 @@ function M.open_chat(chat_id, chat_title)
   vim.api.nvim_buf_set_option(state.menu_buf, 'bufhidden', 'wipe')
   state.menu_bar = 'i:msg e:edit Enter:reply/original s:switch r:refresh Esc:back q:quit'
   open_windows(chat_title)
-  do
-    local win_w = vim.api.nvim_win_get_width(state.win)
-    local win_h = vim.api.nvim_win_get_height(state.win)
-    local text = '◇ Loading...'
-    local text_w = vim.fn.strwidth(text)
-    local pad = math.max(0, math.floor((win_w - text_w) / 2))
-    local top = math.max(0, math.floor(win_h / 2))
-    local lines = {}
-    for _ = 1, top do table.insert(lines, '') end
-    table.insert(lines, string.rep(' ', pad) .. text)
-    set_lines(lines)
-  end
   server.open_chat(state.chat_id)
   update_title()
+  refresh_messages()
   vim.keymap.set('n', '<Esc>', close_chat, { buffer = state.buf })
   vim.keymap.set('n', 'q', function()
     close_chat()
@@ -662,7 +677,6 @@ function M.open_chat(chat_id, chat_title)
       end
     end,
   })
-  refresh_messages()
   vim.defer_fn(function()
     local restore = state.saved_cursors[state.chat_id]
     if restore then

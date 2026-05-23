@@ -122,11 +122,14 @@ app.get('/messages', async (req, res) => {
     if (!chatId) {
       return res.status(400).json({ error: 'chatId is required' });
     }
+    const t0 = Date.now();
     const result = await tgClient.getMessages(
       Number(chatId),
       limit ? Number(limit) : 50,
       before ? Number(before) : undefined
     );
+    const totalMs = Date.now() - t0;
+    result._timing = { total_ms: totalMs, tdlib_ms: result._tdlib_ms, format_ms: result._format_ms };
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

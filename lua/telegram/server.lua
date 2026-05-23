@@ -5,6 +5,7 @@ local M = {}
 local http_port = 8080
 local ws_port = 8081
 local server_job = nil
+local cached_groups = nil
 
 local function base_url() return 'http://localhost:' .. http_port end
 local function ws_url_internal() return 'ws://localhost:' .. ws_port end
@@ -166,15 +167,17 @@ function M.stop_server()
 end
 
 ---@param chat_id any
----@return boolean
 function M.open_chat(chat_id)
-  return http_post('/chat/open', { chatId = chat_id })
+  local url = base_url() .. '/chat/open'
+  local body = vim.json.encode({ chatId = chat_id })
+  vim.fn.jobstart({ 'curl', '-s', '-X', 'POST', url, '-H', 'Content-Type: application/json', '-d', body })
 end
 
 ---@param chat_id any
----@return boolean
 function M.close_chat(chat_id)
-  return http_post('/chat/close', { chatId = chat_id })
+  local url = base_url() .. '/chat/close'
+  local body = vim.json.encode({ chatId = chat_id })
+  vim.fn.jobstart({ 'curl', '-s', '-X', 'POST', url, '-H', 'Content-Type: application/json', '-d', body })
 end
 
 ---@param chat_id any
@@ -194,7 +197,16 @@ M.DEFAULT_LIMIT = 50
 
 ---@return table|nil
 function M.get_groups()
-  return http_get('/groups')
+  if not cached_groups then
+    cached_groups = http_get('/groups')
+  end
+  return cached_groups
+end
+
+---@return table|nil
+function M.refresh_groups()
+  cached_groups = nil
+  return M.get_groups()
 end
 
 ---@param chat_id any
@@ -254,4 +266,5 @@ function M.forward_messages(from_chat_id, message_ids, to_chat_id)
   return http_post('/forwardMessages', { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
 end
 
+M.http_port = http_port
 return M

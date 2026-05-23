@@ -539,6 +539,7 @@ class TelegramLSPClient {
 
     const fromMessageId = before || 0;
     const offset = before ? -1 : 0;
+    const t0 = Date.now();
     const result = await this.client.invoke({
       _: 'getChatHistory',
       chat_id: chatId,
@@ -547,10 +548,16 @@ class TelegramLSPClient {
       limit,
       only_local: false,
     });
+    const tdlibMs = Date.now() - t0;
     const chat = this._chats.get(chatId);
+    const t1 = Date.now();
+    const msgs = await Promise.all((result.messages || []).map(m => this._formatMessage(m)));
+    const fmtMs = Date.now() - t1;
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
-      messages: await Promise.all((result.messages || []).map(m => this._formatMessage(m))),
+      messages: msgs,
+      _tdlib_ms: tdlibMs,
+      _format_ms: fmtMs,
     };
   }
 
