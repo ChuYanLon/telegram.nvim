@@ -424,8 +424,10 @@ local function refresh_messages()
     return
   end
   local raw = data.messages or {}
-  state.messages = {}
   local seen = {}
+  for _, m in ipairs(state.messages) do
+    seen[m.id] = true
+  end
   for i = #raw, 1, -1 do
     local msg = raw[i]
     if not seen[msg.id] then
