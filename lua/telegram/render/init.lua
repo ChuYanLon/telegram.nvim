@@ -26,7 +26,7 @@ end
 
 function M.render(msg)
   local date_str = os.date('%m-%d %H:%M', msg.date)
-  local sender = msg.sender and msg.sender.name or 'unknown'
+  local sender = msg.own and 'You' or (msg.sender and msg.sender.name or 'unknown')
   local content = get_renderer(msg).render(msg)
   local out = {}
   if msg.replyTo then
