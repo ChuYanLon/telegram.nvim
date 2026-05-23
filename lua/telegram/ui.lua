@@ -424,10 +424,8 @@ local function refresh_messages()
     return
   end
   local raw = data.messages or {}
+  state.messages = {}
   local seen = {}
-  for _, m in ipairs(state.messages) do
-    seen[m.id] = true
-  end
   for i = #raw, 1, -1 do
     local msg = raw[i]
     if not seen[msg.id] then
@@ -656,8 +654,8 @@ function M.open_chat(chat_id, chat_title)
       end
     end,
   })
+  refresh_messages()
   vim.defer_fn(function()
-    refresh_messages()
     local restore = state.saved_cursors[state.chat_id]
     if restore then
       state.saved_cursors[state.chat_id] = nil
@@ -667,7 +665,7 @@ function M.open_chat(chat_id, chat_title)
       for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
       pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
     end
-  end, 300)
+  end, 100)
 end
 
 return M
