@@ -683,7 +683,17 @@ function M.open_chat(chat_id, chat_title)
   end, 50)
   update_input_title()
   M.render_groups()
-  M.refresh_messages()
+  M.refresh_messages(function()
+    local restore = state.saved_cursors[state.chat_id]
+    if restore then
+      state.saved_cursors[state.chat_id] = nil
+      M.jump_to_message(restore)
+    elseif #state.messages > 0 then
+      local total = 1
+      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
+      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
+    end
+  end)
 
   vim.api.nvim_create_autocmd('CursorMoved', {
     group = vim.api.nvim_create_augroup('TgChatScroll', { clear = true }),
@@ -699,18 +709,6 @@ function M.open_chat(chat_id, chat_title)
       end
     end,
   })
-
-  vim.defer_fn(function()
-    local restore = state.saved_cursors[state.chat_id]
-    if restore then
-      state.saved_cursors[state.chat_id] = nil
-      M.jump_to_message(restore)
-    elseif #state.messages > 0 then
-      local total = 1
-      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
-      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
-    end
-  end, 100)
 end
 
 function M.close_chat()
@@ -829,7 +827,7 @@ function M.load_older()
   )
 end
 
-function M.refresh_messages()
+function M.refresh_messages(on_complete)
   if not state.msg_popup then return end
   state.loading = false
   state.exhausted = false
@@ -856,9 +854,11 @@ function M.refresh_messages()
         server.view_messages(state.chat_id, latest.id)
       end
       update_input_title()
+      if on_complete then on_complete() end
     end,
     function()
       vim.notify('[tg] Failed to load messages', vim.log.levels.ERROR)
+      if on_complete then on_complete() end
     end
   )
 end
