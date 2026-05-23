@@ -486,6 +486,42 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
+  async getChat(chatId) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const chat = await this.client.invoke({ _: 'getChat', chat_id: chatId });
+    return {
+      id: chat.id,
+      title: chat.title,
+      unreadCount: chat.unread_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
+      memberCount: chat.type._ === 'chatTypeSupergroup'
+        ? (await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id })).member_count
+        : chat.type._ === 'chatTypeBasicGroup'
+        ? (await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id })).member_count
+        : 0,
+    };
+  }
+
+  async viewMessages(chatId, messageId) {
+    if (!this._ready) return;
+    try {
+      await this.client.invoke({
+        _: 'viewMessages',
+        chat_id: chatId,
+        message_thread_id: 0,
+        force_read: true,
+      });
+      if (messageId) {
+        await this.client.invoke({
+          _: 'viewMessages',
+          chat_id: chatId,
+          message_ids: [messageId],
+          force_read: true,
+        });
+      }
+    } catch {}
+  }
+
   async openChat(chatId) {
     if (!this._ready) return;
     try {

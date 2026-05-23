@@ -169,10 +169,21 @@ function M.stop_server()
 end
 
 ---@param chat_id any
+---@return table|nil
+function M.get_chat(chat_id)
+  return http_get('/chat?chatId=' .. chat_id)
+end
+
+---@param chat_id any
+---@return boolean
 function M.open_chat(chat_id)
-  local url = base_url() .. '/chat/open'
-  local body = vim.json.encode({ chatId = chat_id })
-  vim.fn.jobstart({ 'curl', '-s', '-X', 'POST', url, '-H', 'Content-Type: application/json', '-d', body })
+  return http_post('/chat/open', { chatId = chat_id }) ~= nil
+end
+
+---@param chat_id any
+---@param message_id any
+function M.view_messages(chat_id, message_id)
+  http_post('/chat/viewMessages', { chatId = chat_id, messageId = message_id })
 end
 
 ---@param chat_id any
@@ -209,6 +220,10 @@ end
 function M.refresh_groups()
   cached_groups = nil
   return M.get_groups()
+end
+
+function M.clear_groups_cache()
+  cached_groups = nil
 end
 
 ---@param chat_id any

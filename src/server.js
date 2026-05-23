@@ -57,6 +57,17 @@ app.get('/groups', async (_req, res) => {
   }
 });
 
+app.post('/chat/viewMessages', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.body;
+    if (!chatId || !messageId) return res.status(400).json({ error: 'chatId and messageId are required' });
+    await tgClient.viewMessages(Number(chatId), Number(messageId));
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/chat/open', async (req, res) => {
   try {
     const { chatId } = req.body;
@@ -74,6 +85,17 @@ app.post('/chat/action', async (req, res) => {
     if (!chatId || !action) return res.status(400).json({ error: 'chatId and action are required' });
     await tgClient.sendChatAction(chatId, action);
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/chat', async (req, res) => {
+  try {
+    const { chatId } = req.query;
+    if (!chatId) return res.status(400).json({ error: 'chatId is required' });
+    const chat = await tgClient.getChat(Number(chatId));
+    res.json(chat);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

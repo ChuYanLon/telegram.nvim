@@ -190,7 +190,7 @@ function M.set_groups(groups)
       title = g.title,
       member_count = g.memberCount or 0,
       online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
-      unread_count = (existing and existing.unread_count) or 0,
+      unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
       last_msg_preview = (existing and existing.last_msg_preview) or '',
     }
     table.insert(new_ids, g.id)
@@ -220,9 +220,9 @@ function M.render_groups()
       local total = (g.member_count or 0) > 0 and tostring(g.member_count) or '?'
       local label = g.title .. '(' .. total .. ')'
       if g.unread_count and g.unread_count > 0 and state.chat_id and id ~= state.chat_id then
-        label = label .. ' ●'
+        label = label .. '  ● +' .. g.unread_count
       end
-      if #label > 34 then label = label:sub(1, 31) .. '…' end
+      if #label > 36 then label = label:sub(1, 33) .. '…' end
       table.insert(lines, '  ' .. label)
     end
   end
@@ -658,6 +658,11 @@ function M.open_chat(chat_id, chat_title)
   setup_group_keymaps()
 
   server.open_chat(state.chat_id)
+  server.clear_groups_cache()
+  local chat_data = server.get_chat(state.chat_id)
+  if chat_data and state.groups[state.chat_id] then
+    state.groups[state.chat_id].unread_count = chat_data.unreadCount or 0
+  end
   update_input_title()
   M.render_groups()
   M.refresh_messages()
@@ -851,6 +856,7 @@ function M.refresh_messages()
           local latest = state.messages[#state.messages]
           local ts = os.date('%m-%d %H:%M', latest.date)
           state.last_msg = '[' .. ts .. '] ' .. (latest.sender and latest.sender.name or '?') .. ': ' .. (latest.text or '')
+          server.view_messages(state.chat_id, latest.id)
         end
         update_input_title()
       end)
