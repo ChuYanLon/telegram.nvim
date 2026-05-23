@@ -120,14 +120,15 @@ local function apply_highlights()
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(state.buf, line, line + 1, false)[1]
     if not text then break end
-    if text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, 2, 5)
-      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyBg', line, 5, -1)
+    local rs, re = text:find('\xE2\x94\x83')
+    if rs then
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyIndicator', line, rs - 1, re)
+      vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgReplyBg', line, re, -1)
     end
     local _, ts_start = text:find('%[%d+%-%d+ %d+:%d+%] ')
     if ts_start then
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, 0, ts_start)
-      local _, se = text:find('%S+:', ts_start + 1)
+      local _, se = text:find('%S.*', ts_start + 1)
       if se then
         vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ts_start, se)
       end
@@ -136,7 +137,7 @@ local function apply_highlights()
     if ts_s then
       vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgTimestamp', line, ts_s - 1, ts_e)
       local pre = text:sub(1, ts_s - 1)
-      local ss, se = pre:find(':%S+%s*$')
+      local ss, se = pre:find('%S+%s*$')
       if ss then
         vim.api.nvim_buf_add_highlight(state.buf, hl_ns, 'TgSender', line, ss - 1, se)
       end
@@ -151,8 +152,15 @@ local function render()
     local msg_lines = fmt_msg(msg)
     if msg.own and state.win and vim.api.nvim_win_is_valid(state.win) then
       local win_w = vim.api.nvim_win_get_width(state.win)
+      local max_w = 0
+      for _, l in ipairs(msg_lines) do
+        max_w = math.max(max_w, vim.fn.strwidth(l))
+      end
+      local pad = math.max(0, win_w - max_w - 1)
       for i, l in ipairs(msg_lines) do
-        msg_lines[i] = string.rep(' ', math.max(0, win_w - vim.fn.strwidth(l) - 1)) .. l
+        local lw = vim.fn.strwidth(l)
+        local extra = l:find('\xE2\x94\x83') and 0 or math.min(max_w - lw, win_w - lw - 1)
+        msg_lines[i] = string.rep(' ', pad + math.max(0, extra)) .. l
       end
     end
     for _, l in ipairs(msg_lines) do
@@ -542,7 +550,7 @@ function M.open_chat(chat_id, chat_title)
     if not target then return end
     local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
     local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
-    if text and text:byte(1) == 0x20 and text:byte(2) == 0x20 and text:byte(3) == 0xE2 and text:byte(4) == 0x94 then
+    if text and text:find('\xE2\x94\x83') then
       if target.replyTo then
         jump_to_message(target.replyTo.id)
       end
