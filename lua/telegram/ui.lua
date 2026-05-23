@@ -365,11 +365,26 @@ local function cur_area()
   return 'msg'
 end
 
+local function restore_group_cursor()
+  for i, id in ipairs(state.group_ids) do
+    if id == state.active_group_id then
+      state.group_cursor = i
+      break
+    end
+  end
+  if state.group_popup then
+    pcall(vim.api.nvim_win_set_cursor, state.group_popup.winid, { state.group_cursor, 0 })
+    apply_group_highlights()
+  end
+end
+
 local function nav_h()
+  if cur_area() == 'group' then restore_group_cursor() end
   if cur_area() == 'msg' then focus_groups() else focus_msg() end
 end
 
 local function nav_l()
+  if cur_area() == 'group' then restore_group_cursor() end
   if cur_area() == 'group' then focus_msg() else focus_groups() end
 end
 
@@ -599,6 +614,9 @@ function M.open_chat(chat_id, chat_title)
   state.chat_id = chat_id
   state.chat_title = chat_title
   state.active_group_id = chat_id
+  for i, id in ipairs(state.group_ids) do
+    if id == chat_id then state.group_cursor = i; break end
+  end
   if state.groups[chat_id] then
     state.groups[chat_id].unread_count = 0
   end
