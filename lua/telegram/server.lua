@@ -3,6 +3,7 @@ local config = require('telegram.config')
 local M = {}
 
 local http_port = 8080
+M.http_port = http_port
 local ws_port = 8081
 local server_job = nil
 local cached_groups = nil
@@ -109,6 +110,7 @@ function M.start_server()
   if status == 'ready' then return true end
   while status == 'other' do
     http_port = http_port + 2
+    M.http_port = http_port
     ws_port = ws_port + 2
     if http_port > 9000 then
       vim.notify('[tg] No free port', vim.log.levels.ERROR)
@@ -266,5 +268,4 @@ function M.forward_messages(from_chat_id, message_ids, to_chat_id)
   return http_post('/forwardMessages', { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
 end
 
-M.http_port = http_port
 return M

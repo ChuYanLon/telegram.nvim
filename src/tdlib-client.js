@@ -299,6 +299,8 @@ class TelegramLSPClient {
     const group = {
       id: chat.id,
       title: chat.title,
+      unreadCount: chat.unread_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
     };
 
     if (chat.last_message) {

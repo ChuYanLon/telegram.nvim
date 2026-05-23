@@ -66,6 +66,13 @@ local function finish_init()
           state.exhausted = false
         end)
       else
+        vim.schedule(function()
+          ui.update_group_last_msg(
+            msg.chat and msg.chat.id,
+            msg.sender and msg.sender.name,
+            msg.text and msg.text:sub(1, 60) or ''
+          )
+        end)
         vim.notify(string.format('[%s] %s: %s',
           msg.chat and msg.chat.title or '?',
           msg.sender and msg.sender.name or '?',
@@ -84,11 +91,12 @@ local function finish_init()
         end)
       end
     elseif msg.event == 'chatOnlineMemberCount' then
-      if ui.state.chat_id and msg.chat_id == ui.state.chat_id then
-        vim.schedule(function()
+      vim.schedule(function()
+        if ui.state.chat_id and msg.chat_id == ui.state.chat_id then
           ui.set_online_count(msg.online_member_count)
-        end)
-      end
+        end
+        ui.update_group_online(msg.chat_id, msg.online_member_count)
+      end)
     end
   end)
   initialized = true
@@ -121,16 +129,6 @@ function M.list_groups(force_picker)
       return
     end
   end
-  if not force_picker then
-    if ui.state.last_chat and not (ui.state.buf and vim.api.nvim_buf_is_valid(ui.state.buf)) then
-      ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-      return
-    end
-    if ui.state.buf and vim.api.nvim_buf_is_valid(ui.state.buf) then
-      ui.refresh_messages()
-      return
-    end
-  end
   local groups = server.get_groups()
   if not groups then
     vim.notify('[tg] No groups found', vim.log.levels.WARN)
@@ -145,6 +143,17 @@ function M.list_groups(force_picker)
     end, 0, true)
     if not ok or not groups or #groups == 0 then
       vim.notify('[tg] No groups found', vim.log.levels.WARN)
+      return
+    end
+  end
+  ui.set_groups(groups)
+  if not force_picker then
+    if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
+      ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
+      return
+    end
+    if ui.state.layout and ui.state.layout._.mounted then
+      ui.refresh_messages()
       return
     end
   end
@@ -202,7 +211,7 @@ vim.api.nvim_create_autocmd('VimLeavePre', {
 
 vim.api.nvim_create_user_command('Tg', M.list_groups, {})
 vim.api.nvim_create_user_command('TgLogout', M.logout, {})
-vim.api.nvim_create_user_command('TgGroups', M.list_groups, {})
+vim.api.nvim_create_user_command('TgGroups', function() M.list_groups(true) end, {})
 vim.api.nvim_create_user_command('TgSend', function(opts)
   local args = vim.fn.split(opts.args)
   if #args < 2 then
