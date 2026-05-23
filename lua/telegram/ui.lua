@@ -261,19 +261,6 @@ local function render()
   local lines = {}
   for _, msg in ipairs(state.messages) do
     local msg_lines = fmt_msg(msg)
-    if msg.own then
-      local win_w = state.msg_popup._.size and state.msg_popup._.size.width or 80
-      local max_w = 0
-      for _, l in ipairs(msg_lines) do
-        max_w = math.max(max_w, vim.fn.strwidth(l))
-      end
-      local pad = math.max(0, win_w - max_w - 1)
-      for i, l in ipairs(msg_lines) do
-        local lw = vim.fn.strwidth(l)
-        local extra = l:find('\xE2\x94\x83') and 0 or math.min(max_w - lw, win_w - lw - 1)
-        msg_lines[i] = string.rep(' ', pad + math.max(0, extra)) .. l
-      end
-    end
     for _, l in ipairs(msg_lines) do
       table.insert(lines, l)
     end
