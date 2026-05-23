@@ -441,6 +441,7 @@ local function open_windows(chat_title)
     title_pos = 'center',
   })
   vim.api.nvim_set_option_value('winhl', 'Normal:TgNoBg,FloatBorder:TgBorder', { win = state.win })
+  vim.api.nvim_win_set_option(state.win, 'wrap', true)
   state.menu_win = vim.api.nvim_open_win(state.menu_buf, false, {
     relative = 'editor', width = width, height = 1,
     row = row + msg_h + 2, col = col,
