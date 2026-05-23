@@ -115,6 +115,10 @@ local function apply_group_highlights()
     if line + 1 == state.group_cursor then
       vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgBorder', line, 0, -1)
     end
+    local ds, de = text:find('\xE2\x97\x8F')
+    if ds then
+      vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgKey', line, ds - 1, de)
+    end
   end
   pcall(vim.api.nvim_win_set_cursor, win, { state.group_cursor, 0 })
 end
@@ -186,7 +190,7 @@ function M.set_groups(groups)
       title = g.title,
       member_count = g.memberCount or 0,
       online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
-      unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
+      unread_count = (existing and existing.unread_count) or 0,
       last_msg_preview = (existing and existing.last_msg_preview) or '',
     }
     table.insert(new_ids, g.id)
@@ -215,7 +219,10 @@ function M.render_groups()
     if g then
       local total = (g.member_count or 0) > 0 and tostring(g.member_count) or '?'
       local label = g.title .. '(' .. total .. ')'
-      if #label > 32 then label = label:sub(1, 29) .. '…' end
+      if g.unread_count and g.unread_count > 0 and state.chat_id and id ~= state.chat_id then
+        label = label .. ' ●'
+      end
+      if #label > 34 then label = label:sub(1, 31) .. '…' end
       table.insert(lines, '  ' .. label)
     end
   end
@@ -585,6 +592,9 @@ function M.open_chat(chat_id, chat_title)
   state.chat_id = chat_id
   state.chat_title = chat_title
   state.active_group_id = chat_id
+  if state.groups[chat_id] then
+    state.groups[chat_id].unread_count = 0
+  end
 
   state.msg_popup = NuiPopup({
     enter = true,

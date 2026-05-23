@@ -73,11 +73,6 @@ local function finish_init()
             msg.text and msg.text:sub(1, 60) or ''
           )
         end)
-        vim.notify(string.format('[%s] %s: %s',
-          msg.chat and msg.chat.title or '?',
-          msg.sender and msg.sender.name or '?',
-          msg.text and msg.text:sub(1, 80) or '?'
-        ), vim.log.levels.INFO, { title = 'Telegram' })
       end
     elseif msg.event == 'userAction' then
       local state = ui.state
