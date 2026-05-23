@@ -134,18 +134,11 @@ local function update_input_title()
     else
       title = title .. '| ' .. typing_items[1].name .. ' +' .. (#typing_items - 1) .. ' ' .. typing_items[1].action_desc
     end
-  elseif state.online_count and state.online_count > 0 then
-    title = title .. '| ' .. state.online_count .. ' online'
   end
-  state.input_popup:set_layout({
-    relative = 'win',
-    winid = state.layout.winid,
-    position = state.input_popup._.position,
-    size = state.input_popup._.size,
-  })
-  pcall(function()
-    state.input_popup.border:set_text('top', title)
-  end)
+  title = title .. '| ' .. (state.online_count or 0) .. ' online'
+  if state.msg_popup and state.msg_popup.border then
+    state.msg_popup.border:set_text('top', title)
+  end
 end
 
 M.update_title = update_input_title
@@ -219,10 +212,8 @@ function M.render_groups()
   for _, id in ipairs(state.group_ids) do
     local g = state.groups[id]
     if g then
-      local label = g.title
-      if g.member_count and g.member_count > 0 then
-        label = label .. ' (' .. g.member_count .. ')'
-      end
+      local total = (g.member_count or 0) > 0 and tostring(g.member_count) or '?'
+      local label = g.title .. '(' .. total .. ')'
       if #label > 32 then label = label:sub(1, 29) .. '…' end
       table.insert(lines, '  ' .. label)
     end
@@ -569,7 +560,10 @@ function M.open_chat(chat_id, chat_title)
   state.msg_popup = NuiPopup({
     enter = true,
     focusable = true,
-    border = { style = 'rounded' },
+    border = {
+      style = 'rounded',
+      text = { top = '', top_align = 'center' },
+    },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
       wrap = true,
@@ -580,7 +574,7 @@ function M.open_chat(chat_id, chat_title)
   state.input_popup = NuiPopup({
     enter = false,
     focusable = true,
-    border = { style = 'rounded', text = { top = ' Message ', top_align = 'center' } },
+    border = { style = 'rounded' },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
       winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder',
