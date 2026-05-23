@@ -144,6 +144,17 @@ local function update_input_title()
   if state.msg_popup and state.msg_popup.border then
     state.msg_popup.border:set_text('top', title)
   end
+  if state.input_popup and state.input_popup.border and #typing_items > 0 then
+    local input_title
+    if #typing_items == 1 then
+      input_title = ' ' .. typing_items[1].name .. ' ' .. typing_items[1].action_desc .. ' '
+    else
+      input_title = ' ' .. typing_items[1].name .. ' +' .. (#typing_items - 1) .. ' ' .. typing_items[1].action_desc .. ' '
+    end
+    pcall(function()
+      state.input_popup.border:set_text('top', input_title)
+    end)
+  end
 end
 
 M.update_title = update_input_title
@@ -415,6 +426,10 @@ local function setup_msg_keymaps()
   end, { buffer = buf })
   vim.keymap.set('n', '?', show_help, { buffer = buf })
   vim.keymap.set('n', 'i', focus_input, { buffer = buf })
+  local no_insert = { 'I', 'a', 'A', 'o', 'O', 's', 'S' }
+  for _, k in ipairs(no_insert) do
+    pcall(vim.keymap.set, 'n', k, '<Nop>', { buffer = buf, nowait = true })
+  end
   vim.keymap.set('n', 'r', function()
     if state.unread > 0 then state.unread = 0 end
     M.refresh_messages()
@@ -572,10 +587,6 @@ local function setup_input_keymaps()
   local buf = state.input_popup.bufnr
   setup_nav_keymaps(buf)
   vim.keymap.set('n', '<CR>', input_send, { buffer = buf, nowait = true })
-  local nop_keys = { 'x', 'X', 'dd', 'D', 'p', 'P', 'u', '<C-r>', 'J', 's', 'S', 'c', 'C', '.', 'r', 'R', 'a', 'A', 'o', 'O', 'v', 'V', '<C-v>', '<Space>', '\\' }
-  for _, k in ipairs(nop_keys) do
-    pcall(vim.keymap.set, 'n', k, '<Nop>', { buffer = buf, nowait = true })
-  end
 end
 
 ---@param chat_id any
@@ -615,7 +626,10 @@ function M.open_chat(chat_id, chat_title)
     enter = false,
     focusable = true,
     zindex = 100,
-    border = { style = 'rounded' },
+    border = {
+      style = 'rounded',
+      text = { top = '', top_align = 'center' },
+    },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
       winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder',
