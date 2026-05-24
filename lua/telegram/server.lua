@@ -302,9 +302,10 @@ end
 
 ---@param chat_id any
 ---@param message_id any
+---@param revoke boolean|nil
 ---@return boolean
-function M.delete_message(chat_id, message_id)
-  return http_post('/deleteMessage', { chatId = chat_id, messageId = message_id })
+function M.delete_message(chat_id, message_id, revoke)
+  return http_post('/deleteMessage', { chatId = chat_id, messageId = message_id, revoke = revoke })
 end
 
 ---@param from_chat_id any

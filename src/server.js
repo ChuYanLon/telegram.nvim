@@ -186,11 +186,11 @@ app.post('/editMessage', async (req, res) => {
 
 app.post('/deleteMessage', async (req, res) => {
   try {
-    const { chatId, messageId } = req.body;
+    const { chatId, messageId, revoke } = req.body;
     if (!chatId || !messageId) {
       return res.status(400).json({ error: 'chatId and messageId are required' });
     }
-    const result = await tgClient.deleteMessage(chatId, messageId);
+    const result = await tgClient.deleteMessage(chatId, messageId, revoke !== false);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
