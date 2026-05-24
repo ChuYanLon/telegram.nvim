@@ -282,7 +282,7 @@ function M.render_groups()
     if g then
       local total = (g.member_count or 0) > 0 and tostring(g.member_count) or '?'
       local label = g.title .. '(' .. total .. ')'
-      if g.unread_count and g.unread_count > 0 and state.chat_id and id ~= state.chat_id then
+      if g.unread_count and g.unread_count > 0 and state.chat_id then
         label = label .. '  ● +' .. g.unread_count
       end
       if #label > 36 then label = label:sub(1, 33) .. '…' end
@@ -775,6 +775,10 @@ function M.open_chat(chat_id, chat_title)
       local total_lines = vim.api.nvim_buf_line_count(state.buf)
       if state.unread > 0 and cursor_line >= total_lines - 1 then
         state.unread = 0
+        if state.groups[state.chat_id] then
+          state.groups[state.chat_id].unread_count = 0
+          M.render_groups()
+        end
       end
       if cursor_line <= 1 and not state.exhausted then
         M.load_older()

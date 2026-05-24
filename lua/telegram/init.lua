@@ -47,10 +47,14 @@ local function finish_init()
 					end
 					local total_before = vim.api.nvim_buf_line_count(state.buf)
 					local cur = vim.api.nvim_win_get_cursor(state.win)
-					local at_bottom = cur[1] >= total_before - 1
-					if not at_bottom then
-						state.unread = state.unread + 1
+				local at_bottom = cur[1] >= total_before - 1
+				if not at_bottom then
+					state.unread = state.unread + 1
+					if state.groups[state.chat_id] then
+						state.groups[state.chat_id].unread_count = state.unread
+						ui.render_groups()
 					end
+				end
 					local ts = os.date("%m-%d %H:%M", msg.date)
 					local preview = "["
 						.. ts
