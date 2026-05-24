@@ -14,8 +14,7 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 | **Reply / restore message** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
 | **Recall / delete message** | <img width="400" src="https://github.com/user-attachments/assets/2b482549-d983-4207-ae10-a5e265b71d6e" /> |
 | **Forward message** | <img width="400" src="https://github.com/user-attachments/assets/eabcbe42-69d1-4716-946e-7a34155331a9" /> |
-| **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> |
-| **Search results** | <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
+| **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
 
 ## Requirements
 
