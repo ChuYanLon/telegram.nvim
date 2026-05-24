@@ -8,7 +8,6 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 
 | Feature | |
 |---------|-|
-| **Select group** | <img width="400" src="https://github.com/user-attachments/assets/067b9a4f-1fd7-48a9-8841-23c77da0302e" /> |
 | **Group details** | <img width="400" src="https://github.com/user-attachments/assets/a93336ce-f847-4331-973c-02e4a096eeb5" /> |
 | **Edit message** | <img width="400" src="https://github.com/user-attachments/assets/f0fdf32e-6e8b-4d77-9082-c5b07f9e365d" /> |
 | **Reply / restore message** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
@@ -82,7 +81,7 @@ ldconfig 2>/dev/null || true
 
 | Command       | Description                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
+| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise open the first group |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgGroups`   | Force show the group picker even if already in a chat                                                                             |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
@@ -145,7 +144,8 @@ In the groups panel:
 - **Operation feedback** — success notifications for send/reply/edit/delete/recall/forward
 - **Async UI** — message operations, search, and scroll loading don't block the UI or cause scroll jumps
 - **Startup feedback** — immediate "Starting server..." notification before blocking operations
-- **Reply/Edit target highlight** — target message is highlighted with "● Replying" / "● Editing" indicator
+- **Reply/Edit/Delete target highlight** — target message is highlighted with "● Replying" / "● Editing" / "● Deleting" indicator
+- **Virtual-scrolled groups panel** — only renders visible groups; `j/k` automatically pages when reaching the boundary; handles hundreds of groups efficiently
 - **Read-only message window** — main chat buffer is not modifiable
 
 ## Auth Flow
