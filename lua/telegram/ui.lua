@@ -836,7 +836,7 @@ function M.jump_to_message(target_id, callback)
   if state.msg_popup and state.msg_popup.border then
     state.msg_popup.border:set_text('top', ' ⏳ Loading... ')
   end
-  server.get_messages_around_async(state.chat_id, target_id, 11, function(data)
+  server.get_messages_around_async(state.chat_id, target_id, 31, function(data)
     if not state.chat_id then return end
     state.messages = data.messages or {}
     render()

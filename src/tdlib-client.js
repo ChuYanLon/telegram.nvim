@@ -616,7 +616,7 @@ class TelegramLSPClient {
     return { messages: newer };
   }
 
-  async getMessagesAround(chatId, messageId, limit = 11) {
+  async getMessagesAround(chatId, messageId, limit = 31) {
     if (!this._ready) throw new Error('Client not ready yet');
     const half = Math.floor(limit / 2);
 
@@ -626,23 +626,34 @@ class TelegramLSPClient {
     } catch {}
     if (!target) return { messages: [] };
 
-    let olderResult = { messages: [] };
-    try {
-      olderResult = await this.client.invoke({
+    const [olderResult, newerResult] = await Promise.all([
+      this.client.invoke({
         _: 'getChatHistory',
         chat_id: chatId,
         from_message_id: messageId,
         offset: -1,
         limit: half + 1,
         only_local: false,
-      });
-    } catch {}
+      }).catch(() => ({ messages: [] })),
+      this.client.invoke({
+        _: 'getChatHistory',
+        chat_id: chatId,
+        from_message_id: 0,
+        offset: 0,
+        limit: half + 30,
+        only_local: false,
+      }).catch(() => ({ messages: [] })),
+    ]);
 
     const older = (await Promise.all(
       (olderResult.messages || []).map(m => this._formatMessage(m))
     )).filter(Boolean).reverse();
 
-    return { messages: [...older, target], targetIndex: older.length };
+    const newer = (await Promise.all(
+      (newerResult.messages || []).map(m => this._formatMessage(m))
+    )).filter(Boolean).filter(m => m.id > messageId).reverse().slice(0, half);
+
+    return { messages: [...older, target, ...newer], targetIndex: older.length };
   }
 
 }
