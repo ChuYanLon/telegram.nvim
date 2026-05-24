@@ -64,7 +64,7 @@ local function finish_init()
 					local function dup()
 						for _, m in ipairs(state.messages) do
 							if m.id == mid then return true end
-							if msg.own and m.own and m.text == msg.text and m.date == msg.date then
+							if msg.own and m.own and m.text == msg.text and math.abs(m.date - msg.date) <= 2 then
 								return true
 							end
 						end

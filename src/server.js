@@ -183,8 +183,8 @@ app.post('/sendMessage', async (req, res) => {
     if (!chatId || !text) {
       return res.status(400).json({ error: 'chatId and text are required' });
     }
-    const result = await tgClient.sendMessage(chatId, text, replyTo);
-    res.json(result);
+    const msg = await tgClient.sendMessage(chatId, text, replyTo);
+    res.json({ ok: true, message: msg });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

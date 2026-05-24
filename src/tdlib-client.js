@@ -446,8 +446,8 @@ class TelegramLSPClient {
     if (replyTo) {
       params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
     }
-    await this.client.invoke(params);
-    return { ok: true };
+    const result = await this.client.invoke(params);
+    return this._formatMessage(result);
   }
 
   async editMessage(chatId, messageId, text) {

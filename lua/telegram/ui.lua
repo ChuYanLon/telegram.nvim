@@ -386,11 +386,17 @@ local function input_send()
       vim.notify('[tg] Message edited', vim.log.levels.INFO)
     end
   elseif state.input_mode == 'reply' and state.reply_to then
-    if server.send_message(state.chat_id, text, state.reply_to) then
+    local msg = server.send_message(state.chat_id, text, state.reply_to)
+    if msg then
+      table.insert(state.messages, msg)
+      render()
       vim.notify('[tg] Reply sent', vim.log.levels.INFO)
     end
   else
-    if server.send_message(state.chat_id, text) then
+    local msg = server.send_message(state.chat_id, text)
+    if msg then
+      table.insert(state.messages, msg)
+      render()
       vim.notify('[tg] Message sent', vim.log.levels.INFO)
     end
   end

@@ -327,11 +327,13 @@ end
 ---@param chat_id any
 ---@param text string
 ---@param replyTo any|nil
----@return boolean
+---@return table|nil
 function M.send_message(chat_id, text, replyTo)
   local body = { chatId = chat_id, text = text }
   if replyTo then body.replyTo = replyTo end
-  return http_post('/sendMessage', body)
+  local data = http_post('/sendMessage', body)
+  if data and data.message then return data.message end
+  return nil
 end
 
 ---@param chat_id any
