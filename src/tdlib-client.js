@@ -394,9 +394,10 @@ class TelegramLSPClient {
     return this._ready;
   }
 
-  async getChats() {
+  async getChats(force) {
     if (!this._ready) throw new Error('Client not ready yet');
-    const allChats = [];
+    if (this._chats.size > 0 && !force) return [...this._chats.values()];
+
     let offsetOrder = '9223372036854775807';
     let offsetChatId = 0;
     const limit = 100;
@@ -419,12 +420,20 @@ class TelegramLSPClient {
         );
         if (!inMainList) continue;
         this._chats.set(id, chat);
-        allChats.push(chat);
       }
 
       if (chatIds.length < limit) break;
-      offsetOrder = String(BigInt(offsetOrder) - BigInt(1));
+      const prevOrder = offsetOrder;
+      const prevChatId = offsetChatId;
       offsetChatId = chatIds[chatIds.length - 1];
+      const lastChat = this._chats.get(offsetChatId);
+      if (lastChat) {
+        const pos = (lastChat.positions || []).find(p => p.list && p.list._ === 'chatListMain');
+        if (pos) {
+          offsetOrder = String(pos.order);
+        }
+      }
+      if (offsetOrder === prevOrder || offsetChatId === prevChatId) break;
     }
     return [...this._chats.values()];
   }
