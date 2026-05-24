@@ -12,7 +12,7 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 | **Edit message** | <img width="400" src="https://github.com/user-attachments/assets/f0fdf32e-6e8b-4d77-9082-c5b07f9e365d" /> |
 | **Reply / restore message** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
 | **Recall / delete message** | <img width="400" src="https://github.com/user-attachments/assets/5c4f623e-295b-451c-a186-d51622a6feae" /> |
-| **Forward message** | <img width="400" src="https://github.com/user-attachments/assets/eabcbe42-69d1-4716-946e-7a34155331a9" /> |
+| **Forward message** | <img width="400" src="https://github.com/user-attachments/assets/eb902e79-344a-42a0-a55e-3deee305068a" /> |
 | **New message indicator** | <img width="400" src="https://github.com/user-attachments/assets/eb363ec8-d908-4c24-9d79-8358656f3bc4" /> |
 | **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
 
@@ -143,7 +143,7 @@ In the groups panel:
 - **Operation feedback** — success notifications for send/reply/edit/delete/recall/forward
 - **Async UI** — message operations, search, and scroll loading don't block the UI or cause scroll jumps
 - **Startup feedback** — immediate "Starting server..." notification before blocking operations
-- **Reply/Edit/Delete target highlight** — target message is highlighted with "● Replying" / "● Editing" / "● Deleting" indicator
+- **Reply/Edit/Delete/Forward target highlight** — target message is highlighted with "● Replying" / "● Editing" / "● Deleting" / "● Forwarding" indicator
 - **Virtual-scrolled groups panel** — only renders visible groups; `j/k` automatically pages when reaching the boundary; handles hundreds of groups efficiently
 - **Read-only message window** — main chat buffer is not modifiable
 

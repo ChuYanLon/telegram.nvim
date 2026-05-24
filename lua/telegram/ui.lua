@@ -37,6 +37,7 @@ local state = {
   reply_to = nil,
   edit_target = nil,
   delete_target = nil,
+  forward_target = nil,
   esc_count = 0,
   sending = false,
   loading_newer = false,
@@ -124,11 +125,11 @@ local function apply_highlights()
       end
     end
   end
-  local target_id = state.reply_to or (state.edit_target and state.edit_target.id) or (state.delete_target and state.delete_target.id)
-  local mode = state.reply_to and 'reply' or (state.edit_target and 'edit') or (state.delete_target and 'delete')
+  local target_id = state.reply_to or (state.edit_target and state.edit_target.id) or (state.delete_target and state.delete_target.id) or (state.forward_target and state.forward_target.id)
+  local mode = state.reply_to and 'reply' or (state.edit_target and 'edit') or (state.delete_target and 'delete') or (state.forward_target and 'forward')
   if not target_id or not mode then return end
-  local hl = mode == 'reply' and 'TgReplyTarget' or mode == 'edit' and 'TgEditTarget' or 'TgDeleteTarget'
-  local label = mode == 'reply' and '  \xE2\x97\x8F Replying' or mode == 'edit' and '  \xE2\x97\x8F Editing' or '  \xE2\x97\x8F Deleting'
+  local hl = mode == 'reply' and 'TgReplyTarget' or mode == 'edit' and 'TgEditTarget' or mode == 'delete' and 'TgDeleteTarget' or 'TgForwardTarget'
+  local label = mode == 'reply' and '  \xE2\x97\x8F Replying' or mode == 'edit' and '  \xE2\x97\x8F Editing' or mode == 'delete' and '  \xE2\x97\x8F Deleting' or '  \xE2\x97\x8F Forwarding'
   local line = 1
   for _, m in ipairs(state.messages) do
     local n = #fmt_msg(m)
@@ -367,7 +368,7 @@ local function show_help()
     ' <CR>     reply / jump to original',
     ' e        edit own message',
     ' d        delete / revoke message',
-    ' f        forward message',
+    ' f        forward message to another group',
     ' r        refresh',
     ' Esc Esc  close chat',
     ' q        quit plugin',
@@ -619,8 +620,12 @@ local function setup_msg_keymaps()
   vim.keymap.set('n', 'f', function()
     local target = M.curr_msg()
     if not target or not target.id then return end
+    state.forward_target = target
+    apply_highlights()
     local groups = server.get_groups()
     if not groups or #groups == 0 then
+      state.forward_target = nil
+      apply_highlights()
       vim.notify('[tg] No groups to forward to', vim.log.levels.WARN)
       return
     end
@@ -636,6 +641,8 @@ local function setup_msg_keymaps()
         local ok = server.forward_messages(state.chat_id, target.id, choice.id)
         if ok then vim.notify('[tg] Forwarded to ' .. choice.label, vim.log.levels.INFO) end
       end
+      state.forward_target = nil
+      apply_highlights()
     end)
   end, { buffer = buf })
 end
