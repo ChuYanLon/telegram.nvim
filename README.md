@@ -117,6 +117,17 @@ In the groups panel:
 | `<CR>` | Open selected chat |
 | `<C-h/j/k/l>` | Navigate panels |
 
+## Screenshots
+
+| Feature | |
+|---------|-|
+| **选择群** | <img width="400" src="https://github.com/user-attachments/assets/067b9a4f-1fd7-48a9-8841-23c77da0302e" /> |
+| **群详情** | <img width="400" src="https://github.com/user-attachments/assets/a93336ce-f847-4331-973c-02e4a096eeb5" /> |
+| **编辑消息** | <img width="400" src="https://github.com/user-attachments/assets/f0fdf32e-6e8b-4d77-9082-c5b07f9e365d" /> |
+| **恢复消息** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
+| **撤回/删除消息** | <img width="400" src="https://github.com/user-attachments/assets/2b482549-d983-4207-ae10-a5e265b71d6e" /> |
+| **转发消息** | <img width="400" src="https://github.com/user-attachments/assets/eabcbe42-69d1-4716-946e-7a34155331a9" /> |
+
 ## Features
 
 - **Online member count** — shows `N online` in the menu bar when a group is open
