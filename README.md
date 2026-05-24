@@ -79,10 +79,12 @@ ldconfig 2>/dev/null || true
 
 ## Commands
 
-| Command     | Description                                                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `:Tg`       | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
-| `:TgLogout` | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
+| Command       | Description                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise show group picker |
+| `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
+| `:TgGroups`   | Force show the group picker even if already in a chat                                                                             |
+| `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
 
 ## Neovim Keymaps
 
@@ -165,8 +167,17 @@ Pass options via `setup()`:
 require("telegram").setup({
   -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
   -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
+  -- data_dir = "/path/to/data",            -- tdlib_db/ and tdlib_files/ location (default: plugin root)
 })
 ```
+
+Environment variable overrides:
+
+| Env var | Overrides |
+|---------|-----------|
+| `TG_TDLIB_PATH` | `tdlib_path` |
+| `TG_PROXY` | `proxy` |
+| `TG_DATA_DIR` | `data_dir` |
 
 The server auto-detects `libtdjson` on startup via:
 - **Linux**: `ldconfig -p`, common paths (`/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/lib64`, `/opt/lib`), `LD_LIBRARY_PATH`, and `find`
