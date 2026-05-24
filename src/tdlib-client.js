@@ -647,7 +647,7 @@ class TelegramLSPClient {
 
     const older = (await Promise.all(
       (olderResult.messages || []).map(m => this._formatMessage(m))
-    )).filter(Boolean).reverse();
+    )).filter(Boolean).filter(m => m.id !== messageId).reverse();
 
     const newer = (await Promise.all(
       (newerResult.messages || []).map(m => this._formatMessage(m))
