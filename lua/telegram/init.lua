@@ -127,10 +127,8 @@ local function finish_init()
 	vim.notify("[tg] Ready", vim.log.levels.INFO)
 end
 
----@param force_picker boolean|nil
-function M.list_groups(force_picker)
-	force_picker = force_picker == true
-	local function show_groups(f_picker)
+function M.list_groups()
+	local function show_groups()
 		local groups = server.get_groups()
 		if not groups then
 			vim.notify("[tg] No groups found", vim.log.levels.WARN)
@@ -149,41 +147,17 @@ function M.list_groups(force_picker)
 			end
 		end
 		ui.set_groups(groups)
-		if not f_picker then
-			if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
-				ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-				return
-			end
-			if ui.state.layout and ui.state.layout._.mounted then
-				ui.refresh_messages()
-				return
-			end
-			if #groups > 0 then
-				ui.open_chat(groups[1].id, groups[1].title)
-				return
-			end
+		if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
+			ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
+			return
 		end
-		local items = {}
-		for _, g in ipairs(groups) do
-			local desc = ""
-			if g.lastMessage then
-				local s = g.lastMessage.sender and g.lastMessage.sender.name or "?"
-				desc = s .. ": " .. (g.lastMessage.text:len() > 60 and g.lastMessage.text:sub(1, 60) .. "…" or g.lastMessage.text)
-			end
-			local member_info = g.memberCount and (" (" .. g.memberCount .. " members)") or ""
-			table.insert(items, { id = g.id, label = g.title .. member_info, detail = desc })
+		if ui.state.layout and ui.state.layout._.mounted then
+			ui.refresh_messages()
+			return
 		end
-		vim.ui.select(items, {
-			prompt = "Select a group:",
-			format_item = function(item)
-				return item.label
-			end,
-		}, function(choice)
-			if choice then
-				ui.close_chat()
-				ui.open_chat(choice.id, choice.label)
-			end
-		end)
+		if #groups > 0 then
+			ui.open_chat(groups[1].id, groups[1].title)
+		end
 	end
 
 	if not initialized then
@@ -194,13 +168,13 @@ function M.list_groups(force_picker)
 			local health = server.server_health()
 			if health and health.ready == true then
 				finish_init()
-				show_groups(force_picker)
+				show_groups()
 			else
 				vim.notify("[tg] Waiting for auth...", vim.log.levels.INFO)
 				auth.auth_poll(function(success)
 					if success then
 						finish_init()
-						show_groups(force_picker)
+						show_groups()
 					else
 						server.stop_server()
 						local db = config.config.data_dir .. "/tdlib_db"
@@ -213,7 +187,7 @@ function M.list_groups(force_picker)
 		end, 100)
 		return
 	end
-	show_groups(force_picker)
+	show_groups()
 end
 
 function M.logout()
@@ -251,9 +225,6 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
 vim.api.nvim_create_user_command("TgLogout", M.logout, {})
-vim.api.nvim_create_user_command("TgGroups", function()
-	M.list_groups(true)
-end, {})
 vim.api.nvim_create_user_command("TgSend", function(opts)
 	local args = vim.fn.split(opts.args)
 	if #args < 2 then

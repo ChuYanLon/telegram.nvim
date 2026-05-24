@@ -81,9 +81,8 @@ ldconfig 2>/dev/null || true
 
 | Command       | Description                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise open the first group |
+| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
-| `:TgGroups`   | Force show the group picker even if already in a chat                                                                             |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
 
 ## Neovim Keymaps
