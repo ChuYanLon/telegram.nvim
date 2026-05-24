@@ -93,7 +93,7 @@ Inside a chat window:
 | `<C-k>` | Focus message panel |
 | `i` | Focus input editor |
 | `/` | Search messages |
-| `<CR>` | Reply to message / jump to original |
+| `<CR>` | Reply to message / jump to original with context |
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another group |
@@ -124,11 +124,11 @@ In the groups panel:
 - **Own typing broadcast** — sends `typing...` indicator while composing, cancels on close
 - **Cursor position persistence** — Esc saves cursor position, reopening restores it
 - **Multi-line input editor** — NuiPopup-based editor with placeholder, reply/edit mode indicators
-- **Jump to original message** — `Enter` on a reply reference navigates to the original message
-- **Search messages** — `/` to search, pick a result to jump to it
-- **Auto-load on scroll up** — loads older messages when reaching the top
+- **Context window** — `Enter` on a reply reference or picking a search result navigates to the message with surrounding context (~15 messages before and after), not a jump to raw message
+- **Search messages** — `/` to search, pick a result to jump to it with full context
+- **Bidirectional auto-load** — scroll past the top to load older messages, scroll past the bottom to load newer messages; both paginate from your current position, not from the chat's absolute newest
 - **Operation feedback** — success notifications for send/reply/edit/delete/recall/forward
-- **Async UI** — message operations don't block the UI or cause scroll jumps
+- **Async UI** — message operations, search, and scroll loading don't block the UI or cause scroll jumps
 - **Startup feedback** — immediate "Starting server..." notification before blocking operations
 - **Reply/Edit target highlight** — target message is highlighted with "● Replying" / "● Editing" indicator
 - **Read-only message window** — main chat buffer is not modifiable
