@@ -6,6 +6,7 @@ local http_port = 8080
 M.http_port = http_port
 local ws_port = 8081
 local server_job = nil
+local server_pid = nil
 local cached_groups = nil
 
 local function base_url() return 'http://localhost:' .. http_port end
@@ -109,8 +110,6 @@ function M.start_server()
   local status = check_port()
   if status == 'ready' then return true end
   if status ~= 'ours' then
-    vim.fn.system({ 'sh', '-c', 'pkill -f "telegram.*src/server\\.js" 2>/dev/null; true' })
-    vim.wait(20, function() return false end, 10)
     status = check_port()
   end
   while status == 'other' do
@@ -163,10 +162,15 @@ function M.start_server()
     vim.notify('[tg] Failed to start server', vim.log.levels.ERROR)
     return false
   end
+  server_pid = vim.fn.jobpid(server_job)
   return server_wait_reachable()
 end
 
 function M.stop_server()
+  if server_pid then
+    vim.fn.system({ 'sh', '-c', 'kill ' .. server_pid .. ' 2>/dev/null; true' })
+    server_pid = nil
+  end
   if server_job then
     vim.fn.jobstop(server_job)
     server_job = nil
