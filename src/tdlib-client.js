@@ -310,6 +310,7 @@ class TelegramLSPClient {
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        if (sg.status._ === 'chatMemberStatusLeft' || sg.status._ === 'chatMemberStatusBanned') return null;
         group.memberCount = sg.member_count;
         if (sg.status._ === 'chatMemberStatusCreator') {
           group.owner = await this._resolveSender(sg.status.member_id);
@@ -318,6 +319,7 @@ class TelegramLSPClient {
         group.description = info.description;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        if (bg.status._ === 'chatMemberStatusLeft' || bg.status._ === 'chatMemberStatusBanned' || !bg.is_active) return null;
         group.memberCount = bg.member_count;
         if (bg.status._ === 'chatMemberStatusCreator') {
           group.owner = await this._resolveSender(bg.status.member_id);
@@ -402,6 +404,7 @@ class TelegramLSPClient {
     while (true) {
       const result = await this.client.invoke({
         _: 'getChats',
+        chat_list: { _: 'chatListMain' },
         offset_order: offsetOrder,
         offset_chat_id: offsetChatId,
         limit,
@@ -411,6 +414,10 @@ class TelegramLSPClient {
 
       for (const id of chatIds) {
         const chat = await this.client.invoke({ _: 'getChat', chat_id: id });
+        const inMainList = (chat.positions || []).some(
+          p => p.list && p.list._ === 'chatListMain'
+        );
+        if (!inMainList) continue;
         this._chats.set(id, chat);
         allChats.push(chat);
       }
@@ -430,7 +437,8 @@ class TelegramLSPClient {
       if (t !== 'chatTypeSupergroup') return false;
       return !c.type.is_channel;
     });
-    return Promise.all(groups.map(g => this._enrichGroup(g)));
+    const enriched = await Promise.all(groups.map(g => this._enrichGroup(g)));
+    return enriched.filter(Boolean);
   }
 
   async sendMessage(chatId, text, replyTo) {
