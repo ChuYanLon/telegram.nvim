@@ -459,8 +459,8 @@ local function setup_msg_keymaps()
     M.refresh_messages()
     if #state.messages > 0 then
       local total = 1
-      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
-      pcall(vim.api.nvim_win_set_cursor, state.msg_popup.winid, { total - 1, 0 })
+      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) + 1 end
+      pcall(vim.api.nvim_win_set_cursor, state.msg_popup.winid, { total - 2, 0 })
     end
   end, { buffer = buf })
   vim.keymap.set('n', '/', function()
@@ -727,8 +727,8 @@ function M.open_chat(chat_id, chat_title)
       M.jump_to_message(restore)
     elseif #state.messages > 0 then
       local total = 1
-      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) end
-      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
+      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) + 1 end
+      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
     end
   end)
 
@@ -786,7 +786,7 @@ function M.message_at_cursor()
     if cursor_line >= line and cursor_line < line + n then
       return idx
     end
-    line = line + n
+    line = line + n + 1
   end
   return nil
 end
@@ -802,7 +802,7 @@ function M.jump_to_message(target_id)
     for i, m in ipairs(state.messages) do
       if m.id == target_id then
         local line = 1
-        for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) end
+        for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) + 1 end
         return line
       end
     end
@@ -851,7 +851,7 @@ function M.load_older()
         if not seen[new_msgs[i].id] then
           seen[new_msgs[i].id] = true
           table.insert(state.messages, 1, new_msgs[i])
-          new_lines = new_lines + #fmt_msg(new_msgs[i])
+          new_lines = new_lines + #fmt_msg(new_msgs[i]) + 1
         end
       end
       if state.chat_id ~= chat_id then state.loading = false; return end
