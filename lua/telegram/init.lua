@@ -158,6 +158,10 @@ function M.list_groups(force_picker)
 				ui.refresh_messages()
 				return
 			end
+			if #groups > 0 then
+				ui.open_chat(groups[1].id, groups[1].title)
+				return
+			end
 		end
 		local items = {}
 		for _, g in ipairs(groups) do

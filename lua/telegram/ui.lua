@@ -30,6 +30,8 @@ local state = {
   groups = {},
   group_ids = {},
   group_cursor = 1,
+  group_offset = 1,
+  group_win_size = 20,
 
   input_mode = 'send',
   reply_to = nil,
@@ -155,7 +157,7 @@ local function apply_group_highlights()
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
     if not text then break end
-    if line + 1 == state.group_cursor then
+    if line + 1 == state.group_cursor - state.group_offset + 1 then
       vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgBorder', line, 0, -1)
     end
     local ds, de = text:find('\xE2\x97\x8F')
@@ -163,7 +165,8 @@ local function apply_group_highlights()
       vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgKey', line, ds - 1, de)
     end
   end
-  pcall(vim.api.nvim_win_set_cursor, win, { state.group_cursor, 0 })
+  local cursor_line = state.group_cursor - state.group_offset + 1
+  pcall(vim.api.nvim_win_set_cursor, win, { cursor_line, 0 })
 end
 
 local function update_input_title()
@@ -263,6 +266,12 @@ function M.set_groups(groups)
   state.group_ids = new_ids
   if state.group_cursor > #new_ids then state.group_cursor = #new_ids end
   if state.group_cursor < 1 and #new_ids > 0 then state.group_cursor = 1 end
+  if state.group_popup and state.group_popup.winid then
+    local ok, h = pcall(vim.api.nvim_win_get_height, state.group_popup.winid)
+    if ok then state.group_win_size = math.max(h, 5) end
+  end
+  local half = math.floor(state.group_win_size / 2)
+  state.group_offset = math.max(1, math.min(state.group_cursor - half, math.max(1, #new_ids - state.group_win_size + 1)))
   if state.active_group_id and new_groups[state.active_group_id] then
     for i, id in ipairs(new_ids) do
       if id == state.active_group_id then
@@ -278,7 +287,10 @@ function M.render_groups()
   if not state.group_popup then return end
   local buf = state.group_popup.bufnr
   local lines = {}
-  for _, id in ipairs(state.group_ids) do
+  local total = #state.group_ids
+  local end_idx = math.min(state.group_offset + state.group_win_size - 1, total)
+  for i = state.group_offset, end_idx do
+    local id = state.group_ids[i]
     local g = state.groups[id]
     if g then
       local total = (g.member_count or 0) > 0 and tostring(g.member_count) or '?'
@@ -289,6 +301,9 @@ function M.render_groups()
       if #label > 36 then label = label:sub(1, 33) .. '…' end
       table.insert(lines, '  ' .. label)
     end
+  end
+  if total > end_idx then
+    table.insert(lines, '  ↓ ' .. (total - end_idx) .. ' more')
   end
   pcall(vim.api.nvim_buf_set_option, buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -632,8 +647,16 @@ local function setup_group_keymaps()
     local new = state.group_cursor + delta
     if new < 1 or new > #state.group_ids then return end
     state.group_cursor = new
-    pcall(vim.api.nvim_win_set_cursor, state.group_popup.winid, { new, 0 })
-    apply_group_highlights()
+    local rel = new - state.group_offset + 1
+    if rel > state.group_win_size then
+      state.group_offset = state.group_offset + (rel - state.group_win_size)
+      M.render_groups()
+    elseif rel < 1 then
+      state.group_offset = math.max(1, state.group_offset + rel - 1)
+      M.render_groups()
+    else
+      apply_group_highlights()
+    end
   end
 
   vim.keymap.set('n', 'j', function() move_group_cursor(1) end, { buffer = buf, nowait = true })
@@ -732,7 +755,7 @@ function M.open_chat(chat_id, chat_title)
         NuiLayout.Box(state.msg_popup, { grow = 1 }),
         NuiLayout.Box(state.input_popup, { size = { height = 6 } }),
       }, { dir = 'col', grow = 1 }),
-      NuiLayout.Box(state.group_popup, { size = { width = 36 } }),
+      NuiLayout.Box(state.group_popup, { size = { width = 36, height = '100%' } }),
     }, { dir = 'row' })
   )
 
@@ -751,6 +774,11 @@ function M.open_chat(chat_id, chat_title)
   server.clear_groups_cache()
   vim.defer_fn(function()
     if not state.chat_id then return end
+    if state.group_popup and state.group_popup.winid then
+      local ok, h = pcall(vim.api.nvim_win_get_height, state.group_popup.winid)
+      if ok then state.group_win_size = math.max(h, 5) end
+    end
+    M.render_groups()
     local chat_data = server.get_chat(state.chat_id)
     if chat_data and state.groups[state.chat_id] then
       state.groups[state.chat_id].unread_count = chat_data.unreadCount or 0
@@ -758,7 +786,6 @@ function M.open_chat(chat_id, chat_title)
     end
   end, 50)
   update_input_title()
-  M.render_groups()
   local restore = state.saved_cursors[state.chat_id]
   if restore then
     state.saved_cursors[state.chat_id] = nil
