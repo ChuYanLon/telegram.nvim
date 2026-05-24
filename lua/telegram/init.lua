@@ -24,6 +24,27 @@ local M = {}
 
 local initialized = false
 
+local notify_queue = {}
+local notify_timer_id = nil
+
+local function flush_notify()
+	if #notify_queue == 0 then return end
+	local lines = table.concat(notify_queue, '\n')
+	notify_queue = {}
+	notify_timer_id = nil
+	vim.notify(lines, vim.log.levels.INFO, { title = 'tg' })
+end
+
+local function queue_notify(preview)
+	table.insert(notify_queue, preview)
+	if not notify_timer_id then
+		notify_timer_id = vim.fn.timer_start(500, function()
+			notify_timer_id = nil
+			flush_notify()
+		end, { ["repeat"] = 1 })
+	end
+end
+
 ---@param v boolean
 function M.set_initialized(v)
 	initialized = v
@@ -34,39 +55,34 @@ M.setup = config.setup
 local function finish_init()
 	ws.ws_start(function(msg)
 		if msg.event == "newMessage" then
-			local state = ui.state
-			if state.chat_id and msg.chat and msg.chat.id == state.chat_id then
-				vim.schedule(function()
-					if
-						not state.buf
-						or not state.win
-						or not vim.api.nvim_buf_is_valid(state.buf)
-						or not vim.api.nvim_win_is_valid(state.win)
-					then
+			vim.schedule(function()
+				local st = ui.state
+				local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
+				local sender = msg.sender and msg.sender.name or '?'
+				local text = (msg.text or ''):gsub('\n', ' '):sub(1, 50)
+
+				if is_current then
+					if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
 						return
 					end
-					local total_before = vim.api.nvim_buf_line_count(state.buf)
-					local cur = vim.api.nvim_win_get_cursor(state.win)
-				local at_bottom = cur[1] >= total_before - 1
-				if not at_bottom then
-					state.unread = state.unread + 1
-					if state.groups[state.chat_id] then
-						state.groups[state.chat_id].unread_count = state.unread
-						ui.render_groups()
+					local total_before = vim.api.nvim_buf_line_count(st.buf)
+					local cur = vim.api.nvim_win_get_cursor(st.win)
+					local at_bottom = cur[1] >= total_before - 1
+					if not at_bottom then
+						st.unread = st.unread + 1
+						if st.groups[st.chat_id] then
+							st.groups[st.chat_id].unread_count = st.unread
+							ui.render_groups()
+						end
+						queue_notify(sender .. ': ' .. text)
 					end
-				end
 					local ts = os.date("%m-%d %H:%M", msg.date)
-					local preview = "["
-						.. ts
-						.. "] "
-						.. (msg.sender and msg.sender.name or "?")
-						.. ": "
-						.. (msg.text or "")
-					state.last_msg = preview:sub(1, 60)
+					local preview = "[" .. ts .. "] " .. (msg.sender and msg.sender.name or "?") .. ": " .. (msg.text or "")
+					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
 					local mid = msg.id or (os.time() .. math.random())
 					local function dup()
-						for _, m in ipairs(state.messages) do
+						for _, m in ipairs(st.messages) do
 							if m.id == mid then return true end
 							if msg.own and m.own and m.text == msg.text and math.abs(m.date - msg.date) <= 2 then
 								return true
@@ -74,35 +90,19 @@ local function finish_init()
 						end
 					end
 					if dup() then return end
-					table.insert(state.messages, {
-						id = mid,
-						type = msg.type,
-						date = msg.date,
-						sender = msg.sender,
-						text = msg.text,
-						own = msg.own,
-						replyTo = msg.replyTo,
-					})
+					table.insert(st.messages, { id = mid, type = msg.type, date = msg.date, sender = msg.sender, text = msg.text, own = msg.own, replyTo = msg.replyTo })
 					ui.render()
 					if at_bottom then
-						pcall(
-							vim.api.nvim_win_set_cursor,
-							state.win,
-							{ vim.api.nvim_buf_line_count(state.buf) - 1, cur[2] }
-						)
+						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
 					end
-					state.exhausted = false
-				state.exhausted_forward = false
-				end)
-			else
-				vim.schedule(function()
-					ui.update_group_last_msg(
-						msg.chat and msg.chat.id,
-						msg.sender and msg.sender.name,
-						msg.text and msg.text:sub(1, 60) or ""
-					)
-				end)
-			end
+					st.exhausted = false
+					st.exhausted_forward = false
+				else
+					local group_title = msg.chat and msg.chat.title or '?'
+					ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
+					queue_notify('[' .. group_title .. '] ' .. sender .. ': ' .. text)
+				end
+			end)
 		elseif msg.event == "userAction" then
 			local state = ui.state
 			if state.chat_id and msg.chat_id == state.chat_id then
