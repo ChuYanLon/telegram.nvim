@@ -502,6 +502,9 @@ local function setup_msg_keymaps()
   for _, k in ipairs(no_insert) do
     pcall(vim.keymap.set, 'n', k, '<Nop>', { buffer = buf, nowait = true })
   end
+  vim.keymap.set('x', 'y', '"+y', { buffer = buf })
+  vim.keymap.set('x', 'Y', '"+Y', { buffer = buf })
+  vim.keymap.set('x', '<Esc>', '<Esc>', { buffer = buf })
   vim.keymap.set('n', 'r', function()
     if state.unread > 0 then state.unread = 0 end
     M.refresh_messages()
