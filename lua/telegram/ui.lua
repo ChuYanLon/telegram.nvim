@@ -35,6 +35,8 @@ local state = {
   reply_to = nil,
   edit_target = nil,
   esc_count = 0,
+  loading_newer = false,
+  exhausted_forward = false,
 }
 
 M.state = state
@@ -52,6 +54,18 @@ end
 ---@return string[]
 local function fmt_msg(msg)
   return render_msg(msg)
+end
+
+---@param target_id any
+---@return integer|nil
+local function line_of(target_id)
+  for i, m in ipairs(state.messages) do
+    if m.id == target_id then
+      local line = 1
+      for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) + 1 end
+      return line
+    end
+  end
 end
 
 local action_descriptions = {
@@ -725,17 +739,19 @@ function M.open_chat(chat_id, chat_title)
   end, 50)
   update_input_title()
   M.render_groups()
-  M.refresh_messages(function()
-    local restore = state.saved_cursors[state.chat_id]
-    if restore then
-      state.saved_cursors[state.chat_id] = nil
-      M.jump_to_message(restore)
-    elseif #state.messages > 0 then
-      local total = 1
-      for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) + 1 end
-      pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
-    end
-  end)
+  local restore = state.saved_cursors[state.chat_id]
+  if restore then
+    state.saved_cursors[state.chat_id] = nil
+    M.jump_to_message(restore)
+  else
+    M.refresh_messages(function()
+      if #state.messages > 0 then
+        local total = 1
+        for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) + 1 end
+        pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
+      end
+    end)
+  end
 
   vim.api.nvim_create_autocmd('CursorMoved', {
     group = vim.api.nvim_create_augroup('TgChatScroll', { clear = true }),
@@ -743,11 +759,15 @@ function M.open_chat(chat_id, chat_title)
     callback = function()
       if not state.msg_popup or not vim.api.nvim_win_is_valid(state.msg_popup.winid) then return end
       if vim.api.nvim_get_current_win() ~= state.msg_popup.winid then return end
-      if state.unread > 0 and vim.api.nvim_win_get_cursor(state.msg_popup.winid)[1] >= vim.api.nvim_buf_line_count(state.buf) - 1 then
+      local cursor_line = vim.api.nvim_win_get_cursor(state.msg_popup.winid)[1]
+      local total_lines = vim.api.nvim_buf_line_count(state.buf)
+      if state.unread > 0 and cursor_line >= total_lines - 1 then
         state.unread = 0
       end
-      if vim.api.nvim_win_get_cursor(state.msg_popup.winid)[1] <= 1 and not state.exhausted then
+      if cursor_line <= 1 and not state.exhausted then
         M.load_older()
+      elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
+        M.load_newer()
       end
     end,
   })
@@ -776,6 +796,7 @@ function M.close_chat()
   state.messages = {}
   state.loading = false
   state.exhausted = false
+  state.exhausted_forward = false
   state.online_count = nil
   state.typing_users = {}
   state.chat_id = nil
@@ -802,39 +823,32 @@ function M.curr_msg()
   return i and state.messages[i]
 end
 
-function M.jump_to_message(target_id)
-  local function line_of()
-    for i, m in ipairs(state.messages) do
-      if m.id == target_id then
-        local line = 1
-        for j = 1, i - 1 do line = line + #fmt_msg(state.messages[j]) + 1 end
-        return line
-      end
-    end
-  end
-  local l = line_of()
-  if not l then
-    local ctx = server.get_messages(state.chat_id, 100, target_id)
-    if ctx and ctx.messages then
-      local oldest = state.messages[1] and state.messages[1].id or 0
-      for _, m in ipairs(ctx.messages) do
-        if m.id < oldest then table.insert(state.messages, 1, m); oldest = m.id end
-      end
-    end
-    local single = server.get_message(state.chat_id, target_id)
-    if single then
-      local seen = {}
-      for _, m in ipairs(state.messages) do seen[m.id] = true end
-      if not seen[target_id] then table.insert(state.messages, 1, single) end
-    end
-    l = line_of()
-  end
+function M.jump_to_message(target_id, callback)
+  local l = line_of(target_id)
   if l then
-    render()
     pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-    return true
+    if callback then callback(true) end
+    return
   end
-  return false
+  state.messages = {}
+  state.exhausted = false
+  state.exhausted_forward = false
+  if state.msg_popup and state.msg_popup.border then
+    state.msg_popup.border:set_text('top', ' ⏳ Loading... ')
+  end
+  server.get_messages_around_async(state.chat_id, target_id, 11, function(data)
+    if not state.chat_id then return end
+    state.messages = data.messages or {}
+    render()
+    local l = line_of(target_id)
+    if l then
+      pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+    end
+    if callback then callback(true) end
+  end, function()
+    vim.notify('[tg] Failed to load message context', vim.log.levels.ERROR)
+    if callback then callback(false) end
+  end)
 end
 
 function M.load_older()
@@ -870,10 +884,37 @@ function M.load_older()
   )
 end
 
+function M.load_newer()
+  if state.loading_newer or state.exhausted_forward or #state.messages == 0 then return end
+  state.loading_newer = true
+  local chat_id = state.chat_id
+  local newest_id = state.messages[#state.messages].id
+  server.get_messages_after_async(chat_id, newest_id, server.DEFAULT_LIMIT,
+    function(data)
+      if state.chat_id ~= chat_id then state.loading_newer = false; return end
+      local new_msgs = data.messages or {}
+      if #new_msgs == 0 then
+        state.exhausted_forward = true
+        state.loading_newer = false
+        return
+      end
+      for _, m in ipairs(new_msgs) do
+        table.insert(state.messages, m)
+      end
+      if #new_msgs > 0 then
+        render()
+      end
+      state.loading_newer = false
+    end,
+    function() state.loading_newer = false end
+  )
+end
+
 function M.refresh_messages(on_complete)
   if not state.msg_popup then return end
   state.loading = false
   state.exhausted = false
+  state.exhausted_forward = false
   local chat_id = state.chat_id
   server.get_messages_async(chat_id, 10, nil,
     function(data)

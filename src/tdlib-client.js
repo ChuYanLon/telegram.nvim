@@ -599,6 +599,52 @@ class TelegramLSPClient {
     };
   }
 
+  async getMessagesAfter(chatId, afterId, limit = 50) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'getChatHistory',
+      chat_id: chatId,
+      from_message_id: 0,
+      offset: 0,
+      limit: limit + 30,
+      only_local: false,
+    });
+    const msgs = (await Promise.all(
+      (result.messages || []).map(m => this._formatMessage(m))
+    )).filter(Boolean);
+    const newer = msgs.filter(m => m.id > afterId).reverse().slice(0, limit);
+    return { messages: newer };
+  }
+
+  async getMessagesAround(chatId, messageId, limit = 11) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const half = Math.floor(limit / 2);
+
+    let target = null;
+    try {
+      target = await this.getMessage(chatId, messageId);
+    } catch {}
+    if (!target) return { messages: [] };
+
+    let olderResult = { messages: [] };
+    try {
+      olderResult = await this.client.invoke({
+        _: 'getChatHistory',
+        chat_id: chatId,
+        from_message_id: messageId,
+        offset: -1,
+        limit: half + 1,
+        only_local: false,
+      });
+    } catch {}
+
+    const older = (await Promise.all(
+      (olderResult.messages || []).map(m => this._formatMessage(m))
+    )).filter(Boolean).reverse();
+
+    return { messages: [...older, target], targetIndex: older.length };
+  }
+
 }
 
 module.exports = TelegramLSPClient;

@@ -140,20 +140,39 @@ app.get('/searchMessages', async (req, res) => {
 
 app.get('/messages', async (req, res) => {
   try {
-    const { chatId, limit, before } = req.query;
+    const { chatId, limit, before, after } = req.query;
     if (!chatId) {
       return res.status(400).json({ error: 'chatId is required' });
     }
     const t0 = Date.now();
-    const result = await tgClient.getMessages(
-      Number(chatId),
-      limit ? Number(limit) : 50,
-      before ? Number(before) : undefined
-    );
+    let result;
+    if (after) {
+      result = await tgClient.getMessagesAfter(Number(chatId), Number(after), limit ? Number(limit) : 50);
+    } else {
+      result = await tgClient.getMessages(
+        Number(chatId),
+        limit ? Number(limit) : 50,
+        before ? Number(before) : undefined
+      );
+    }
     const totalMs = Date.now() - t0;
     result._timing = { total_ms: totalMs, tdlib_ms: result._tdlib_ms, format_ms: result._format_ms };
     res.json(result);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/messages/around', async (req, res) => {
+  try {
+    const { chatId, messageId, limit } = req.query;
+    if (!chatId || !messageId) {
+      return res.status(400).json({ error: 'chatId and messageId are required' });
+    }
+    const result = await tgClient.getMessagesAround(Number(chatId), Number(messageId), limit ? Number(limit) : 11);
+    res.json(result);
+  } catch (err) {
+    console.error('/messages/around error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

@@ -282,6 +282,48 @@ function M.get_messages_async(chat_id, limit, before, on_ok, on_err)
   })
 end
 
+function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err)
+  local url = base_url() .. '/messages?chatId=' .. chat_id .. '&limit=' .. (limit or M.DEFAULT_LIMIT) .. '&after=' .. after_id
+  local stdout = {}
+  vim.fn.jobstart({ 'curl', '-s', '--connect-timeout', '3', '--max-time', '15', '--fail-with-body', url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      local ok, data = pcall(vim.json.decode, table.concat(stdout))
+      if not ok or not data then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      if on_ok then vim.schedule(function() on_ok(data) end) end
+    end,
+  })
+end
+
+function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
+  local url = base_url() .. '/messages/around?chatId=' .. chat_id .. '&messageId=' .. message_id .. '&limit=' .. (limit or 11)
+  local stdout = {}
+  vim.fn.jobstart({ 'curl', '-s', '--connect-timeout', '3', '--max-time', '15', '--fail-with-body', url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      local ok, data = pcall(vim.json.decode, table.concat(stdout))
+      if not ok or not data then
+        if on_err then vim.schedule(on_err) end
+        return
+      end
+      if on_ok then vim.schedule(function() on_ok(data) end) end
+    end,
+  })
+end
+
 ---@param chat_id any
 ---@param text string
 ---@param replyTo any|nil

@@ -84,6 +84,7 @@ local function finish_init()
 						)
 					end
 					state.exhausted = false
+				state.exhausted_forward = false
 				end)
 			else
 				vim.schedule(function()
