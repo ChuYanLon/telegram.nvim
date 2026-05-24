@@ -465,47 +465,26 @@ local function setup_msg_keymaps()
   end, { buffer = buf })
   vim.keymap.set('n', '/', function()
     if not state.msg_popup then return end
-    local input = NuiPopup({
-      relative = 'win',
-      winid = state.msg_popup.winid,
-      position = { row = '50%', col = '50%' },
-      size = { width = 50, height = 3 },
-      border = { style = 'rounded', text = { top = ' Search ', top_align = 'center' } },
-    buf_options = { buftype = 'nofile', bufhidden = 'wipe', modifiable = false },
-      win_options = { winhighlight = 'Normal:TgNoBg,FloatBorder:TgBorder' },
-      enter = true,
-      focusable = true,
-    })
-    input:mount()
-    vim.api.nvim_buf_set_lines(input.bufnr, 0, -1, false, { '' })
-    vim.cmd('startinsert!')
-    vim.keymap.set('n', '<Esc>', function()
-      input:unmount()
-    end, { buffer = input.bufnr, nowait = true })
-    vim.keymap.set('i', '<CR>', function()
-      local lines = vim.api.nvim_buf_get_lines(input.bufnr, 0, -1, false)
-      local text = table.concat(lines, '\n'):gsub('[\n ]+$', '')
-      input:unmount()
-      if not text or #text == 0 then return end
-      local data = server.search_messages(state.chat_id, text)
-      if not data or not data.messages or #data.messages == 0 then
-        vim.notify('[tg] No results for "' .. text .. '"', vim.log.levels.INFO)
-        return
-      end
-      local items = {}
-      for _, m in ipairs(data.messages) do
-        local name = m.sender and m.sender.name or '?'
-        local preview = (m.text or ''):gsub('\n', ' '):sub(1, 80)
-        table.insert(items, { msg = m, label = name .. ': ' .. preview })
-      end
-      vim.ui.select(items, {
-        prompt = 'Search: ' .. text,
-        format_item = function(item) return item.label end,
-      }, function(choice)
-        if not choice then return end
-        M.jump_to_message(choice.msg.id)
-      end)
-    end, { buffer = input.bufnr, nowait = true })
+    local text = vim.fn.input('Search: ')
+    if not text or #text == 0 then return end
+    local data = server.search_messages(state.chat_id, text)
+    if not data or not data.messages or #data.messages == 0 then
+      vim.notify('[tg] No results for "' .. text .. '"', vim.log.levels.INFO)
+      return
+    end
+    local items = {}
+    for _, m in ipairs(data.messages) do
+      local name = m.sender and m.sender.name or '?'
+      local preview = (m.text or ''):gsub('\n', ' '):sub(1, 80)
+      table.insert(items, { id = m.id, label = name .. ': ' .. preview })
+    end
+    vim.ui.select(items, {
+      prompt = 'Search: ' .. text,
+      format_item = function(item) return item.label end,
+    }, function(choice)
+      if not choice or type(choice) ~= 'table' then return end
+      M.jump_to_message(choice.id)
+    end)
   end, { buffer = buf })
   vim.keymap.set('n', '<CR>', function()
     if state.unread > 0 then state.unread = 0 end
@@ -577,10 +556,8 @@ local function setup_msg_keymaps()
       prompt = 'Forward to:',
       format_item = function(item) return item.label end,
     }, function(choice)
-      if choice then
-        local ok = server.forward_messages(state.chat_id, target.id, choice.id)
-        if ok then vim.notify('[tg] Forwarded to ' .. choice.label, vim.log.levels.INFO) end
-      end
+      if not choice or type(choice) ~= 'table' then return end
+      M.jump_to_message(choice.id)
     end)
   end, { buffer = buf })
 end
