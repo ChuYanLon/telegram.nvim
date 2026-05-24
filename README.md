@@ -12,8 +12,9 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 | **Group details** | <img width="400" src="https://github.com/user-attachments/assets/a93336ce-f847-4331-973c-02e4a096eeb5" /> |
 | **Edit message** | <img width="400" src="https://github.com/user-attachments/assets/f0fdf32e-6e8b-4d77-9082-c5b07f9e365d" /> |
 | **Reply / restore message** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
-| **Recall / delete message** | <img width="400" src="https://github.com/user-attachments/assets/2b482549-d983-4207-ae10-a5e265b71d6e" /> |
+| **Recall / delete message** | <img width="400" src="https://github.com/user-attachments/assets/5c4f623e-295b-451c-a186-d51622a6feae" /> |
 | **Forward message** | <img width="400" src="https://github.com/user-attachments/assets/eabcbe42-69d1-4716-946e-7a34155331a9" /> |
+| **New message indicator** | <img width="400" src="https://github.com/user-attachments/assets/eb363ec8-d908-4c24-9d79-8358656f3bc4" /> |
 | **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
 
 ## Requirements

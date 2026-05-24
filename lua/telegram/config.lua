@@ -35,6 +35,7 @@ function M.setup(opts)
   vim.api.nvim_set_hl(0, 'TgReplyBg', { bg = '#2e3a4e', default = true })
   vim.api.nvim_set_hl(0, 'TgReplyTarget', { bg = '#2d4a3e', default = true })
   vim.api.nvim_set_hl(0, 'TgEditTarget', { bg = '#4a3e2d', default = true })
+  vim.api.nvim_set_hl(0, 'TgDeleteTarget', { bg = '#4e2d2d', default = true })
   vim.api.nvim_set_hl(0, 'TgNoBg', { fg = 'NONE', bg = 'NONE', default = true })
   local bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name('FloatBorder') }) or {}).fg or '#6c6c6c'
   vim.api.nvim_set_hl(0, 'TgBorder', { fg = bfg, bg = 'NONE', default = true })

@@ -34,6 +34,7 @@ local state = {
   input_mode = 'send',
   reply_to = nil,
   edit_target = nil,
+  delete_target = nil,
   esc_count = 0,
   sending = false,
   loading_newer = false,
@@ -121,11 +122,11 @@ local function apply_highlights()
       end
     end
   end
-  local target_id = state.reply_to or (state.edit_target and state.edit_target.id)
-  local mode = state.reply_to and 'reply' or (state.edit_target and 'edit')
+  local target_id = state.reply_to or (state.edit_target and state.edit_target.id) or (state.delete_target and state.delete_target.id)
+  local mode = state.reply_to and 'reply' or (state.edit_target and 'edit') or (state.delete_target and 'delete')
   if not target_id or not mode then return end
-  local hl = mode == 'reply' and 'TgReplyTarget' or 'TgEditTarget'
-  local label = mode == 'reply' and '  \xE2\x97\x8F Replying' or '  \xE2\x97\x8F Editing'
+  local hl = mode == 'reply' and 'TgReplyTarget' or mode == 'edit' and 'TgEditTarget' or 'TgDeleteTarget'
+  local label = mode == 'reply' and '  \xE2\x97\x8F Replying' or mode == 'edit' and '  \xE2\x97\x8F Editing' or '  \xE2\x97\x8F Deleting'
   local line = 1
   for _, m in ipairs(state.messages) do
     local n = #fmt_msg(m)
@@ -574,11 +575,17 @@ local function setup_msg_keymaps()
   vim.keymap.set('n', 'd', function()
     local target = M.curr_msg()
     if not target or not target.id then return end
+    state.delete_target = target
+    apply_highlights()
     local choices = target.own and { 'Revoke (for everyone)', 'Delete (for me)', 'Cancel' } or { 'Delete (for me)', 'Cancel' }
     vim.ui.select(choices, {
       prompt = 'Delete message?',
     }, function(choice)
-      if not choice or choice == 'Cancel' then return end
+      if not choice or choice == 'Cancel' then
+        state.delete_target = nil
+        apply_highlights()
+        return
+      end
       local revoke = (choice == 'Revoke (for everyone)')
       if server.delete_message(state.chat_id, target.id, revoke) then
         for i = #state.messages, 1, -1 do
@@ -591,6 +598,7 @@ local function setup_msg_keymaps()
         end)
         vim.notify('[tg] Message ' .. (revoke and 'revoked' or 'deleted'), vim.log.levels.INFO)
       end
+      state.delete_target = nil
     end)
   end, { buffer = buf })
   vim.keymap.set('n', 'f', function()
