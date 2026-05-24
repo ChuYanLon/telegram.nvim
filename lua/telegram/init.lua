@@ -121,6 +121,58 @@ end
 ---@param force_picker boolean|nil
 function M.list_groups(force_picker)
 	force_picker = force_picker == true
+	local function show_groups(f_picker)
+		local groups = server.get_groups()
+		if not groups then
+			vim.notify("[tg] No groups found", vim.log.levels.WARN)
+			return
+		end
+		if #groups == 0 then
+			vim.notify("[tg] Syncing chats, please wait...", vim.log.levels.INFO)
+			local ok = vim.wait(15000, function()
+				vim.wait(1000)
+				groups = server.get_groups()
+				return groups and #groups > 0
+			end, 0, true)
+			if not ok or not groups or #groups == 0 then
+				vim.notify("[tg] No groups found", vim.log.levels.WARN)
+				return
+			end
+		end
+		ui.set_groups(groups)
+		if not f_picker then
+			if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
+				ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
+				return
+			end
+			if ui.state.layout and ui.state.layout._.mounted then
+				ui.refresh_messages()
+				return
+			end
+		end
+		local items = {}
+		for _, g in ipairs(groups) do
+			local desc = ""
+			if g.lastMessage then
+				local s = g.lastMessage.sender and g.lastMessage.sender.name or "?"
+				desc = s .. ": " .. (g.lastMessage.text:len() > 60 and g.lastMessage.text:sub(1, 60) .. "…" or g.lastMessage.text)
+			end
+			local member_info = g.memberCount and (" (" .. g.memberCount .. " members)") or ""
+			table.insert(items, { id = g.id, label = g.title .. member_info, detail = desc })
+		end
+		vim.ui.select(items, {
+			prompt = "Select a group:",
+			format_item = function(item)
+				return item.label
+			end,
+		}, function(choice)
+			if choice then
+				ui.close_chat()
+				ui.open_chat(choice.id, choice.label)
+			end
+		end)
+	end
+
 	if not initialized then
 		vim.notify("[tg] Starting server...", vim.log.levels.INFO)
 		vim.defer_fn(function()
@@ -129,13 +181,13 @@ function M.list_groups(force_picker)
 			local health = server.server_health()
 			if health and health.ready == true then
 				finish_init()
-				vim.schedule(function() M.list_groups(force_picker) end)
+				show_groups(force_picker)
 			else
 				vim.notify("[tg] Waiting for auth...", vim.log.levels.INFO)
 				auth.auth_poll(function(success)
 					if success then
 						finish_init()
-						vim.schedule(function() M.list_groups(force_picker) end)
+						show_groups(force_picker)
 					else
 						server.stop_server()
 						local db = config.config.data_dir .. "/tdlib_db"
@@ -145,64 +197,16 @@ function M.list_groups(force_picker)
 					end
 				end)
 			end
-		end, 200)
+		end, 100)
 		return
 	end
-	local groups = server.get_groups()
-	if not groups then
-		vim.notify("[tg] No groups found", vim.log.levels.WARN)
-		return
-	end
-	if #groups == 0 then
-		vim.notify("[tg] Syncing chats, please wait...", vim.log.levels.INFO)
-		local ok = vim.wait(15000, function()
-			vim.wait(1000)
-			groups = server.get_groups()
-			return groups and #groups > 0
-		end, 0, true)
-		if not ok or not groups or #groups == 0 then
-			vim.notify("[tg] No groups found", vim.log.levels.WARN)
-			return
-		end
-	end
-	ui.set_groups(groups)
-	if not force_picker then
-		if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
-			ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-			return
-		end
-		if ui.state.layout and ui.state.layout._.mounted then
-			ui.refresh_messages()
-			return
-		end
-	end
-	local items = {}
-	for _, g in ipairs(groups) do
-		local desc = ""
-		if g.lastMessage then
-			local s = g.lastMessage.sender and g.lastMessage.sender.name or "?"
-			desc = s
-				.. ": "
-				.. (g.lastMessage.text:len() > 60 and g.lastMessage.text:sub(1, 60) .. "…" or g.lastMessage.text)
-		end
-		local member_info = g.memberCount and (" (" .. g.memberCount .. " members)") or ""
-		table.insert(items, { id = g.id, label = g.title .. member_info, detail = desc })
-	end
-	vim.ui.select(items, {
-		prompt = "Select a group:",
-		format_item = function(item)
-			return item.label
-		end,
-	}, function(choice)
-		if choice then
-			ui.close_chat()
-			ui.open_chat(choice.id, choice.label)
-		end
-	end)
+	show_groups(force_picker)
 end
 
 function M.logout()
 	vim.notify("[tg] Logging out and clearing auth data...", vim.log.levels.INFO)
+	ui.close_chat()
+	ui.state.last_chat = nil
 	server.stop_server()
 	local db_dir = config.config.data_dir .. "/tdlib_db"
 	local files_dir = config.config.data_dir .. "/tdlib_files"
