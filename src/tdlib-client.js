@@ -604,9 +604,9 @@ class TelegramLSPClient {
     const result = await this.client.invoke({
       _: 'getChatHistory',
       chat_id: chatId,
-      from_message_id: 0,
-      offset: 0,
-      limit: limit + 30,
+      from_message_id: afterId,
+      offset: -limit,
+      limit,
       only_local: false,
     });
     const msgs = (await Promise.all(
@@ -631,16 +631,16 @@ class TelegramLSPClient {
         _: 'getChatHistory',
         chat_id: chatId,
         from_message_id: messageId,
-        offset: -1,
+        offset: 0,
         limit: half + 1,
         only_local: false,
       }).catch(() => ({ messages: [] })),
       this.client.invoke({
         _: 'getChatHistory',
         chat_id: chatId,
-        from_message_id: 0,
-        offset: 0,
-        limit: half + 30,
+        from_message_id: messageId,
+        offset: -half,
+        limit: half,
         only_local: false,
       }).catch(() => ({ messages: [] })),
     ]);
