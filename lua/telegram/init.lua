@@ -61,11 +61,15 @@ local function finish_init()
 					state.last_msg = preview:sub(1, 60)
 					ui.update_title()
 					local mid = msg.id or (os.time() .. math.random())
-					for _, m in ipairs(state.messages) do
-						if m.id == mid then
-							return
+					local function dup()
+						for _, m in ipairs(state.messages) do
+							if m.id == mid then return true end
+							if msg.own and m.own and m.text == msg.text and m.date == msg.date then
+								return true
+							end
 						end
 					end
+					if dup() then return end
 					table.insert(state.messages, {
 						id = mid,
 						type = msg.type,

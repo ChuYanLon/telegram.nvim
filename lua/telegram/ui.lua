@@ -35,6 +35,7 @@ local state = {
   reply_to = nil,
   edit_target = nil,
   esc_count = 0,
+  sending = false,
   loading_newer = false,
   exhausted_forward = false,
 }
@@ -373,9 +374,10 @@ end
 M.show_help = show_help
 
 local function input_send()
-  if not state.editor then return end
+  if not state.editor or state.sending then return end
+  state.sending = true
   local text = state.editor:get_text()
-  if #text == 0 then return end
+  if #text == 0 then state.sending = false; return end
   if state.input_mode == 'edit' and state.edit_target then
     local target = state.edit_target
     if server.edit_message(state.chat_id, target.id, text) then
@@ -396,6 +398,7 @@ local function input_send()
   state.input_mode = 'send'
   state.reply_to = nil
   state.edit_target = nil
+  state.sending = false
   apply_highlights()
   update_input_border()
 end
