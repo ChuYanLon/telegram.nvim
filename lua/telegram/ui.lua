@@ -840,6 +840,7 @@ function M.jump_to_message(target_id, callback)
     if not state.chat_id then return end
     state.messages = data.messages or {}
     render()
+    update_input_title()
     local l = line_of(target_id)
     if l then
       pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
