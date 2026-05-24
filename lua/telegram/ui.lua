@@ -335,7 +335,7 @@ local function show_help()
     ' /        search history',
     ' <CR>     reply / jump to original',
     ' e        edit own message',
-    ' d        delete / recall own',
+    ' d        delete / revoke message',
     ' f        forward message',
     ' r        refresh',
     ' Esc Esc  close chat',
