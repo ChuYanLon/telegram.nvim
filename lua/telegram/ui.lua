@@ -72,11 +72,13 @@ local action_descriptions = {
 }
 
 local hl_ns = vim.api.nvim_create_namespace('TgChat')
+local target_ns = vim.api.nvim_create_namespace('TgTarget')
 
 local function apply_highlights()
   if not state.msg_popup then return end
   local buf = state.msg_popup.bufnr
   vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
+  vim.api.nvim_buf_clear_namespace(buf, target_ns, 0, -1)
   local total = vim.api.nvim_buf_line_count(buf)
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
@@ -103,6 +105,28 @@ local function apply_highlights()
         vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgSender', line, ss - 1, se)
       end
     end
+  end
+  local target_id = state.reply_to or (state.edit_target and state.edit_target.id)
+  local mode = state.reply_to and 'reply' or (state.edit_target and 'edit')
+  if not target_id or not mode then return end
+  local hl = mode == 'reply' and 'TgReplyTarget' or 'TgEditTarget'
+  local label = mode == 'reply' and '  \xE2\x97\x8F Replying' or '  \xE2\x97\x8F Editing'
+  local line = 1
+  for _, m in ipairs(state.messages) do
+    local n = #fmt_msg(m)
+    if m.id == target_id then
+      local start_line = line - 1
+      local end_line = line + n - 2
+      for l = start_line, end_line do
+        vim.api.nvim_buf_add_highlight(buf, hl_ns, hl, l, 0, -1)
+      end
+      local last = end_line >= start_line and end_line or start_line
+      vim.api.nvim_buf_set_extmark(buf, target_ns, last, 0, {
+        virt_lines = {{ { label, hl } }},
+      })
+      break
+    end
+    line = line + n + 1
   end
 end
 
@@ -358,6 +382,7 @@ local function input_send()
   state.input_mode = 'send'
   state.reply_to = nil
   state.edit_target = nil
+  apply_highlights()
   update_input_border()
 end
 
@@ -500,6 +525,7 @@ local function setup_msg_keymaps()
     end
     state.input_mode = 'reply'
     state.reply_to = target.id
+    apply_highlights()
     update_input_border()
     focus_input()
   end, { buffer = buf })
@@ -513,6 +539,7 @@ local function setup_msg_keymaps()
     end
     state.input_mode = 'edit'
     state.edit_target = target
+    apply_highlights()
     update_input_border()
     state.editor:set_text(target.text or '')
     state.editor:focus()
@@ -596,6 +623,7 @@ local function setup_input_keymaps()
       state.reply_to = nil
       state.edit_target = nil
       state.editor:clear()
+      apply_highlights()
       update_input_border()
       focus_msg()
     end
