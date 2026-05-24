@@ -23,7 +23,6 @@ function Editor.new(opts)
   self.popup = NuiPopup({
     enter = opts.enter == true,
     focusable = opts.focusable ~= false,
-    zindex = opts.zindex or 100,
     border = opts.border or default_border(),
     buf_options = vim.tbl_deep_extend('force', { buftype = 'nofile', bufhidden = 'wipe' }, opts.buf_options or {}),
     win_options = vim.tbl_deep_extend('force', default_win_opts(), opts.win_options or {}),

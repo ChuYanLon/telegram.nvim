@@ -654,7 +654,6 @@ function M.open_chat(chat_id, chat_title)
   state.msg_popup = NuiPopup({
     enter = true,
     focusable = true,
-    zindex = 100,
     border = {
       style = 'rounded',
       text = { top = '', top_align = 'center' },
@@ -674,7 +673,6 @@ function M.open_chat(chat_id, chat_title)
   state.group_popup = NuiPopup({
     enter = false,
     focusable = true,
-    zindex = 100,
     border = { style = 'rounded', text = { top = ' Groups ', top_align = 'center' } },
     buf_options = { buftype = 'nofile', bufhidden = 'wipe' },
     win_options = {
