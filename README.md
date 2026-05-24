@@ -92,10 +92,10 @@ Inside a chat window:
 | `<C-j>` | Focus input editor |
 | `<C-k>` | Focus message panel |
 | `i` | Focus input editor |
-| `/` | Search messages (opens search input → picker) |
+| `/` | Search messages |
 | `<CR>` | Reply to message / jump to original |
 | `e` | Edit own message at cursor |
-| `d` | Delete / recall message (with confirmation) |
+| `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another group |
 | `r` | Refresh and scroll to latest messages |
 | `Esc Esc` | Close chat (preserves cursor position) |
@@ -127,8 +127,10 @@ In the groups panel:
 - **Jump to original message** — `Enter` on a reply reference navigates to the original message
 - **Search messages** — `/` to search, pick a result to jump to it
 - **Auto-load on scroll up** — loads older messages when reaching the top
-- **Operation feedback** — success notifications for send/reply/edit/delete/recall
+- **Operation feedback** — success notifications for send/reply/edit/delete/recall/forward
 - **Async UI** — message operations don't block the UI or cause scroll jumps
+- **Startup feedback** — immediate "Starting server..." notification before blocking operations
+- **Reply/Edit target highlight** — target message is highlighted with "● Replying" / "● Editing" indicator
 - **Read-only message window** — main chat buffer is not modifiable
 
 ## Auth Flow
@@ -189,7 +191,7 @@ A: No. TDLib caches session state in `tdlib_db/`. Auth persists across restarts.
 A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` directories.
 
 **Q: Port conflict?**
-A: Default ports are 8080/8081. If occupied, the plugin auto-increments until it finds a free port.
+A: Default ports are 8080/8081. The plugin kills any leftover tg server process on the port before starting. If still occupied, it auto-increments until a free port is found. Server process is terminated on Neovim exit.
 
 ## Contributing
 
