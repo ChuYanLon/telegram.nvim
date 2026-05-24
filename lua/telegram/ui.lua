@@ -583,8 +583,10 @@ local function setup_msg_keymaps()
       prompt = 'Forward to:',
       format_item = function(item) return item.label end,
     }, function(choice)
-      if not choice or type(choice) ~= 'table' then return end
-      M.jump_to_message(choice.id)
+      if choice then
+        local ok = server.forward_messages(state.chat_id, target.id, choice.id)
+        if ok then vim.notify('[tg] Forwarded to ' .. choice.label, vim.log.levels.INFO) end
+      end
     end)
   end, { buffer = buf })
 end

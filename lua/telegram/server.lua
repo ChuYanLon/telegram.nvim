@@ -108,6 +108,11 @@ end
 function M.start_server()
   local status = check_port()
   if status == 'ready' then return true end
+  if status ~= 'ours' then
+    vim.fn.system({ 'sh', '-c', 'pkill -f "telegram.*src/server\\.js" 2>/dev/null; true' })
+    vim.wait(20, function() return false end, 10)
+    status = check_port()
+  end
   while status == 'other' do
     http_port = http_port + 2
     M.http_port = http_port
@@ -165,6 +170,7 @@ function M.stop_server()
   if server_job then
     vim.fn.jobstop(server_job)
     server_job = nil
+    vim.notify('[tg] Stopped', vim.log.levels.INFO)
   end
 end
 
