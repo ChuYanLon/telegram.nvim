@@ -89,6 +89,7 @@ ldconfig 2>/dev/null || true
 | `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
+| `:TgPr`       | Create a PR — select source/target branch, auto-fill title, optionally merge to `main` (admin only)                               |
 
 ## Neovim Keymaps
 
