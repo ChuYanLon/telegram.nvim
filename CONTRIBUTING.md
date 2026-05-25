@@ -36,7 +36,9 @@ pnpm install
 
 ## Making Changes
 
-1. Fork the repo and create a branch from `master`
+1. Fork the repo and create a branch from `dev` (e.g. `fix/login-crash`)
+2. Open a Pull Request **targeting the `dev` branch**, not `main`
+3. CI will run automatically on your PR
 2. Make your changes
 3. Test locally — run `pnpm start` to verify the backend starts
 4. Submit a pull request
