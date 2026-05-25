@@ -1,0 +1,8 @@
+# CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+
+*.lua @ChuYanLon
+*.js  @ChuYanLon
+
+/src/           @ChuYanLon
+/lua/           @ChuYanLon
