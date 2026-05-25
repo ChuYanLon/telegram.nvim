@@ -18,37 +18,18 @@ Use a prefix + short description when creating branches:
 1. Fork the repository
 2. Create a branch on your fork (e.g. `fix/login-crash`)
 3. Write code and commit
-4. Open a Pull Request targeting the `dev` branch
-5. Maintainer reviews and merges to `dev`
+4. Open a Pull Request targeting the `main` branch
+5. Maintainer reviews and merges
 
 ## 3. Your Development
 
-1. Work on the `dev` branch:
+1. Work directly on `main` or create a feature branch:
    ```
-   git checkout dev
+   git checkout -b feat/your-feature
    # write code...
    git add .
-   git commit -m 'fix: short description'
+   git commit -m 'feat: short description'
    git push
    ```
 
-2. Merge `dev` to `main`:
-   - Open https://github.com/ChuYanLon/telegram.nvim/compare/dev?expand=1
-   - Click "Create pull request"
-   - Write title and description
-   - Click "Create pull request"
-   - Wait for CI to pass (green checkmark ✓)
-   - Click "Merge pull request" → "Confirm merge"
-
-   Or use `:TgPr` inside Neovim (requires `gh` CLI).
-
-## 4. Notes
-
-- Never commit directly to `main`
-- Keep `dev` in sync with `main` after merges:
-  ```
-  git checkout dev
-  git pull --rebase origin main
-  git push
-  ```
-- This is handled automatically when using `:TgPr` to merge to `main`.
+2. Open a Pull Request targeting `main`.
