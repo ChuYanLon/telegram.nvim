@@ -29,7 +29,6 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 
 - [x] Login with phone number, verification code, and 2FA password
 - [x] Session persists across restarts (no re-login)
-- [x] Auth prompts are non-blocking — keep editing while waiting
 - [x] `:TgLogout` to clear auth and start fresh
 - [x] Group list with unread badges, virtual scrolling
 - [x] Open/close chats, switch between groups
@@ -55,8 +54,6 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
 - [x] `:TgIssue` — list, create branch, close, assign, open in browser
 - [x] Proxy support (SOCKS5 / HTTP) for restricted regions
-- [x] Port auto-increment if the default port is busy
-- [x] Server auto-stops when Neovim exits
 
 ### What doesn't work yet
 
