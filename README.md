@@ -53,6 +53,7 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
 - [x] `:TgIssue` — list, create branch, close, assign, open in browser
 - [x] Proxy support (SOCKS5 / HTTP) for restricted regions
+- [x] Service messages shown as readable text with prefix symbols
 
 ### What doesn't work yet
 
@@ -79,9 +80,21 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - [ ] **Adjustable layout** — panel sizes and position are fixed
 - [ ] **Dark/light theme adaptation** — colors are hardcoded
 
-### Message label tags
+### Service messages
 
-Since Neovim cannot render media or service messages natively, they are shown as tags:
+System messages (members added, group renamed, etc.) are rendered as readable text with a prefix symbol. The text color follows the `Comment` highlight group.
+
+| Prefix | Display | Example |
+|--------|---------|---------|
+| `+` | Member joined | `+ Kitty joined this group at 19:49:58 on May 09, 2026` |
+| `-` | Member left | `- Kitty left the group at ...` |
+| `~` | Group changed | `~ Kitty changed the group name to 'New Name' at ...` |
+| `*` | Message pinned | `* Kitty pinned a message at ...` |
+| `>` | Group/topic created | `> Kitty created this group at ...` |
+
+### Media labels
+
+Media messages that cannot be rendered natively are shown as tags:
 
 | Tag | Meaning |
 |-----|---------|
@@ -99,17 +112,6 @@ Since Neovim cannot render media or service messages natively, they are shown as
 | `[Dice]` | Dice rolled |
 | `[Game]` | Game played |
 | `[Call]` | Voice/video call |
-| `[Basic Group Created]` | Group created |
-| `[Members Added]` | New members added |
-| `[Member Removed]` | Member removed |
-| `[Joined by Link]` | Someone joined via invite link |
-| `[Join Request]` | Join request approved |
-| `[Group Renamed]` | Group name changed |
-| `[Photo Changed]` | Group photo changed |
-| `[Photo Removed]` | Group photo removed |
-| `[Message Pinned]` | A message was pinned |
-| `[Auto-delete Set]` | Auto-delete timer changed |
-| `[Topic Created]` | Forum topic created |
 
 ## Requirements
 
