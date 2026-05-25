@@ -89,7 +89,9 @@ ldconfig 2>/dev/null || true
 | `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
-| `:TgPr`       | Create a PR — select source/target branch, auto-fill title, optionally merge to `main` (admin only)                               |
+| `:TgPr`       | Create a PR — select source/target branch, auto-fill title, optionally merge directly (admin bypass for `main`)                   |
+
+> The server runs on a fixed port (8080). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
 ## Neovim Keymaps
 
@@ -142,8 +144,8 @@ In the groups panel:
 |----------|------|-------|----------|
 | Messaging | 7 | 14 | ████████░░░░░ 50% |
 | UI & Interaction | 16 | 21 | ████████████░░ 76% |
-| Infrastructure | 6 | 10 | ████████░░░░ 60% |
-| **Total** | **29** | **45** | █████████░░ 64% |
+| Infrastructure | 9 | 12 | ███████████░░ 75% |
+| **Total** | **32** | **47** | ██████████░░ 68% |
 
 ### Messaging
 
@@ -197,13 +199,15 @@ In the groups panel:
 | ✓ | **Auth flow** — phone → code → 2FA, async | ✅ Done |
 | ✓ | **Proxy support** — SOCKS5/HTTP for TDLib | ✅ Done |
 | ✓ | **Auto-detect libtdjson** — Linux/macOS/Windows | ✅ Done |
-| ✓ | **Port conflict handling** — auto-increment on conflict | ✅ Done |
 | ✓ | **Server lifecycle** — auto-start/stop with Neovim | ✅ Done |
+| ✓ | **Multi-instance** — share one server across Neovim instances | ✅ Done |
+| ✓ | **`:TgPr` command** — interactive PR creation and merge | ✅ Done |
+| ✓ | **Unit tests** — Vitest + FakeTdClient, no TDLib dependency | ✅ Done |
+| ✓ | **GitHub CI** — automated tests on push/PR | ✅ Done |
 | ✓ | **`vim.notify` with title** — `[tg]` as title, not text | ✅ Done |
 | ☐ | **WebSocket auto-reconnect** — reconnect on disconnect | 📝 Planned |
 | ☐ | **Chat cache persistence** — avoid re-fetch on restart | 📝 Planned |
 | ☐ | **Batch sender resolve** — optimize bulk message loading | 📝 Planned |
-| ☐ | **HTTP error retry** — retry with backoff on failure | 📝 Planned |
 
 ## Auth Flow
 
