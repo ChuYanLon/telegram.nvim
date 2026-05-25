@@ -223,6 +223,19 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 	end,
 })
 
+local function get_branches()
+  local handle = io.popen('git branch --format=%(refname:short) 2>/dev/null')
+  local out = handle and handle:read('*a')
+  if handle then handle:close() end
+  if not out then return {} end
+  local branches = {}
+  for b in out:gmatch('[^\n]+') do
+    table.insert(branches, b)
+  end
+  table.sort(branches)
+  return branches
+end
+
 local function current_branch()
   local handle = io.popen('git rev-parse --abbrev-ref HEAD 2>/dev/null')
   local branch = handle and handle:read('*l')
@@ -231,67 +244,84 @@ local function current_branch()
 end
 
 vim.api.nvim_create_user_command("TgPr", function()
-  local src = vim.fn.input('Source branch [' .. current_branch() .. ']: ')
-  if src == '' then src = current_branch() end
-  local dst = vim.fn.input('Target branch [dev]: ')
-  if dst == '' then dst = 'dev' end
+  local branches = get_branches()
+  local cur = current_branch()
+  local src, dst, title
 
-  local title = vim.fn.input('PR title (optional): ')
-  local args = { 'pr', 'create', '--base', dst, '--head', src, '--repo', 'ChuYanLon/telegram.nvim' }
-  if title and #title > 0 then
-    vim.list_extend(args, { '--title', title, '--fill' })
-  else
-    local handle = io.popen('git log -1 --format=%s 2>/dev/null')
-    local last = handle and handle:read('*l')
-    if handle then handle:close() end
-    vim.list_extend(args, { '--title', last or src, '--fill' })
+  local function pick_title()
+    vim.ui.input({ prompt = 'PR title (optional): ' }, function(t)
+      title = t or ''
+      local args = { 'pr', 'create', '--base', dst, '--head', src, '--repo', 'ChuYanLon/telegram.nvim' }
+      if title and #title > 0 then
+        vim.list_extend(args, { '--title', title, '--fill' })
+      else
+        local handle = io.popen('git log -1 --format=%s 2>/dev/null')
+        local last = handle and handle:read('*l')
+        if handle then handle:close() end
+        vim.list_extend(args, { '--title', last or src, '--fill' })
+      end
+
+      vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
+
+      local stdout = {}
+      vim.fn.jobstart({ 'gh', unpack(args) }, {
+        stdout_buffered = true,
+        on_stdout = function(_, data) stdout = data end,
+        on_exit = function(_, code)
+          if code ~= 0 then
+            vim.schedule(function()
+              vim.notify('PR creation failed', vim.log.levels.ERROR, { title = 'tg' })
+            end)
+            return
+          end
+          local url = table.concat(stdout, '\n'):match('https[%w:/.%-]+')
+          vim.schedule(function()
+            vim.notify('PR created: ' .. (url or '?'), vim.log.levels.INFO, { title = 'tg' })
+            if dst == 'main' and url then
+              local pr_num = url:match('/(%d+)$')
+              if pr_num then
+                vim.ui.select({ 'Yes (merge now)', 'No (just PR)' }, {
+                  prompt = 'Merge PR #' .. pr_num .. ' to main?',
+                }, function(choice)
+                  if choice and choice:match('^Yes') then
+                    vim.notify('Merging...', vim.log.levels.INFO, { title = 'tg' })
+                    vim.fn.jobstart({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' }, {
+                      on_exit = function(_, mc)
+                        vim.schedule(function()
+                          if mc == 0 then vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
+                          else vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' }) end
+                        end)
+                      end,
+                    })
+                  end
+                end)
+              end
+            end
+          end)
+        end,
+      })
+    end)
   end
 
-  vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
+  local function pick_target()
+    vim.ui.select(branches, {
+      prompt = 'Target branch',
+      format_item = function(b) return (b == 'main' and b .. ' ⭐' or b) end,
+    }, function(choice)
+      if not choice then return end
+      dst = choice
+      pick_title()
+    end)
+  end
 
-  local stdout = {}
-  vim.fn.jobstart({ 'gh', unpack(args) }, {
-    stdout_buffered = true,
-    on_stdout = function(_, data) stdout = data end,
-    on_exit = function(_, code)
-      if code ~= 0 then
-        local err = table.concat(stdout, '\n')
-        vim.schedule(function()
-          vim.notify('PR creation failed:\n' .. err, vim.log.levels.ERROR, { title = 'tg' })
-        end)
-        return
-      end
-      local url = table.concat(stdout, '\n'):match('https[%w:/.%-]+')
-      vim.schedule(function()
-        vim.notify('PR created: ' .. (url or '?'), vim.log.levels.INFO, { title = 'tg' })
-
-        if dst == 'main' and url then
-          local pr_num = url:match('/(%d+)$')
-          if pr_num then
-            vim.ui.select({ 'Yes (merge now)', 'No (just PR)' }, {
-              prompt = 'Merge PR #' .. pr_num .. ' to main?',
-              format_item = function(item) return item end,
-            }, function(choice)
-              if choice and choice:match('^Yes') then
-                vim.notify('Merging...', vim.log.levels.INFO, { title = 'tg' })
-                vim.fn.jobstart({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' }, {
-                  on_exit = function(_, mc)
-                    vim.schedule(function()
-                      if mc == 0 then
-                        vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
-                      else
-                        vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' })
-                      end
-                    end)
-                  end,
-                })
-              end
-            end)
-          end
-        end
-      end)
-    end,
-  })
+  vim.ui.select(branches, {
+    prompt = 'Source branch',
+    format_item = function(b) return (b == cur and b .. ' ← current' or b) end,
+  }, function(choice)
+    if not choice then return end
+    src = choice
+    pick_target()
+  end)
 end, {})
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
