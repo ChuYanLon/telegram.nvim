@@ -328,7 +328,7 @@ vim.api.nvim_create_user_command("TgPr", function()
               local pr_num = url:match('/(%d+)$')
               if pr_num and can_merge_main then
                 vim.ui.select({ 'Yes (merge now)', 'No (just PR)' }, {
-                  prompt = 'Merge PR #' .. pr_num .. ' to main?',
+                  prompt = 'Merge PR #' .. pr_num .. ' to ' .. dst .. '?',
                 }, function(choice)
                   if choice and choice:match('^Yes') then
                     vim.notify('Merging...', vim.log.levels.INFO, { title = 'tg' })
