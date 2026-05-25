@@ -417,7 +417,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
       })
 
     elseif choice:match('Create') then
-      local url = 'https://github.com/ChuYanLon/telegram.nvim/issues/new'
+      local url = 'https://github.com/ChuYanLon/telegram.nvim/issues/new/choose'
       vim.fn.jobstart({ 'sh', '-c', 'xdg-open "' .. url .. '" 2>/dev/null || open "' .. url .. '" 2>/dev/null || true' })
       vim.notify('Opening: ' .. url, vim.log.levels.INFO, { title = 'tg' })
 
