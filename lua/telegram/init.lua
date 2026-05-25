@@ -80,16 +80,11 @@ local function finish_init()
 					local preview = "[" .. ts .. "] " .. (msg.sender and msg.sender.name or "?") .. ": " .. (msg.text or "")
 					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
-					local mid = msg.id or (os.time() .. math.random())
-					local function dup()
-						for _, m in ipairs(st.messages) do
-							if m.id == mid then return true end
-							if msg.own and m.own and m.text == msg.text and math.abs(m.date - msg.date) <= 2 then
-								return true
-							end
-						end
+					local mid = msg.id
+					mid = (mid and tonumber(mid)) or (os.time() .. math.random())
+					for _, m in ipairs(st.messages or {}) do
+						if m.id == mid then return end
 					end
-					if dup() then return end
 					table.insert(st.messages, { id = mid, type = msg.type, date = msg.date, sender = msg.sender, text = msg.text, own = msg.own, replyTo = msg.replyTo })
 					ui.render()
 					if at_bottom then
