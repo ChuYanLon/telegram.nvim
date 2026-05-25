@@ -152,75 +152,64 @@ In the groups panel:
 
 ## Feature Status
 
-- [x] **Auth**: Phone number, verification code, 2FA password input
-- [x] **Auth**: Session persistence across restarts
-- [x] **Auth**: Error retry on invalid input
-- [x] **Auth**: Async non-blocking input prompts
-- [x] **Chat**: Group list with virtual scrolling and unread badges
-- [x] **Chat**: Open/close chat
-- [x] **Chat**: Bi-directional infinite scroll (older + newer messages)
-- [x] **Chat**: Typing indicators (receive + send own typing)
-- [x] **Chat**: Online member count in title bar
-- [x] **Chat**: Real-time new message push via WebSocket
-- [x] **Chat**: Cursor position persistence per chat
-- [x] **Chat**: Mark messages as read on open
-- [x] **Message**: Send plain text messages (with reply-to support)
-- [x] **Message**: Edit own messages
-- [x] **Message**: Delete messages (for me / revoke for everyone)
-- [x] **Message**: Forward messages across groups
-- [x] **Message**: Reply to messages with quote context
-- [x] **Message**: Search messages with result picker + jump to context
-- [x] **Message**: URL link detection and rendering
-- [x] **Message**: Code block detection and rendering (backtick)
-- [x] **Message**: Media display labels (photo, video, audio, document, voice, animation)
-- [x] **Message**: Fallback rendering for stickers, polls, contacts, locations, dice, games, calls
-- [x] **UI**: Three-panel layout: groups / messages / input
-- [x] **UI**: Panel navigation via `<C-h/j/k/l>`
-- [x] **UI**: Floating NUI popups with rounded borders
-- [x] **UI**: Help popup showing all keymaps
-- [x] **UI**: Input editor with placeholder text
-- [x] **UI**: Action target color highlighting (reply / edit / delete / forward)
-- [x] **UI**: Visual clipboard yank (`y`/`Y`)
-- [x] **UI**: 12 custom highlight groups
-- [x] **GitHub**: `:TgPr` — Create PR with branch selection, auto-fill, optional admin merge
-- [x] **GitHub**: `:TgIssue` — List issues, create branch, close, assign, open in browser
-- [x] **Backend**: 16 HTTP API endpoints (health, auth, groups, messages, chat actions, CRUD)
-- [x] **Backend**: WebSocket broadcast for real-time updates
-- [x] **Backend**: Auto-detection of libtdjson on Linux / macOS / Windows
-- [x] **Backend**: Proxy support (SOCKS5 / HTTP)
-- [x] **Backend**: Auto port allocation (fallback if port is occupied)
-- [x] **Backend**: Server process lifecycle managed by Neovim
-- [x] **Config**: `tdlib_path`, `proxy`, `data_dir`, `api_id`, `api_hash` options
-- [x] **Config**: Environment variable overrides (`TG_TDLIB_PATH`, `TG_PROXY`, etc.)
-- [x] **Config**: Dependency checking on startup (node, curl, scripts)
-- [x] **Testing**: Vitest unit tests for message formatting, sender resolution, reply formatting
-- [x] **Testing**: Vitest integration tests for Express server endpoints
-- [x] **Testing**: FakeTdClient mock for testing
+### What works
 
-- [ ] **Message**: Message formatting (bold, italic, underline, strikethrough, monospace, spoiler) — send/edit only supports plain text
-- [ ] **Message**: Media upload (send photos, videos, files, audio) — only text messages can be sent
-- [ ] **Message**: Media download / preview in Neovim — media is shown as labels only
-- [ ] **Message**: Sticker / GIF sending — can only receive and display labels
-- [ ] **Message**: Poll creation and voting — read-only fallback rendering
-- [ ] **Message**: Message pinning — no UI or API
-- [ ] **Message**: Message reactions — no UI or API
-- [ ] **Message**: Inline bots / bot commands
-- [ ] **Message**: Scheduled messages
-- [ ] **Message**: Emoji picker — no emoji support in input
-- [ ] **Chat**: Channel support — filtered out; supergroups only
-- [ ] **Chat**: Private chat (direct messages)
-- [ ] **Chat**: Chat folders
-- [ ] **Chat**: Pinned chats section
-- [ ] **Chat**: Group management (add/remove members, change title/photo)
-- [ ] **Chat**: Voice message recording / sending
-- [ ] **Chat**: Message selection (multi-select for batch operations) — single message operations only
-- [ ] **UI**: Message thread / topic view
-- [ ] **UI**: Image / file preview in floating window — only text labels
-- [ ] **UI**: Customizable keymaps — hardcoded, no user override API
-- [ ] **UI**: Configurable UI layout (panel sizes, position) — fixed layout
-- [ ] **UI**: Message search within chat (inline filtering) — uses `vim.ui.select` external picker
-- [ ] **UI**: Dark/light theme adaptation — colors are fixed
-- [ ] **Code**: `render/reply.lua` is dead code — defined but never called
+- [x] Login with phone number, verification code, and 2FA password
+- [x] Session persists across restarts (no re-login)
+- [x] Auth prompts are non-blocking — keep editing while waiting
+- [x] `:TgLogout` to clear auth and start fresh
+- [x] Group list with unread badges, virtual scrolling
+- [x] Open/close chats, switch between groups
+- [x] Scroll infinitely in both directions (older and newer messages)
+- [x] Receive new messages in real-time via WebSocket
+- [x] Typing indicators and online member count
+- [x] Cursor position is remembered per chat
+- [x] Messages are marked as read when opening a chat
+- [x] Send plain text messages (with reply context)
+- [x] Edit your own messages
+- [x] Delete your own messages (Delete for me / Revoke for everyone)
+- [x] Forward messages to another group
+- [x] Reply to a message with quote context
+- [x] Search messages and jump to the result position
+- [x] URLs are highlighted and clickable
+- [x] Code blocks (backtick) are detected and formatted
+- [x] Photo, video, audio, document, voice note are labeled
+- [x] Three-panel layout: group list / messages / input
+- [x] `<C-h/j/k/l>` to navigate between panels
+- [x] `?` opens a help popup with all keybindings
+- [x] Input editor with placeholder text
+- [x] Different highlight colors for reply / edit / delete / forward targets
+- [x] Visual `y`/`Y` yanks to system clipboard
+- [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
+- [x] `:TgIssue` — list, create branch, close, assign, open in browser
+- [x] Proxy support (SOCKS5 / HTTP) for restricted regions
+- [x] Port auto-increment if the default port is busy
+- [x] Server auto-stops when Neovim exits
+
+### What doesn't work yet
+
+- [ ] **Send messages with formatting** (bold, italic, underline, etc.) — plain text only
+- [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
+- [ ] **Send stickers / GIFs**
+- [ ] **Create polls**
+- [ ] **Scheduled messages**
+- [ ] **Emoji picker**
+- [ ] **Inline preview** of photos, videos, files in Neovim
+- [ ] **Sticker, poll, contact, location, dice, game, call display** — fallback exists but doesn't render properly
+- [ ] **React to messages** (like, heart, etc.)
+- [ ] **Pin messages**
+- [ ] **Multi-select messages** for batch operations
+- [ ] **Channel support** — currently filtered out, supergroups only
+- [ ] **Private chats** (direct 1-on-1 messages)
+- [ ] **Chat folders**
+- [ ] **Pinned chats** section
+- [ ] **Group management** (add/remove members, change title/photo)
+- [ ] **Voice message** recording and sending
+- [ ] **Inline bots** / bot commands
+- [ ] **Message threads** / topic view
+- [ ] **Customizable keymaps** — all hardcoded for now
+- [ ] **Adjustable layout** — panel sizes and position are fixed
+- [ ] **Dark/light theme adaptation** — colors are hardcoded
 
 ## Auth Flow
 
