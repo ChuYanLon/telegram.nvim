@@ -402,6 +402,13 @@ local function input_send()
       render()
       vim.notify('Message edited', vim.log.levels.INFO, { title = 'tg' })
     end
+    state.editor:clear()
+    state.input_mode = 'send'
+    state.reply_to = nil
+    state.edit_target = nil
+    state.sending = false
+    return
+  end
   local function insert_msg(msg)
     if not msg then return end
     local id = msg.id and tonumber(msg.id)
