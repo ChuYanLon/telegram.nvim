@@ -16,6 +16,22 @@
 
 - Various `vim.notify` calls: `[tg]` prefix moved to notification title
 
+## [0.2.0] - 2026-05-25
+
+### Fixed
+
+- **Message dedup** — use message ID instead of text+time heuristic (#8)
+- **Cross-chat reply** — `_formatReplyTo` now fetches original message from source chat (#7)
+- **Chat wrapper** — `getMessagesAfter`/`getMessagesAround` now include `chat` object (#2)
+
+### Added
+
+- **`:TgIssue` command** — list, create branch, close, assign issues
+- **Branch auto-delete** — `:TgPr` deletes source branch after merge (except dev/main)
+- **Multi-instance support** — share one server across Neovim instances
+- **Unit tests** — Vitest + FakeTdClient, no TDLib dependency
+- **`dev` branch protection** — ruleset prevents direct pushes/deletion
+
 ## [0.1.0] - 2025-05-25
 
 ### Added
