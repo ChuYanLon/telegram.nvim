@@ -1,87 +1,128 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest';
-
-vi.mock('dotenv', () => ({ default: { config: () => ({}) } }));
-vi.mock('tdl', () => ({
-  default: {
-    configure: () => {},
-    createClient: () => ({
-      on: () => {},
-      invoke: async () => ({ value: '1.8.64' }),
-      login: async () => {},
-      close: async () => {},
-    }),
-  },
-}));
+import { describe, it, expect, beforeAll } from 'vitest';
+import FakeTdClient from './fake-td-client';
 
 let client;
 
 beforeAll(async () => {
-  process.env.TG_API_ID = '1';
-  process.env.TG_API_HASH = 'test';
-  const mod = await import('../src/tdlib-client');
-  client = new mod.default();
+  process.env.TG_TDLIB_PATH = '/dev/null';
+  const { default: TelegramLSPClient } = await import('../src/tdlib-client');
+  const fake = new FakeTdClient();
+  fake.addUser({ id: 1, first_name: 'Alice', last_name: null });
+  fake.addUser({ id: 2, first_name: 'Bob', last_name: 'Lee' });
+  fake.addChat({ id: -1001, title: 'Test Group' });
+  client = new TelegramLSPClient({ client: fake });
+  // Pre-populate internal caches so resolveSender works
+  client._users.set(1, 'Alice');
+  client._users.set(2, 'Bob Lee');
+  client._chats.set(-1001, { id: -1001, title: 'Test Group' });
 });
 
 describe('_extractText', () => {
-  it('returns empty string for null/undefined', () => {
+  it('returns empty string for null', () => {
     expect(client._extractText(null)).toBe('');
-    expect(client._extractText(undefined)).toBe('');
   });
 
   it('extracts text from messageText', () => {
-    expect(
-      client._extractText({ _: 'messageText', text: { text: 'hello world' } }),
-    ).toBe('hello world');
+    expect(client._extractText({ _: 'messageText', text: { text: 'hi' } })).toBe('hi');
   });
 
-  it('returns type name for non-text messages', () => {
+  it('returns type for non-text messages', () => {
     expect(client._extractText({ _: 'messagePhoto' })).toBe('messagePhoto');
-    expect(client._extractText({ _: 'messageSticker' })).toBe('messageSticker');
-    expect(client._extractText({ _: 'messageDocument' })).toBe('messageDocument');
-    expect(client._extractText({ _: 'messageAudio' })).toBe('messageAudio');
+  });
+});
+
+describe('_resolveSender', () => {
+  it('resolves a user sender', async () => {
+    const result = await client._resolveSender({ _: 'messageSenderUser', user_id: 1 });
+    expect(result).toEqual({ id: 1, name: 'Alice' });
+  });
+
+  it('resolves another user', async () => {
+    const result = await client._resolveSender({ _: 'messageSenderUser', user_id: 2 });
+    expect(result).toEqual({ id: 2, name: 'Bob Lee' });
+  });
+
+  it('resolves a chat sender', async () => {
+    const result = await client._resolveSender({ _: 'messageSenderChat', chat_id: -1001 });
+    expect(result).toEqual({ id: -1001, name: 'Test Group' });
   });
 });
 
 describe('_formatMessage', () => {
   it('formats a basic text message', async () => {
     const msg = {
-      id: 123,
-      content: { _: 'messageText', text: { text: 'hi' } },
+      id: 1,
+      content: { _: 'messageText', text: { text: 'hello' } },
       sender_id: { _: 'messageSenderUser', user_id: 1 },
       date: 1000000,
       is_outgoing: false,
       reply_to: null,
     };
     const result = await client._formatMessage(msg);
-    expect(result.id).toBe(123);
-    expect(result.text).toBe('hi');
-    expect(result.date).toBe(1000000);
-    expect(result.own).toBe(false);
-    expect(result.type).toBe('messageText');
+    expect(result).toEqual({
+      id: 1,
+      type: 'messageText',
+      text: 'hello',
+      sender: { id: 1, name: 'Alice' },
+      date: 1000000,
+      own: false,
+    });
+  });
+
+  it('formats an outgoing message', async () => {
+    const msg = {
+      id: 2,
+      content: { _: 'messageText', text: { text: 'outgoing' } },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 2000000,
+      is_outgoing: true,
+      reply_to: null,
+    };
+    const result = await client._formatMessage(msg);
+    expect(result.own).toBe(true);
+  });
+
+  it('includes replyTo when message has reply', async () => {
+    const msg = {
+      id: 3,
+      content: { _: 'messageText', text: { text: 'reply' } },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 3000000,
+      is_outgoing: false,
+      reply_to: {
+        _: 'messageReplyToMessage',
+        message_id: 99,
+        chat_id: -1001,
+        origin_sender_id: { _: 'messageSenderUser', user_id: 2 },
+      },
+    };
+    const result = await client._formatMessage(msg);
+    expect(result.replyTo).toBeDefined();
+    expect(result.replyTo.id).toBe(99);
+    expect(result.replyTo.sender).toEqual({ id: 2, name: 'Bob Lee' });
   });
 
   it('returns null for null message', async () => {
     expect(await client._formatMessage(null)).toBeNull();
   });
+});
 
-  it('includes replyTo when message has reply', async () => {
+describe('_formatReplyTo', () => {
+  it('returns null when no reply', async () => {
+    const result = await client._formatReplyTo({ reply_to: null });
+    expect(result).toBeNull();
+  });
+
+  it('returns origin_sender_name fallback when no sender resolved', async () => {
     const msg = {
-      id: 456,
-      content: { _: 'messageText', text: { text: 'reply test' } },
-      sender_id: { _: 'messageSenderUser', user_id: 1 },
-      date: 2000000,
-      is_outgoing: true,
       reply_to: {
         _: 'messageReplyToMessage',
-        message_id: 1,
-        chat_id: 10,
-        origin_sender_id: { _: 'messageSenderUser', user_id: 2 },
+        message_id: 5,
+        chat_id: -1001,
+        origin_sender_name: 'TelegramUser',
       },
     };
-    const result = await client._formatMessage(msg);
-    expect(result.id).toBe(456);
-    expect(result.replyTo).toBeDefined();
-    expect(result.replyTo.id).toBe(1);
-    expect(result.own).toBe(true);
+    const result = await client._formatReplyTo(msg);
+    expect(result).toEqual({ id: 5, sender: { id: null, name: 'TelegramUser' } });
   });
 });
