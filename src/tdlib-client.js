@@ -529,17 +529,9 @@ class TelegramLSPClient {
       await this.client.invoke({
         _: 'viewMessages',
         chat_id: chatId,
-        message_thread_id: 0,
+        message_ids: messageId ? [messageId] : [],
         force_read: true,
       });
-      if (messageId) {
-        await this.client.invoke({
-          _: 'viewMessages',
-          chat_id: chatId,
-          message_ids: [messageId],
-          force_read: true,
-        });
-      }
     } catch {}
   }
 
