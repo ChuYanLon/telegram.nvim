@@ -5,7 +5,7 @@ Thank you for considering contributing to telegram.nvim!
 ## Development Setup
 
 ```bash
-git clone https://github.com/ChuYanLon/telegram.nvim.git
+git clone -b dev https://github.com/ChuYanLon/telegram.nvim.git
 cd telegram.nvim
 pnpm install
 ```
@@ -37,21 +37,15 @@ pnpm install
 ## Making Changes
 
 1. Fork the repo and create a branch from `dev` (e.g. `fix/login-crash`)
-2. Open a Pull Request **targeting the `dev` branch**, not `main`
-3. CI will run automatically on your PR
 2. Make your changes
-3. Test locally — run `pnpm start` to verify the backend starts
-4. Submit a pull request
+3. Test locally — `pnpm run test` to verify tests pass, `pnpm start` to check the backend starts
+4. Commit and push
+5. Open a Pull Request **targeting the `dev` branch** (not `main`)
+6. CI will run automatically on your PR
 
 ## Commit Messages
 
 Use concise, descriptive commit messages in English. Focus on the "why" rather than the "what".
-
-## Pull Request Process
-
-1. Update the README / Progress section if adding or changing features
-2. Ensure the PR description clearly describes the problem and solution
-3. Link any related issues
 
 ## License
 
