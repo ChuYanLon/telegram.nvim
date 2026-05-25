@@ -112,17 +112,21 @@ if (resolvedTdlibPath) {
   console.log('TDLib library: auto');
 }
 
+const { extractText } = require('./utils/extract-text');
+
 class TelegramLSPClient {
-  constructor() {
-    tdl.configure({
-      tdjson: resolvedTdlibPath,
-    });
-    this.client = tdl.createClient({
-      apiId: TG_API_ID,
-      apiHash: TG_API_HASH,
-      databaseDirectory: path.join(dataDir, 'tdlib_db'),
-      filesDirectory: path.join(dataDir, 'tdlib_files'),
-    });
+  constructor(opts) {
+    if (opts && opts.client) {
+      this.client = opts.client;
+    } else {
+      tdl.configure({ tdjson: resolvedTdlibPath });
+      this.client = tdl.createClient({
+        apiId: TG_API_ID,
+        apiHash: TG_API_HASH,
+        databaseDirectory: path.join(dataDir, 'tdlib_db'),
+        filesDirectory: path.join(dataDir, 'tdlib_files'),
+      });
+    }
     this._ready = false;
     this._chats = new Map();
     this._users = new Map();
@@ -250,11 +254,7 @@ class TelegramLSPClient {
     return null;
   }
 
-  _extractText(content) {
-    if (!content) return '';
-    if (content._ === 'messageText') return content.text.text;
-    return content._;
-  }
+  _extractText(content) { return extractText(content); }
 
   async _formatReplyTo(msg) {
     if (!msg.reply_to || msg.reply_to._ !== 'messageReplyToMessage') return null;

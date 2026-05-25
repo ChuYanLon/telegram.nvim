@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node src/server.js",
-    "test": "vitest run --pool forks --fileParallelism false",
-    "test:watch": "vitest --pool forks --fileParallelism false"
+    "pretest": "pgrep -f 'node src/server\\.js' | xargs -r kill 2>/dev/null; true",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
