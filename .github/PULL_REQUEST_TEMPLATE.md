@@ -1,0 +1,18 @@
+## Summary
+
+<!-- One-line summary of what this PR does -->
+
+## Related issue
+
+<!-- Link to the issue this PR fixes, e.g. Fixes #123 -->
+
+## Changes
+
+<!-- Bullet points of what changed -->
+
+## Checklist
+
+- [ ] I have read the [Contributing Guide](../CONTRIBUTING.md)
+- [ ] My code follows the existing code style and conventions
+- [ ] I have tested the changes locally
+- [ ] `pnpm start` works without errors
