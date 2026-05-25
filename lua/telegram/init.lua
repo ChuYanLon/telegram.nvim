@@ -239,9 +239,9 @@ vim.api.nvim_create_user_command("TgPr", function()
   local title = vim.fn.input('PR title (optional): ')
   local args = { 'pr', 'create', '--base', dst, '--head', src, '--repo', 'ChuYanLon/telegram.nvim' }
   if title and #title > 0 then
-    vim.list_extend(args, { '--title', title })
+    vim.list_extend(args, { '--title', title, '--fill' })
   else
-    table.insert(args, '--fill-first')
+    table.insert(args, '--fill')
   end
 
   vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
