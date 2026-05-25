@@ -94,7 +94,7 @@ ldconfig 2>/dev/null || true
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
 | `:TgPr`       | Create a PR — select source/target branch, auto-fill title, optionally merge directly (admin bypass for `main`)                   |
-| `:TgIssue`    | Manage issues — list, create, close, assign to yourself                                                                         |
+| `:TgIssue`    | Manage issues — list, create branch, close, assign, open in browser                                                              |
 
 > The server runs on a fixed port (8080). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
@@ -211,7 +211,7 @@ In the groups panel:
 | ✓ | **`:TgPr` command** — interactive PR creation and merge | ✅ Done |
 | ✓ | **Unit tests** — Vitest + FakeTdClient, no TDLib dependency | ✅ Done |
 | ✓ | **GitHub CI** — automated tests on push/PR | ✅ Done |
-| ✓ | **`:TgIssue` command** — list, close, assign, create branch from issue | ✅ Done |
+| ✓ | **`:TgIssue` command** — list, filter branch create, close, assign from issue | ✅ Done |
 | ✓ | **`vim.notify` with title** — `[tg]` as title, not text | ✅ Done |
 | ☐ | **WebSocket auto-reconnect** — reconnect on disconnect | 📝 Planned |
 | ☐ | **Chat cache persistence** — avoid re-fetch on restart | 📝 Planned |
