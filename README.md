@@ -79,6 +79,38 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - [ ] **Adjustable layout** — panel sizes and position are fixed
 - [ ] **Dark/light theme adaptation** — colors are hardcoded
 
+### Message label tags
+
+Since Neovim cannot render media or service messages natively, they are shown as tags:
+
+| Tag | Meaning |
+|-----|---------|
+| `[Photo]` | Photo sent |
+| `[Video]` | Video sent |
+| `[Animation]` | GIF sent |
+| `[Document]` | File sent |
+| `[Audio]` | Music sent |
+| `[Voice]` | Voice message |
+| `[Video Note]` | Video message |
+| `[Sticker]` | Sticker sent |
+| `[Poll]` | Poll created |
+| `[Contact]` | Contact shared |
+| `[Location]` | Location shared |
+| `[Dice]` | Dice rolled |
+| `[Game]` | Game played |
+| `[Call]` | Voice/video call |
+| `[Basic Group Created]` | Group created |
+| `[Members Added]` | New members added |
+| `[Member Removed]` | Member removed |
+| `[Joined by Link]` | Someone joined via invite link |
+| `[Join Request]` | Join request approved |
+| `[Group Renamed]` | Group name changed |
+| `[Photo Changed]` | Group photo changed |
+| `[Photo Removed]` | Group photo removed |
+| `[Message Pinned]` | A message was pinned |
+| `[Auto-delete Set]` | Auto-delete timer changed |
+| `[Topic Created]` | Forum topic created |
+
 ## Requirements
 
 - **Node.js** (>= 18)

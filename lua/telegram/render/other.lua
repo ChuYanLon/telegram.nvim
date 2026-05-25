@@ -11,6 +11,17 @@ local type_labels = {
   messageDice = '[Dice]',
   messageGame = '[Game]',
   messageCall = '[Call]',
+  messageBasicGroupChatCreate = '[Basic Group Created]',
+  messageChatAddMembers = '[Members Added]',
+  messageChatJoinByLink = '[Joined by Link]',
+  messageChatJoinByRequest = '[Join Request]',
+  messageChatDeleteMember = '[Member Removed]',
+  messageChatChangeTitle = '[Group Renamed]',
+  messageChatChangePhoto = '[Photo Changed]',
+  messageChatDeletePhoto = '[Photo Removed]',
+  messageChatSetMessageAutoDeleteTime = '[Auto-delete Set]',
+  messagePinMessage = '[Message Pinned]',
+  messageForumTopicCreated = '[Topic Created]',
 }
 
 function M.render(msg)
