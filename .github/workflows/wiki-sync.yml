@@ -1,0 +1,28 @@
+name: Wiki Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync wiki
+        run: |
+          TMP_DIR=$(mktemp -d)
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" "$TMP_DIR" 2>/dev/null || {
+            echo "Wiki repo not initialized yet."
+            echo "Visit https://github.com/${{ github.repository }}/wiki to create the first page."
+            exit 0
+          }
+          rsync -av --delete wiki/ "$TMP_DIR/"
+          cd "$TMP_DIR"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || git commit -m "sync wiki from main repo"
+          git push
