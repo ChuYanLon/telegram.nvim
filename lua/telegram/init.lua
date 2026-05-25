@@ -300,8 +300,21 @@ vim.api.nvim_create_user_command("TgPr", function()
                     vim.fn.jobstart({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' }, {
                       on_exit = function(_, mc)
                         vim.schedule(function()
-                          if mc == 0 then vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
-                          else vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' }) end
+                          if mc == 0 then
+                            vim.notify('Merged! Syncing dev...', vim.log.levels.INFO, { title = 'tg' })
+                            local root = vim.fn.shellescape(config.plugin_root)
+                            vim.fn.jobstart({ 'sh', '-c',
+                              'cd ' .. root .. ' && git fetch origin && git checkout dev && git rebase origin/main && git push'
+                            }, {
+                              on_exit = function(_, sc)
+                                vim.schedule(function()
+                                  vim.notify(sc == 0 and 'dev is in sync' or 'Sync failed, run manually: git pull --rebase origin main', vim.log.levels.INFO, { title = 'tg' })
+                                end)
+                              end,
+                            })
+                          else
+                            vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' })
+                          end
                         end)
                       end,
                     })
