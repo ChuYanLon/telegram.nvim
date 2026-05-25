@@ -248,18 +248,6 @@ local function git(args)
   return vim.fn.systemlist(vim.list_extend({ 'git', '-C', config.plugin_root }, vim.split(args, ' ')))
 end
 
-local function git_async(args, cb)
-  local cmd = vim.list_extend({ 'git', '-C', config.plugin_root }, vim.split(args, ' '))
-  local stdout = {}
-  vim.fn.jobstart(cmd, {
-    stdout_buffered = true,
-    on_stdout = function(_, data) stdout = data end,
-    on_exit = function(_, code)
-      vim.schedule(function() cb(code, stdout) end)
-    end,
-  })
-end
-
 local function current_branch()
   local out = git('rev-parse --abbrev-ref HEAD')
   if vim.v.shell_error ~= 0 or #out == 0 then return 'dev' end
@@ -271,20 +259,12 @@ vim.api.nvim_create_user_command("TgPr", function()
     vim.notify('gh (GitHub CLI) not found. Install it first:\n  sudo pacman -S github-cli  # Arch\n  brew install gh            # macOS', vim.log.levels.ERROR, { title = 'tg' })
     return
   end
-  vim.notify('Fetching branches...', vim.log.levels.INFO, { title = 'tg' })
+  vim.notify('Checking environment...', vim.log.levels.INFO, { title = 'tg' })
   local cur = current_branch()
   local src, dst, title, can_merge_main
 
-  git_async('ls-remote --heads --quiet origin', function(code, stdout)
-    local branches = {}
-    if code == 0 then
-      for _, line in ipairs(stdout) do
-        local name = line:match('refs/heads/(.+)')
-        if name then table.insert(branches, name) end
-      end
-      table.sort(branches)
-    end
-    if #branches == 0 then branches = { 'dev', 'main' } end
+  local branches = git('branch --format=%(refname:short)')
+  if #branches == 0 then branches = { 'dev', 'main' } end
 
   local function check_perm(cb)
     vim.notify('Checking permissions...', vim.log.levels.INFO, { title = 'tg' })
@@ -324,7 +304,7 @@ vim.api.nvim_create_user_command("TgPr", function()
           local url = table.concat(stdout, '\n'):match('https[%w:/.%-]+')
           vim.schedule(function()
             vim.notify('PR created: ' .. (url or '?'), vim.log.levels.INFO, { title = 'tg' })
-            if dst == 'main' and url then
+            if url then
               local pr_num = url:match('/(%d+)$')
               if pr_num and can_merge_main then
                 vim.ui.select({ 'Yes (merge now)', 'No (just PR)' }, {
@@ -378,7 +358,6 @@ vim.api.nvim_create_user_command("TgPr", function()
       pick_target()
     end)
   end)
-end)
 end, {})
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
