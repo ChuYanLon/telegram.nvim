@@ -23,7 +23,24 @@ local ui = require("telegram.ui")
 local M = {}
 
 local initialized = false
-local seen_ids = setmetatable({}, { __index = function(t, k) t[k] = {}; return t[k] end })
+local seen_ids = {}
+local seen_ids_order = {}
+local SEEN_IDS_MAX = 3000
+
+local function trim_seen_ids(chat_key)
+  local keys = seen_ids[chat_key]
+  if not keys then return end
+  local n = 0
+  for _ in pairs(keys) do n = n + 1 end
+  if n <= SEEN_IDS_MAX then return end
+  local order = seen_ids_order[chat_key] or {}
+  local excess = n - SEEN_IDS_MAX
+  for i = 1, excess do
+    local id = order[i]
+    if id then keys[id] = nil end
+  end
+  for i = 1, excess do table.remove(order, 1) end
+end
 
 local notify_queue = {}
 local notify_timer_id = nil
@@ -83,9 +100,12 @@ local function finish_init()
 					ui.update_title()
 					local mid = msg.id
 					if mid ~= nil then
-						local chat_key = msg.chat and tostring(msg.chat.id)
-						if seen_ids[chat_key or '_'][mid] then return end
-						seen_ids[chat_key or '_'][mid] = true
+						local chat_key = msg.chat and tostring(msg.chat.id) or '_'
+						if not seen_ids[chat_key] then seen_ids[chat_key] = {}; seen_ids_order[chat_key] = {} end
+						if seen_ids[chat_key][mid] then return end
+						seen_ids[chat_key][mid] = true
+						table.insert(seen_ids_order[chat_key], mid)
+						trim_seen_ids(chat_key)
 						for _, m in ipairs(st.messages) do
 							if tostring(m.id) == tostring(mid) then return end
 						end

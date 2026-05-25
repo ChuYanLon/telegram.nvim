@@ -4,6 +4,20 @@ local M = {}
 
 local ws_job_id = nil
 local last_ids = {}
+local last_ids_order = {}
+local LAST_IDS_MAX = 3000
+
+local function trim_last_ids()
+  local n = 0
+  for _ in pairs(last_ids) do n = n + 1 end
+  if n <= LAST_IDS_MAX then return end
+  local excess = n - LAST_IDS_MAX
+  for i = 1, excess do
+    local key = last_ids_order[i]
+    if key then last_ids[key] = nil end
+  end
+  for i = 1, excess do table.remove(last_ids_order, 1) end
+end
 
 ---@param on_msg fun(msg: table)
 function M.ws_start(on_msg)
@@ -24,6 +38,8 @@ function M.ws_start(on_msg)
               local key = tostring(msg.id)
               if last_ids[key] then return end
               last_ids[key] = true
+              table.insert(last_ids_order, key)
+              trim_last_ids()
             end
             on_msg(msg)
           end
