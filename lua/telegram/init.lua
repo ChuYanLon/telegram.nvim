@@ -304,7 +304,7 @@ vim.api.nvim_create_user_command("TgPr", function()
                             vim.notify('Merged! Syncing dev...', vim.log.levels.INFO, { title = 'tg' })
                             local root = vim.fn.shellescape(config.plugin_root)
                             vim.fn.jobstart({ 'sh', '-c',
-                              'cd ' .. root .. ' && git fetch origin && git checkout dev && git rebase origin/main && git push'
+                              'cd ' .. root .. ' && git fetch origin && git checkout dev && git rebase origin/main && git push --force-with-lease'
                             }, {
                               on_exit = function(_, sc)
                                 vim.schedule(function()
