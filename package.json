@@ -2,7 +2,9 @@
   "name": "telegram-lsp-backend",
   "version": "1.0.0",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --experimental-test-module-mocks --test tests/*.test.js",
+    "test:watch": "node --experimental-test-module-mocks --test --watch tests/*.test.js"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
