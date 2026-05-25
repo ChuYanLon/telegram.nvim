@@ -1,6 +1,6 @@
 # Reporting a Vulnerability
 
-If you discover a security vulnerability, please report it privately by emailing the maintainer at **chuyanlon@gmail.com**.
+If you discover a security vulnerability, please report it privately by emailing the maintainer at **cylxhzy@gmail.com**.
 
 Please do not open a public issue.
 
