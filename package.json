@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node src/server.js",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --pool forks --fileParallelism false",
+    "test:watch": "vitest --pool forks --fileParallelism false"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
