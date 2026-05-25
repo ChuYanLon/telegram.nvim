@@ -152,75 +152,7 @@ In the groups panel:
 
 ## Progress
 
-| Category | Done | Total | Progress |
-|----------|------|-------|----------|
-| Messaging | 7 | 14 | ████████░░░░░ 50% |
-| UI & Interaction | 16 | 21 | ████████████░░ 76% |
-| Infrastructure | 10 | 12 | ████████████░ 83% |
-| **Total** | **33** | **47** | ██████████░░ 70% |
-
-### Messaging
-
-| | Feature | Status |
-|--|---------|--------|
-| ✓ | **Send text messages** — plain text to any group | ✅ Done |
-| ✓ | **Edit messages** — edit own message text | ✅ Done |
-| ✓ | **Delete / recall** — delete for self or revoke for everyone | ✅ Done |
-| ✓ | **Forward messages** — forward to another group | ✅ Done |
-| ✓ | **Reply to messages** — reply with quoted context | ✅ Done |
-| ✓ | **Search messages** — `/` to search within a chat | ✅ Done |
-| ✓ | **Bidirectional auto-load** — scroll older/newer from current position | ✅ Done |
-| ☐ | **Rich text rendering** — bold/italic/code/links/markdown | 📝 Planned |
-| ☐ | **Media files** — download and view images/documents/voice | 📝 Planned |
-| ☐ | **Message reactions** — add/remove emoji reactions | 📝 Planned |
-| ☐ | **Pinned messages** — view, pin, unpin | 📝 Planned |
-| ☐ | **Polls** — create and vote | 📝 Planned |
-| ☐ | **Multi-select mode** — batch delete / batch forward | 📝 Planned |
-| ☐ | **Message details** — edit history, message info | 📝 Planned |
-
-### UI & Interaction
-
-| | Feature | Status |
-|--|---------|--------|
-| ✓ | **Group list** — all supergroups and basic groups | ✅ Done |
-| ✓ | **Real-time push** — WebSocket instant message arrival | ✅ Done |
-| ✓ | **Online member count** — `N online` in menu bar | ✅ Done |
-| ✓ | **Typing indicators** — see when others are typing | ✅ Done |
-| ✓ | **Own typing broadcast** — auto-send typing indicator | ✅ Done |
-| ✓ | **Multi-line input editor** — NuiPopup with placeholder/mode indicators | ✅ Done |
-| ✓ | **Context window** — reply/search result with surrounding messages | ✅ Done |
-| ✓ | **Target highlighting** — reply/edit/delete/forward indicator | ✅ Done |
-| ✓ | **Cursor persistence** — save/restore position across sessions | ✅ Done |
-| ✓ | **Unread indicator** — `[N]` on title bar | ✅ Done |
-| ✓ | **Virtual-scrolled groups** — efficient for hundreds of groups | ✅ Done |
-| ✓ | **Read-only message window** — buffer not modifiable | ✅ Done |
-| ✓ | **Async UI** — non-blocking operations | ✅ Done |
-| ✓ | **Operation feedback** — success notifications | ✅ Done |
-| ✓ | **Startup feedback** — immediate status | ✅ Done |
-| ✓ | **Help popup** — `?` shows keymap reference | ✅ Done |
-| ☐ | **Direct messages / user search** — private chats | 📝 Planned |
-| ☐ | **Chat filters** — unread only, specific types | 📝 Planned |
-| ☐ | **Cross-chat global search** — search all chats | 📝 Planned |
-| ☐ | **Session persistence** — restore state across Neovim restart | 📝 Planned |
-| ☐ | **Message translation** — via external API | 📝 Planned |
-
-### Infrastructure
-
-| | Feature | Status |
-|--|---------|--------|
-| ✓ | **Auth flow** — phone → code → 2FA, async | ✅ Done |
-| ✓ | **Proxy support** — SOCKS5/HTTP for TDLib | ✅ Done |
-| ✓ | **Auto-detect libtdjson** — Linux/macOS/Windows | ✅ Done |
-| ✓ | **Server lifecycle** — auto-start/stop with Neovim | ✅ Done |
-| ✓ | **Multi-instance** — share one server across Neovim instances | ✅ Done |
-| ✓ | **`:TgPr` command** — interactive PR creation and merge | ✅ Done |
-| ✓ | **Unit tests** — Vitest + FakeTdClient, no TDLib dependency | ✅ Done |
-| ✓ | **GitHub CI** — automated tests on push/PR | ✅ Done |
-| ✓ | **`:TgIssue` command** — list, filter branch create, close, assign from issue | ✅ Done |
-| ✓ | **`vim.notify` with title** — `[tg]` as title, not text | ✅ Done |
-| ☐ | **WebSocket auto-reconnect** — reconnect on disconnect | 📝 Planned |
-| ☐ | **Chat cache persistence** — avoid re-fetch on restart | 📝 Planned |
-| ☐ | **Batch sender resolve** — optimize bulk message loading | 📝 Planned |
+Tracked via [GitHub Milestones](https://github.com/ChuYanLon/telegram.nvim/milestones) — feature requests and bug reports are managed as issues with milestone assignments.
 
 ## Auth Flow
 
