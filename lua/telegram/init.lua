@@ -241,7 +241,10 @@ vim.api.nvim_create_user_command("TgPr", function()
   if title and #title > 0 then
     vim.list_extend(args, { '--title', title, '--fill' })
   else
-    table.insert(args, '--fill')
+    local handle = io.popen('git log -1 --format=%s 2>/dev/null')
+    local last = handle and handle:read('*l')
+    if handle then handle:close() end
+    vim.list_extend(args, { '--title', last or src, '--fill' })
   end
 
   vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
