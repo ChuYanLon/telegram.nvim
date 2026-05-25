@@ -223,6 +223,49 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 	end,
 })
 
+local function current_branch()
+  local handle = io.popen('git rev-parse --abbrev-ref HEAD 2>/dev/null')
+  local branch = handle and handle:read('*l')
+  if handle then handle:close() end
+  return branch or 'dev'
+end
+
+vim.api.nvim_create_user_command("TgPr", function()
+  local src = vim.fn.input('Source branch [' .. current_branch() .. ']: ')
+  if src == '' then src = current_branch() end
+  local dst = vim.fn.input('Target branch [dev]: ')
+  if dst == '' then dst = 'dev' end
+
+  local title = vim.fn.input('PR title (optional): ')
+  local args = { 'pr', 'create', '--base', dst, '--head', src, '--repo', 'ChuYanLon/telegram.nvim' }
+  if title and #title > 0 then
+    vim.list_extend(args, { '--title', title })
+  else
+    table.insert(args, '--fill')
+  end
+
+  vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
+  local out = vim.fn.system({ 'gh', unpack(args) })
+  if vim.v.shell_error ~= 0 then
+    vim.notify('PR creation failed:\n' .. (out or ''), vim.log.levels.ERROR, { title = 'tg' })
+    return
+  end
+  local url = vim.split(out or '', '\n')[1] or ''
+  vim.notify('PR created: ' .. url, vim.log.levels.INFO, { title = 'tg' })
+
+  if dst == 'main' then
+    local merge = vim.fn.input('Merge to main directly? (y/N): ')
+    if merge:lower() == 'y' then
+      local pr_num = url:match('/(%d+)$')
+      if pr_num then
+        vim.notify('Merging PR #' .. pr_num .. ' with admin bypass...', vim.log.levels.INFO, { title = 'tg' })
+        vim.fn.system({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' })
+        vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
+      end
+    end
+  end
+end, {})
+
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
 vim.api.nvim_create_user_command("TgLogout", M.logout, {})
 vim.api.nvim_create_user_command("TgSend", function(opts)
