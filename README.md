@@ -150,9 +150,77 @@ In the groups panel:
 | `<CR>` | Open selected chat |
 | `<C-h/j/k/l>` | Navigate panels |
 
-## Progress
+## Feature Status
 
-Tracked via [GitHub Milestones](https://github.com/ChuYanLon/telegram.nvim/milestones) — feature requests and bug reports are managed as issues with milestone assignments.
+- [x] **Auth**: Phone number, verification code, 2FA password input
+- [x] **Auth**: Session persistence across restarts
+- [x] **Auth**: Error retry on invalid input
+- [x] **Auth**: Async non-blocking input prompts
+- [x] **Chat**: Group list with virtual scrolling and unread badges
+- [x] **Chat**: Open/close chat
+- [x] **Chat**: Bi-directional infinite scroll (older + newer messages)
+- [x] **Chat**: Typing indicators (receive + send own typing)
+- [x] **Chat**: Online member count in title bar
+- [x] **Chat**: Real-time new message push via WebSocket
+- [x] **Chat**: Cursor position persistence per chat
+- [x] **Chat**: Mark messages as read on open
+- [x] **Message**: Send plain text messages (with reply-to support)
+- [x] **Message**: Edit own messages
+- [x] **Message**: Delete messages (for me / revoke for everyone)
+- [x] **Message**: Forward messages across groups
+- [x] **Message**: Reply to messages with quote context
+- [x] **Message**: Search messages with result picker + jump to context
+- [x] **Message**: URL link detection and rendering
+- [x] **Message**: Code block detection and rendering (backtick)
+- [x] **Message**: Media display labels (photo, video, audio, document, voice, animation)
+- [x] **Message**: Fallback rendering for stickers, polls, contacts, locations, dice, games, calls
+- [x] **UI**: Three-panel layout: groups / messages / input
+- [x] **UI**: Panel navigation via `<C-h/j/k/l>`
+- [x] **UI**: Floating NUI popups with rounded borders
+- [x] **UI**: Help popup showing all keymaps
+- [x] **UI**: Input editor with placeholder text
+- [x] **UI**: Action target color highlighting (reply / edit / delete / forward)
+- [x] **UI**: Visual clipboard yank (`y`/`Y`)
+- [x] **UI**: 12 custom highlight groups
+- [x] **GitHub**: `:TgPr` — Create PR with branch selection, auto-fill, optional admin merge
+- [x] **GitHub**: `:TgIssue` — List issues, create branch, close, assign, open in browser
+- [x] **Backend**: 16 HTTP API endpoints (health, auth, groups, messages, chat actions, CRUD)
+- [x] **Backend**: WebSocket broadcast for real-time updates
+- [x] **Backend**: Auto-detection of libtdjson on Linux / macOS / Windows
+- [x] **Backend**: Proxy support (SOCKS5 / HTTP)
+- [x] **Backend**: Auto port allocation (fallback if port is occupied)
+- [x] **Backend**: Server process lifecycle managed by Neovim
+- [x] **Config**: `tdlib_path`, `proxy`, `data_dir`, `api_id`, `api_hash` options
+- [x] **Config**: Environment variable overrides (`TG_TDLIB_PATH`, `TG_PROXY`, etc.)
+- [x] **Config**: Dependency checking on startup (node, curl, scripts)
+- [x] **Testing**: Vitest unit tests for message formatting, sender resolution, reply formatting
+- [x] **Testing**: Vitest integration tests for Express server endpoints
+- [x] **Testing**: FakeTdClient mock for testing
+
+- [ ] **Message**: Message formatting (bold, italic, underline, strikethrough, monospace, spoiler) — send/edit only supports plain text
+- [ ] **Message**: Media upload (send photos, videos, files, audio) — only text messages can be sent
+- [ ] **Message**: Media download / preview in Neovim — media is shown as labels only
+- [ ] **Message**: Sticker / GIF sending — can only receive and display labels
+- [ ] **Message**: Poll creation and voting — read-only fallback rendering
+- [ ] **Message**: Message pinning — no UI or API
+- [ ] **Message**: Message reactions — no UI or API
+- [ ] **Message**: Inline bots / bot commands
+- [ ] **Message**: Scheduled messages
+- [ ] **Message**: Emoji picker — no emoji support in input
+- [ ] **Chat**: Channel support — filtered out; supergroups only
+- [ ] **Chat**: Private chat (direct messages)
+- [ ] **Chat**: Chat folders
+- [ ] **Chat**: Pinned chats section
+- [ ] **Chat**: Group management (add/remove members, change title/photo)
+- [ ] **Chat**: Voice message recording / sending
+- [ ] **Chat**: Message selection (multi-select for batch operations) — single message operations only
+- [ ] **UI**: Message thread / topic view
+- [ ] **UI**: Image / file preview in floating window — only text labels
+- [ ] **UI**: Customizable keymaps — hardcoded, no user override API
+- [ ] **UI**: Configurable UI layout (panel sizes, position) — fixed layout
+- [ ] **UI**: Message search within chat (inline filtering) — uses `vim.ui.select` external picker
+- [ ] **UI**: Dark/light theme adaptation — colors are fixed
+- [ ] **Code**: `render/reply.lua` is dead code — defined but never called
 
 ## Auth Flow
 
