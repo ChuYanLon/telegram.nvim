@@ -1,18 +1,10 @@
-# Dependencies
 node_modules/
-
-# TDLib runtime data
 tdlib_db/
 tdlib_files/
-
-# Environment
 .env
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Editor
 *.swp
 *.swo
 *~
+AGENTS.md

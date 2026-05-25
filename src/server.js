@@ -229,9 +229,11 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);
 });
 
 tgClient.start().catch(console.error);
+
+module.exports = { httpServer, wss, tgClient };
