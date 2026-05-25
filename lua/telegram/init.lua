@@ -295,7 +295,11 @@ vim.api.nvim_create_user_command("TgPr", function()
                       on_exit = function(_, mc)
                         vim.schedule(function()
                           if mc == 0 then
-                            vim.notify('Merged! To sync dev: git pull --rebase origin main', vim.log.levels.INFO, { title = 'tg' })
+                            vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
+                            if src ~= 'dev' and src ~= 'main' then
+                              local root = vim.fn.shellescape(config.plugin_root)
+                              vim.fn.jobstart({ 'sh', '-c', 'cd ' .. root .. ' && git push origin --delete ' .. vim.fn.shellescape(src) .. ' 2>/dev/null; git branch -D ' .. vim.fn.shellescape(src) .. ' 2>/dev/null; true' })
+                            end
                           else
                             vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' })
                           end
