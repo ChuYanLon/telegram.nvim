@@ -48,7 +48,6 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - [x] Three-panel layout: group list / messages / input
 - [x] `<C-h/j/k/l>` to navigate between panels
 - [x] `?` opens a help popup with all keybindings
-- [x] Input editor with placeholder text
 - [x] Different highlight colors for reply / edit / delete / forward targets
 - [x] Visual `y`/`Y` yanks to system clipboard
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
