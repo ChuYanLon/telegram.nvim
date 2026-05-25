@@ -13,6 +13,6 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "vitest": "^4.1.7"
+    "vitest": "^3.2.4"
   }
 }
