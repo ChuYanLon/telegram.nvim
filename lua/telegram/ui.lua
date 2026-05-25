@@ -402,20 +402,26 @@ local function input_send()
       render()
       vim.notify('Message edited', vim.log.levels.INFO, { title = 'tg' })
     end
-  elseif state.input_mode == 'reply' and state.reply_to then
-    local msg = server.send_message(state.chat_id, text, state.reply_to)
-    if msg then
-      table.insert(state.messages, msg)
-      render()
-      vim.notify('Reply sent', vim.log.levels.INFO, { title = 'tg' })
+  local function insert_msg(msg)
+    if not msg then return end
+    local id = msg.id and tonumber(msg.id)
+    if id then
+      for _, m in ipairs(state.messages) do
+        if m.id == id then return end
+      end
     end
+    table.insert(state.messages, msg)
+  end
+  if state.input_mode == 'reply' and state.reply_to then
+    local msg = server.send_message(state.chat_id, text, state.reply_to)
+    insert_msg(msg)
+    render()
+    if msg then vim.notify('Reply sent', vim.log.levels.INFO, { title = 'tg' }) end
   else
     local msg = server.send_message(state.chat_id, text)
-    if msg then
-      table.insert(state.messages, msg)
-      render()
-      vim.notify('Message sent', vim.log.levels.INFO, { title = 'tg' })
-    end
+    insert_msg(msg)
+    render()
+    if msg then vim.notify('Message sent', vim.log.levels.INFO, { title = 'tg' }) end
   end
   state.editor:clear()
   state.input_mode = 'send'
