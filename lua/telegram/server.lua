@@ -107,6 +107,7 @@ end
 
 ---@return boolean
 function M.start_server()
+  vim.fn.system({ 'sh', '-c', 'pkill -f "node.*src/server\\.js" 2>/dev/null; true' })
   local status = check_port()
   if status == 'ready' then return true end
   if status ~= 'ours' then
