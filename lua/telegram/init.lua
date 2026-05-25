@@ -301,27 +301,7 @@ vim.api.nvim_create_user_command("TgPr", function()
                       on_exit = function(_, mc)
                         vim.schedule(function()
                           if mc == 0 then
-                            vim.notify('Merged! Syncing dev...', vim.log.levels.INFO, { title = 'tg' })
-                            local root = vim.fn.shellescape(config.plugin_root)
-                            local stderr = {}
-                            vim.fn.jobstart({ 'sh', '-c',
-                              'cd ' .. root .. ' && git pull --rebase --autostash origin main && git push'
-                            }, {
-                              on_stderr = function(_, data)
-                                for _, l in ipairs(data or {}) do
-                                  if l and #l > 0 then table.insert(stderr, l) end
-                                end
-                              end,
-                              on_exit = function(_, sc)
-                                vim.schedule(function()
-                                  if sc == 0 then
-                                    vim.notify('dev is in sync', vim.log.levels.INFO, { title = 'tg' })
-                                  else
-                                    vim.notify('Sync failed:\n' .. table.concat(stderr, '\n'):sub(1, 200), vim.log.levels.WARN, { title = 'tg' })
-                                  end
-                                end)
-                              end,
-                            })
+                            vim.notify('Merged! To sync dev: git pull --rebase origin main', vim.log.levels.INFO, { title = 'tg' })
                           else
                             vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' })
                           end
