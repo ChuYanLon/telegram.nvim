@@ -411,10 +411,11 @@ local function input_send()
   end
   local function insert_msg(msg)
     if not msg then return end
-    local id = msg.id and tonumber(msg.id)
-    if id then
+    local id = msg.id
+    if id ~= nil then
+      id = tostring(id)
       for _, m in ipairs(state.messages) do
-        if m.id == id then return end
+        if m.id ~= nil and tostring(m.id) == id then return end
       end
     end
     table.insert(state.messages, msg)

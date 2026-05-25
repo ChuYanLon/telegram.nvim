@@ -23,6 +23,7 @@ local ui = require("telegram.ui")
 local M = {}
 
 local initialized = false
+local seen_ids = setmetatable({}, { __index = function(t, k) t[k] = {}; return t[k] end })
 
 local notify_queue = {}
 local notify_timer_id = nil
@@ -81,9 +82,13 @@ local function finish_init()
 					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
 					local mid = msg.id
-					mid = (mid and tonumber(mid)) or (os.time() .. math.random())
-					for _, m in ipairs(st.messages or {}) do
-						if m.id == mid then return end
+					if mid ~= nil then
+						mid = tostring(mid)
+						local chat_key = msg.chat and tostring(msg.chat.id)
+						if seen_ids[chat_key or '_'][mid] then return end
+						seen_ids[chat_key or '_'][mid] = true
+					else
+						mid = os.time() .. math.random()
 					end
 					table.insert(st.messages, { id = mid, type = msg.type, date = msg.date, sender = msg.sender, text = msg.text, own = msg.own, replyTo = msg.replyTo })
 					ui.render()
