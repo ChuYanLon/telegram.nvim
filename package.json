@@ -1,7 +1,6 @@
 {
   "name": "telegram-lsp-backend",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.30.2",
   "scripts": {
     "start": "node src/server.js"
   },
