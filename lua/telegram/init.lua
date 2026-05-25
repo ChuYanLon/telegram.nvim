@@ -405,11 +405,11 @@ vim.api.nvim_create_user_command("TgIssue", function()
               })
             end
             vim.ui.select(items, {
-              prompt = 'Issues (20 newest) — ESC to close',
+              prompt = 'Issues (20 newest)',
               format_item = function(item) return item.label end,
             }, function(choice)
               if choice then
-                vim.notify('https://github.com/ChuYanLon/telegram.nvim/issues/' .. choice.num, vim.log.levels.INFO, { title = 'tg' })
+                vim.fn.jobstart({ 'sh', '-c', 'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/' .. choice.num .. '" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/' .. choice.num .. '" 2>/dev/null || true' })
               end
             end)
           end)
@@ -417,25 +417,9 @@ vim.api.nvim_create_user_command("TgIssue", function()
       })
 
     elseif choice:match('Create') then
-      vim.ui.input({ prompt = 'Issue title: ' }, function(title)
-        if not title or #title == 0 then return end
-        vim.ui.input({ prompt = 'Description (optional): ' }, function(body)
-          local args = { 'gh', 'issue', 'create', '--repo', 'ChuYanLon/telegram.nvim', '--title', title }
-          if body and #body > 0 then table.insert(args, '--body'); table.insert(args, body) end
-          vim.notify('Creating issue...', vim.log.levels.INFO, { title = 'tg' })
-          vim.fn.jobstart(args, {
-            stdout_buffered = true,
-            on_stdout = function(_, data)
-              local url = (data or {})[1] or ''
-              if url and #url > 0 then
-                vim.schedule(function()
-                  vim.notify('Created: ' .. url, vim.log.levels.INFO, { title = 'tg' })
-                end)
-              end
-            end,
-          })
-        end)
-      end)
+      local url = 'https://github.com/ChuYanLon/telegram.nvim/issues/new'
+      vim.fn.jobstart({ 'sh', '-c', 'xdg-open "' .. url .. '" 2>/dev/null || open "' .. url .. '" 2>/dev/null || true' })
+      vim.notify('Opening: ' .. url, vim.log.levels.INFO, { title = 'tg' })
 
     elseif choice:match('Close') then
       vim.notify('Fetching open issues...', vim.log.levels.INFO, { title = 'tg' })
