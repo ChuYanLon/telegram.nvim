@@ -646,10 +646,6 @@ class TelegramLSPClient {
     try {
       target = await this.getMessage(chatId, messageId);
     } catch {}
-    if (!target) {
-      const ch = this._chats.get(chatId);
-      return { chat: { id: chatId, title: ch ? ch.title : 'Unknown group' }, messages: [] };
-    }
 
     const [olderResult, newerResult] = await Promise.all([
       this.client.invoke({
@@ -672,14 +668,15 @@ class TelegramLSPClient {
 
     const older = (await Promise.all(
       (olderResult.messages || []).map(m => this._formatMessage(m))
-    )).filter(Boolean).filter(m => m.id !== messageId).reverse();
+    )).filter(Boolean).filter(m => !target || m.id !== messageId).reverse();
 
     const newer = (await Promise.all(
       (newerResult.messages || []).map(m => this._formatMessage(m))
-    )).filter(Boolean).filter(m => m.id > messageId).reverse().slice(0, half);
+    )).filter(Boolean).filter(m => !target || m.id > messageId).reverse().slice(0, half);
 
+    const allMsgs = [...older, ...(target ? [target] : []), ...newer];
     const chat = this._chats.get(chatId);
-    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: [...older, target, ...newer], targetIndex: older.length };
+    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
 
 }

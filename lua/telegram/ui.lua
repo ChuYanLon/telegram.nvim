@@ -810,7 +810,17 @@ function M.open_chat(chat_id, chat_title)
   local restore = state.saved_cursors[state.chat_id]
   if restore then
     state.saved_cursors[state.chat_id] = nil
-    M.jump_to_message(restore)
+    M.jump_to_message(restore, function(ok)
+      if not ok or #state.messages == 0 then
+        M.refresh_messages(function()
+          if #state.messages > 0 then
+            local total = 1
+            for _, msg in ipairs(state.messages) do total = total + #fmt_msg(msg) + 1 end
+            pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
+          end
+        end)
+      end
+    end)
   else
     M.refresh_messages(function()
       if #state.messages > 0 then
