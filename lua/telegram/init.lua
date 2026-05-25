@@ -424,7 +424,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
                         local prefixes = { 'fix', 'feat', 'chore', 'docs', 'refactor', 'style' }
                         vim.ui.select(prefixes, { prompt = 'Branch type' }, function(prefix)
                           if not prefix then return end
-                          vim.ui.input({ prompt = 'Short description (e.g. login-crash): ' }, function(desc)
+                          vim.ui.input({ prompt = 'Branch description (required): ' }, function(desc)
                             if not desc or #desc == 0 then return end
                             local branch = prefix .. '/' .. issue.num .. '-' .. desc
                             local cmd = 'cd ' .. git_root .. ' && git checkout dev && git pull --rebase --autostash origin dev && git checkout -b ' .. vim.fn.shellescape(branch)
@@ -435,13 +435,16 @@ vim.api.nvim_create_user_command("TgIssue", function()
                               vim.notify('Branch created locally. Push to your fork:\n  git push -u <your-fork> ' .. branch, vim.log.levels.INFO, { title = 'tg' })
                             end
                             vim.notify('Creating branch ' .. branch .. '...', vim.log.levels.INFO, { title = 'tg' })
-                            vim.fn.jobstart({ 'sh', '-c', cmd }, {
+                            local out = {}
+                            vim.fn.jobstart({ 'sh', '-c', '(cd ' .. git_root .. ' && git checkout dev && git pull --rebase --autostash origin dev && git checkout -b ' .. vim.fn.shellescape(branch) .. ' && git push -u origin ' .. vim.fn.shellescape(branch) .. ') 2>&1' }, {
+                              stdout_buffered = true,
+                              on_stdout = function(_, data) out = data end,
                               on_exit = function(_, sc)
                                 vim.schedule(function()
                                   if sc == 0 or not is_admin then
                                     vim.notify('Branch: ' .. branch, vim.log.levels.INFO, { title = 'tg' })
                                   else
-                                    vim.notify('Branch creation failed', vim.log.levels.ERROR, { title = 'tg' })
+                                    vim.notify('Branch creation failed:\n' .. table.concat(out, '\n'):sub(1, 200), vim.log.levels.ERROR, { title = 'tg' })
                                   end
                                 end)
                               end,
