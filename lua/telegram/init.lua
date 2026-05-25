@@ -320,7 +320,7 @@ vim.api.nvim_create_user_command("TgPr", function()
   local function pick_target()
     vim.ui.select(branches, {
       prompt = 'Target branch',
-      format_item = function(b) return (b == 'main' and b .. ' ⭐' or b) end,
+      format_item = function(b) return (b == 'main' and b .. ' (protected)' or b) end,
     }, function(choice)
       if not choice then return end
       dst = choice
@@ -331,7 +331,7 @@ vim.api.nvim_create_user_command("TgPr", function()
   check_perm(function()
     vim.ui.select(branches, {
       prompt = 'Source branch',
-      format_item = function(b) return (b == cur and b .. ' ← current' or b) end,
+      format_item = function(b) return (b == cur and b .. ' (current)' or b) end,
     }, function(choice)
       if not choice then return end
       src = choice
@@ -365,8 +365,8 @@ vim.api.nvim_create_user_command("TgIssue", function()
     return
   end
   vim.ui.select({
-    '📋 List issues',
-    '➕ Create issue (web)',
+    'List issues',
+    'Create issue (web)',
   }, {
     prompt = 'Issue actions',
   }, function(choice)
@@ -401,7 +401,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
                       tags = tags .. '[' .. l.name .. '] '
                     end
                     if issue.assignees and #issue.assignees > 0 then
-                      tags = tags .. '(👤' .. issue.assignees[1].login .. ') '
+                      tags = tags .. '(' .. issue.assignees[1].login .. ') '
                     end
                     table.insert(items, { num = issue.number, label = '#' .. issue.number .. ' ' .. tags .. issue.title })
                   end
@@ -411,10 +411,10 @@ vim.api.nvim_create_user_command("TgIssue", function()
                   }, function(issue)
                     if not issue then return end
                     vim.ui.select({
-                      '🌿 Create branch',
-                      '🔗 Open in browser',
-                      '✏️  Close issue',
-                      '👤 Assign to me',
+                      'Create branch',
+                      'Open in browser',
+                      'Close issue',
+                      'Assign to me',
                     }, {
                       prompt = '#' .. issue.num .. ' — what next?',
                     }, function(action)
