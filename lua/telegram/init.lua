@@ -124,25 +124,25 @@ local function finish_init()
 		end
 	end)
 	initialized = true
-	vim.notify("[tg] Ready", vim.log.levels.INFO)
+	vim.notify("Ready", vim.log.levels.INFO, { title = 'tg' })
 end
 
 function M.list_groups()
 	local function show_groups()
 		local groups = server.get_groups()
 		if not groups then
-			vim.notify("[tg] No groups found", vim.log.levels.WARN)
+			vim.notify("No groups found", vim.log.levels.WARN, { title = 'tg' })
 			return
 		end
 		if #groups == 0 then
-			vim.notify("[tg] Syncing chats, please wait...", vim.log.levels.INFO)
+			vim.notify("Syncing chats, please wait...", vim.log.levels.INFO, { title = 'tg' })
 			local ok = vim.wait(15000, function()
 				vim.wait(1000)
 				groups = server.get_groups()
 				return groups and #groups > 0
 			end, 0, true)
 			if not ok or not groups or #groups == 0 then
-				vim.notify("[tg] No groups found", vim.log.levels.WARN)
+		vim.notify("No groups found", vim.log.levels.WARN, { title = 'tg' })
 				return
 			end
 		end
@@ -161,7 +161,7 @@ function M.list_groups()
 	end
 
 	if not initialized then
-		vim.notify("[tg] Starting server...", vim.log.levels.INFO)
+		vim.notify("Starting server...", vim.log.levels.INFO, { title = 'tg' })
 		vim.defer_fn(function()
 			if not config.ensure_deps() then return end
 			if not server.start_server() then return end
@@ -170,7 +170,7 @@ function M.list_groups()
 				finish_init()
 				show_groups()
 			else
-				vim.notify("[tg] Waiting for auth...", vim.log.levels.INFO)
+				vim.notify("Waiting for auth...", vim.log.levels.INFO, { title = 'tg' })
 				auth.auth_poll(function(success)
 					if success then
 						finish_init()
@@ -191,7 +191,7 @@ function M.list_groups()
 end
 
 function M.logout()
-	vim.notify("[tg] Logging out and clearing auth data...", vim.log.levels.INFO)
+	vim.notify("Logging out and clearing auth data...", vim.log.levels.INFO, { title = 'tg' })
 	ui.close_chat()
 	ui.state.last_chat = nil
 	server.stop_server()
@@ -200,7 +200,7 @@ function M.logout()
 	vim.fn.delete(db_dir, "rf")
 	vim.fn.delete(files_dir, "rf")
 	initialized = false
-	vim.notify("[tg] Logged out. Run :Tg again to re-authenticate", vim.log.levels.INFO)
+	vim.notify("Logged out. Run :Tg again to re-authenticate", vim.log.levels.INFO, { title = 'tg' })
 end
 
 -- API re-exports
@@ -228,17 +228,17 @@ vim.api.nvim_create_user_command("TgLogout", M.logout, {})
 vim.api.nvim_create_user_command("TgSend", function(opts)
 	local args = vim.fn.split(opts.args)
 	if #args < 2 then
-		vim.notify("[tg] Usage: TgSend <chatId> <text>", vim.log.levels.ERROR)
+		vim.notify("Usage: TgSend <chatId> <text>", vim.log.levels.ERROR, { title = 'tg' })
 		return
 	end
 	local chat_id = tonumber(args[1])
 	if not chat_id then
-		vim.notify("[tg] chatId must be a number", vim.log.levels.ERROR)
+		vim.notify("chatId must be a number", vim.log.levels.ERROR, { title = 'tg' })
 		return
 	end
 	local text = table.concat(args, " ", 2)
 	if server.send_message(chat_id, text) then
-		vim.notify("[tg] Message sent", vim.log.levels.INFO)
+		vim.notify("Message sent", vim.log.levels.INFO, { title = 'tg' })
 	end
 end, { nargs = "+" })
 

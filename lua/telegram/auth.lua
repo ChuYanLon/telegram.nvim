@@ -20,7 +20,7 @@ function M.auth_poll(on_done)
       return
     end
     if a.state == 'error' then
-      vim.notify('[tg] Auth failed: ' .. (type(a.error) == 'string' and a.error or 'unknown'), vim.log.levels.ERROR)
+      vim.notify('Auth failed: ' .. (type(a.error) == 'string' and a.error or 'unknown'), vim.log.levels.ERROR, { title = 'tg' })
       on_done(false)
       return
     end
@@ -41,7 +41,7 @@ function M.auth_poll(on_done)
         if val and #val > 0 then
           server.post_auth_input(val)
         else
-          vim.notify('[tg] Auth cancelled', vim.log.levels.INFO)
+          vim.notify('Auth cancelled', vim.log.levels.INFO, { title = 'tg' })
           on_done(false)
           return
         end

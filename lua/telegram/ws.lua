@@ -28,7 +28,7 @@ function M.ws_start(on_msg)
       if data then
         for _, line in ipairs(data) do
           if line and #line > 0 then
-            vim.notify('[tg-ws] ' .. line, vim.log.levels.WARN)
+            vim.notify(line, vim.log.levels.WARN, { title = 'tg-ws' })
           end
         end
       end

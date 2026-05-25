@@ -22,12 +22,12 @@ local function http_get(path)
   if vim.v.shell_error ~= 0 then
     local ok, data = pcall(vim.json.decode, result)
     local err = (ok and type(data) == 'table' and data.error) or result or 'request failed'
-    vim.notify('[tg] ' .. err, vim.log.levels.ERROR)
+    vim.notify(err, vim.log.levels.ERROR, { title = 'tg' })
     return nil
   end
   local ok, data = pcall(vim.json.decode, result)
   if not ok then
-    vim.notify('[tg] Invalid response from server', vim.log.levels.ERROR)
+    vim.notify('Invalid response from server', vim.log.levels.ERROR, { title = 'tg' })
     return nil
   end
   return data
@@ -47,16 +47,16 @@ local function http_post(path, body)
   if vim.v.shell_error ~= 0 then
     local ok, data = pcall(vim.json.decode, result)
     local err = (ok and type(data) == 'table' and data.error) or result or 'request failed'
-    vim.notify('[tg] ' .. err, vim.log.levels.ERROR)
+    vim.notify(err, vim.log.levels.ERROR, { title = 'tg' })
     return nil
   end
   local ok, data = pcall(vim.json.decode, result)
   if not ok then
-    vim.notify('[tg] Invalid response from server', vim.log.levels.ERROR)
+    vim.notify('Invalid response from server', vim.log.levels.ERROR, { title = 'tg' })
     return nil
   end
   if type(data) == 'table' and data.error then
-    vim.notify('[tg] ' .. data.error, vim.log.levels.ERROR)
+    vim.notify(data.error, vim.log.levels.ERROR, { title = 'tg' })
     return nil
   end
   return data
@@ -117,7 +117,7 @@ function M.start_server()
     M.http_port = http_port
     ws_port = ws_port + 2
     if http_port > 9000 then
-      vim.notify('[tg] No free port', vim.log.levels.ERROR)
+      vim.notify('No free port', vim.log.levels.ERROR, { title = 'tg' })
       return false
     end
     status = check_port()
@@ -126,7 +126,7 @@ function M.start_server()
     return server_wait_reachable()
   end
   if http_port ~= 8080 then
-    vim.notify('[tg] Using port ' .. http_port, vim.log.levels.INFO)
+    vim.notify('Using port ' .. http_port, vim.log.levels.INFO, { title = 'tg' })
   end
   local env = {
     TG_DATA_DIR = config.config.data_dir,
@@ -146,20 +146,20 @@ function M.start_server()
       for _, line in ipairs(data) do
         if line and #line > 0 then
           if line:find('Error:') or line:find('MODULE_NOT_FOUND') then
-            vim.notify('[tg] ' .. line, vim.log.levels.ERROR)
+            vim.notify(line, vim.log.levels.ERROR, { title = 'tg' })
           end
         end
       end
     end,
     on_exit = function(_, code)
       if code > 0 then
-        vim.notify('[tg] Server exited with code ' .. code, vim.log.levels.ERROR)
+        vim.notify('Server exited with code ' .. code, vim.log.levels.ERROR, { title = 'tg' })
       end
       server_job = nil
     end,
   })
   if not server_job or server_job <= 0 then
-    vim.notify('[tg] Failed to start server', vim.log.levels.ERROR)
+    vim.notify('Failed to start server', vim.log.levels.ERROR, { title = 'tg' })
     return false
   end
   server_pid = vim.fn.jobpid(server_job)
@@ -174,7 +174,7 @@ function M.stop_server()
   if server_job then
     vim.fn.jobstop(server_job)
     server_job = nil
-    vim.notify('[tg] Stopped', vim.log.levels.INFO)
+    vim.notify('Stopped', vim.log.levels.INFO, { title = 'tg' })
   end
 end
 

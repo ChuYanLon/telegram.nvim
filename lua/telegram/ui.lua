@@ -400,21 +400,21 @@ local function input_send()
     if server.edit_message(state.chat_id, target.id, text) then
       target.text = text
       render()
-      vim.notify('[tg] Message edited', vim.log.levels.INFO)
+      vim.notify('Message edited', vim.log.levels.INFO, { title = 'tg' })
     end
   elseif state.input_mode == 'reply' and state.reply_to then
     local msg = server.send_message(state.chat_id, text, state.reply_to)
     if msg then
       table.insert(state.messages, msg)
       render()
-      vim.notify('[tg] Reply sent', vim.log.levels.INFO)
+      vim.notify('Reply sent', vim.log.levels.INFO, { title = 'tg' })
     end
   else
     local msg = server.send_message(state.chat_id, text)
     if msg then
       table.insert(state.messages, msg)
       render()
-      vim.notify('[tg] Message sent', vim.log.levels.INFO)
+      vim.notify('Message sent', vim.log.levels.INFO, { title = 'tg' })
     end
   end
   state.editor:clear()
@@ -537,7 +537,7 @@ local function setup_msg_keymaps()
     if not text or #text == 0 then return end
     local data = server.search_messages(state.chat_id, text)
     if not data or not data.messages or #data.messages == 0 then
-      vim.notify('[tg] No results for "' .. text .. '"', vim.log.levels.INFO)
+      vim.notify('No results for "' .. text .. '"', vim.log.levels.INFO, { title = 'tg' })
       return
     end
     local items = {}
@@ -577,7 +577,7 @@ local function setup_msg_keymaps()
     local target = M.curr_msg()
     if not target or not target.id then return end
     if not target.own then
-      vim.notify('[tg] Can only edit your own messages', vim.log.levels.WARN)
+      vim.notify('Can only edit your own messages', vim.log.levels.WARN, { title = 'tg' })
       return
     end
     state.input_mode = 'edit'
@@ -612,7 +612,7 @@ local function setup_msg_keymaps()
           local last = state.messages[#state.messages]
           state.last_msg = last and ('[' .. os.date('%m-%d %H:%M', last.date) .. '] ' .. (last.sender and last.sender.name or '?') .. ': ' .. (last.text or '')) or ''
         end)
-        vim.notify('[tg] Message ' .. (revoke and 'revoked' or 'deleted'), vim.log.levels.INFO)
+        vim.notify('Message ' .. (revoke and 'revoked' or 'deleted'), vim.log.levels.INFO, { title = 'tg' })
       end
       state.delete_target = nil
     end)
@@ -626,7 +626,7 @@ local function setup_msg_keymaps()
     if not groups or #groups == 0 then
       state.forward_target = nil
       apply_highlights()
-      vim.notify('[tg] No groups to forward to', vim.log.levels.WARN)
+      vim.notify('No groups to forward to', vim.log.levels.WARN, { title = 'tg' })
       return
     end
     local items = {}
@@ -639,7 +639,7 @@ local function setup_msg_keymaps()
     }, function(choice)
       if choice then
         local ok = server.forward_messages(state.chat_id, target.id, choice.id)
-        if ok then vim.notify('[tg] Forwarded to ' .. choice.label, vim.log.levels.INFO) end
+        if ok then vim.notify('Forwarded to ' .. choice.label, vim.log.levels.INFO, { title = 'tg' }) end
       end
       state.forward_target = nil
       apply_highlights()
@@ -905,7 +905,7 @@ function M.jump_to_message(target_id, callback)
     end
     if callback then callback(true) end
   end, function()
-    vim.notify('[tg] Failed to load message context', vim.log.levels.ERROR)
+    vim.notify('Failed to load message context', vim.log.levels.ERROR, { title = 'tg' })
     if callback then callback(false) end
   end)
 end
@@ -1000,7 +1000,7 @@ function M.refresh_messages(on_complete)
       if on_complete then on_complete() end
     end,
     function()
-      vim.notify('[tg] Failed to load messages', vim.log.levels.ERROR)
+      vim.notify('Failed to load messages', vim.log.levels.ERROR, { title = 'tg' })
       if on_complete then on_complete() end
     end
   )
