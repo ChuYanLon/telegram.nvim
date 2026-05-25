@@ -3,6 +3,7 @@ local server = require('telegram.server')
 local M = {}
 
 local ws_job_id = nil
+local last_ids = {}
 
 ---@param on_msg fun(msg: table)
 function M.ws_start(on_msg)
@@ -19,6 +20,11 @@ function M.ws_start(on_msg)
         if line and #line > 0 then
           local ok, msg = pcall(vim.json.decode, line)
           if ok and on_msg then
+            if msg.id and msg.event == 'newMessage' then
+              local key = tostring(msg.id)
+              if last_ids[key] then return end
+              last_ids[key] = true
+            end
             on_msg(msg)
           end
         end
