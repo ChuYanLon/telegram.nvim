@@ -1,48 +1,44 @@
-const { describe, it, before, mock } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+
+vi.mock('dotenv', () => ({ default: { config: () => ({}) } }));
+vi.mock('tdl', () => ({
+  default: {
+    configure: () => {},
+    createClient: () => ({
+      on: () => {},
+      invoke: async () => ({ value: '1.8.64' }),
+      login: async () => {},
+      close: async () => {},
+    }),
+  },
+}));
 
 let client;
 
-before(() => {
-  mock.module('dotenv', {
-    namedExports: { config: () => ({}) },
-  });
-  mock.module('tdl', {
-    defaultExport: {
-      configure: () => {},
-      createClient: () => ({
-        on: () => {},
-        invoke: async () => ({ value: '1.8.64' }),
-        login: async () => {},
-        close: async () => {},
-      }),
-    },
-  });
+beforeAll(async () => {
   process.env.TG_API_ID = '1';
   process.env.TG_API_HASH = 'test';
-
-  const TelegramLSPClient = require('../src/tdlib-client');
-  client = new TelegramLSPClient();
+  const mod = await import('../src/tdlib-client');
+  client = new mod.default();
 });
 
 describe('_extractText', () => {
   it('returns empty string for null/undefined', () => {
-    assert.equal(client._extractText(null), '');
-    assert.equal(client._extractText(undefined), '');
+    expect(client._extractText(null)).toBe('');
+    expect(client._extractText(undefined)).toBe('');
   });
 
   it('extracts text from messageText', () => {
-    assert.equal(
+    expect(
       client._extractText({ _: 'messageText', text: { text: 'hello world' } }),
-      'hello world'
-    );
+    ).toBe('hello world');
   });
 
   it('returns type name for non-text messages', () => {
-    assert.equal(client._extractText({ _: 'messagePhoto' }), 'messagePhoto');
-    assert.equal(client._extractText({ _: 'messageSticker' }), 'messageSticker');
-    assert.equal(client._extractText({ _: 'messageDocument' }), 'messageDocument');
-    assert.equal(client._extractText({ _: 'messageAudio' }), 'messageAudio');
+    expect(client._extractText({ _: 'messagePhoto' })).toBe('messagePhoto');
+    expect(client._extractText({ _: 'messageSticker' })).toBe('messageSticker');
+    expect(client._extractText({ _: 'messageDocument' })).toBe('messageDocument');
+    expect(client._extractText({ _: 'messageAudio' })).toBe('messageAudio');
   });
 });
 
@@ -57,15 +53,15 @@ describe('_formatMessage', () => {
       reply_to: null,
     };
     const result = await client._formatMessage(msg);
-    assert.equal(result.id, 123);
-    assert.equal(result.text, 'hi');
-    assert.equal(result.date, 1000000);
-    assert.equal(result.own, false);
-    assert.equal(result.type, 'messageText');
+    expect(result.id).toBe(123);
+    expect(result.text).toBe('hi');
+    expect(result.date).toBe(1000000);
+    expect(result.own).toBe(false);
+    expect(result.type).toBe('messageText');
   });
 
   it('returns null for null message', async () => {
-    assert.equal(await client._formatMessage(null), null);
+    expect(await client._formatMessage(null)).toBeNull();
   });
 
   it('includes replyTo when message has reply', async () => {
@@ -83,9 +79,9 @@ describe('_formatMessage', () => {
       },
     };
     const result = await client._formatMessage(msg);
-    assert.equal(result.id, 456);
-    assert.ok(result.replyTo);
-    assert.equal(result.replyTo.id, 1);
-    assert.equal(result.own, true);
+    expect(result.id).toBe(456);
+    expect(result.replyTo).toBeDefined();
+    expect(result.replyTo.id).toBe(1);
+    expect(result.own).toBe(true);
   });
 });

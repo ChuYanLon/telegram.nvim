@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --experimental-test-module-mocks --test tests/*.test.js",
-    "test:watch": "node --experimental-test-module-mocks --test --watch tests/*.test.js"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
     "express": "^4.19.0",
     "tdl": "^8.1.0",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }
