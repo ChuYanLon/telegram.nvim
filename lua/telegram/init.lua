@@ -134,16 +134,15 @@ function M.list_groups()
 			vim.notify("No groups found", vim.log.levels.WARN, { title = 'tg' })
 			return
 		end
-		if #groups == 0 then
+		if #groups <= 1 then
 			vim.notify("Syncing chats, please wait...", vim.log.levels.INFO, { title = 'tg' })
 			local ok = vim.wait(15000, function()
 				vim.wait(1000)
 				groups = server.get_groups()
-				return groups and #groups > 0
+				return groups and #groups > 1
 			end, 0, true)
-			if not ok or not groups or #groups == 0 then
-		vim.notify("No groups found", vim.log.levels.WARN, { title = 'tg' })
-				return
+			if not ok or not groups or #groups <= 1 then
+		vim.notify("Synced " .. (#groups or 0) .. " groups", vim.log.levels.INFO, { title = 'tg' })
 			end
 		end
 		ui.set_groups(groups)

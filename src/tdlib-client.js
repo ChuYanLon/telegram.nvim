@@ -129,6 +129,7 @@ class TelegramLSPClient {
     }
     this._ready = false;
     this._chats = new Map();
+    this._chatsLoaded = false;
     this._users = new Map();
     this._authState = 'initializing';
     this._authResolve = null;
@@ -396,7 +397,7 @@ class TelegramLSPClient {
 
   async getChats(force) {
     if (!this._ready) throw new Error('Client not ready yet');
-    if (this._chats.size > 0 && !force) return [...this._chats.values()];
+    if (this._chatsLoaded && !force) return [...this._chats.values()];
 
     let offsetOrder = '9223372036854775807';
     let offsetChatId = 0;
@@ -435,6 +436,7 @@ class TelegramLSPClient {
       }
       if (offsetOrder === prevOrder || offsetChatId === prevChatId) break;
     }
+    this._chatsLoaded = true;
     return [...this._chats.values()];
   }
 

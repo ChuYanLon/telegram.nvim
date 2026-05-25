@@ -7,6 +7,7 @@ M.http_port = http_port
 local ws_port = 8081
 local server_job = nil
 local server_pid = nil
+local server_owner = false
 local cached_groups = nil
 
 local function base_url() return 'http://localhost:' .. http_port end
@@ -109,25 +110,13 @@ end
 function M.start_server()
   local status = check_port()
   if status == 'ready' then return true end
-  if status ~= 'ours' then
-    status = check_port()
+  if status ~= 'ours' then status = check_port() end
+  if status == 'ours' then return server_wait_reachable() end
+  if status == 'other' then
+    vim.notify('Port ' .. http_port .. ' is occupied by another process', vim.log.levels.WARN, { title = 'tg' })
+    return false
   end
-  while status == 'other' do
-    http_port = http_port + 2
-    M.http_port = http_port
-    ws_port = ws_port + 2
-    if http_port > 9000 then
-      vim.notify('No free port', vim.log.levels.ERROR, { title = 'tg' })
-      return false
-    end
-    status = check_port()
-  end
-  if status == 'ours' then
-    return server_wait_reachable()
-  end
-  if http_port ~= 8080 then
-    vim.notify('Using port ' .. http_port, vim.log.levels.INFO, { title = 'tg' })
-  end
+  server_owner = true
   local env = {
     TG_DATA_DIR = config.config.data_dir,
     TG_PORT = tostring(http_port),
@@ -167,6 +156,7 @@ function M.start_server()
 end
 
 function M.stop_server()
+  if not server_owner then return end
   if server_pid then
     vim.fn.system({ 'sh', '-c', 'kill ' .. server_pid .. ' 2>/dev/null; true' })
     server_pid = nil
@@ -176,6 +166,7 @@ function M.stop_server()
     server_job = nil
     vim.notify('Stopped', vim.log.levels.INFO, { title = 'tg' })
   end
+  server_owner = false
 end
 
 ---@param chat_id any
