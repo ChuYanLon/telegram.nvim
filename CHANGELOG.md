@@ -2,9 +2,17 @@
 
 ## [Unreleased]
 
-### Added
+## [0.2.1] - 2026-05-25
 
-- Feature progress table in README with per-category tracking
+### Fixed
+
+- **Duplicate messages** — own messages no longer appear twice due to send response / WebSocket race (#8 follow-up)
+
+## [0.2.0] - 2026-05-25
+
+### Fixed
+
+- **Message dedup** — use message ID instead of text+time heuristic (#8)
 - `vim.notify` calls now use `title` option instead of `[tg]` text prefix
 - Issue templates (bug report, feature request)
 - Pull request template
