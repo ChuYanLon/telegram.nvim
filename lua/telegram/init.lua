@@ -239,18 +239,18 @@ vim.api.nvim_create_user_command("TgPr", function()
   local title = vim.fn.input('PR title (optional): ')
   local args = { 'pr', 'create', '--base', dst, '--head', src, '--repo', 'ChuYanLon/telegram.nvim' }
   if title and #title > 0 then
-    table.insert(args, '--title')
-    table.insert(args, title)
+    vim.list_extend(args, { '--title', title })
+  else
+    table.insert(args, '--fill')
   end
 
   vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
-  local ok, url = pcall(function()
-    return vim.fn.systemlist({ 'gh', unpack(args) })[1] or ''
-  end)
-  if not ok or url == '' then
-    vim.notify('PR creation failed', vim.log.levels.ERROR, { title = 'tg' })
+  local out = vim.fn.system({ 'gh', unpack(args) })
+  if vim.v.shell_error ~= 0 then
+    vim.notify('PR creation failed:\n' .. (out or ''), vim.log.levels.ERROR, { title = 'tg' })
     return
   end
+  local url = vim.split(out or '', '\n')[1] or ''
   vim.notify('PR created: ' .. url, vim.log.levels.INFO, { title = 'tg' })
 
   if dst == 'main' then
