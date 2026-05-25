@@ -359,4 +359,153 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 	end
 end, { nargs = "+" })
 
+vim.api.nvim_create_user_command("TgIssue", function()
+  if vim.fn.executable('gh') ~= 1 then
+    vim.notify("gh (GitHub CLI) not found", vim.log.levels.ERROR, { title = 'tg' })
+    return
+  end
+  vim.ui.select({
+    '📋 List open issues',
+    '➕ Create issue',
+    '✏️  Close issue',
+    '👤 Assign to me',
+  }, {
+    prompt = 'Issue actions',
+    format_item = function(item) return item end,
+  }, function(choice)
+    if not choice then return end
+
+    if choice:match('List') then
+      vim.notify('Fetching issues...', vim.log.levels.INFO, { title = 'tg' })
+      local stdout = {}
+      vim.fn.jobstart({ 'gh', 'issue', 'list', '--repo', 'ChuYanLon/telegram.nvim', '--limit', '20', '--json', 'number,title,labels,assignees' }, {
+        stdout_buffered = true,
+        on_stdout = function(_, data) stdout = data end,
+        on_exit = function()
+          vim.schedule(function()
+            local lines = table.concat(stdout, '\n')
+            local ok, issues = pcall(vim.json.decode, lines)
+            if not ok or not issues then
+              vim.notify('Failed to parse issues', vim.log.levels.ERROR, { title = 'tg' })
+              return
+            end
+            local items = {}
+            for _, issue in ipairs(issues) do
+              local labels = ''
+              for _, l in ipairs(issue.labels or {}) do
+                labels = labels .. '[' .. l.name .. '] '
+              end
+              local assignee = ''
+              if issue.assignees and #issue.assignees > 0 then
+                assignee = ' @' .. issue.assignees[1].login
+              end
+              table.insert(items, {
+                num = issue.number,
+                label = '#' .. issue.number .. ' ' .. labels .. issue.title .. assignee,
+              })
+            end
+            vim.ui.select(items, {
+              prompt = 'Issues (20 newest) — ESC to close',
+              format_item = function(item) return item.label end,
+            }, function(choice)
+              if choice then
+                vim.notify('https://github.com/ChuYanLon/telegram.nvim/issues/' .. choice.num, vim.log.levels.INFO, { title = 'tg' })
+              end
+            end)
+          end)
+        end,
+      })
+
+    elseif choice:match('Create') then
+      vim.ui.input({ prompt = 'Issue title: ' }, function(title)
+        if not title or #title == 0 then return end
+        vim.ui.input({ prompt = 'Description (optional): ' }, function(body)
+          local args = { 'gh', 'issue', 'create', '--repo', 'ChuYanLon/telegram.nvim', '--title', title }
+          if body and #body > 0 then table.insert(args, '--body'); table.insert(args, body) end
+          vim.notify('Creating issue...', vim.log.levels.INFO, { title = 'tg' })
+          vim.fn.jobstart(args, {
+            stdout_buffered = true,
+            on_stdout = function(_, data)
+              local url = (data or {})[1] or ''
+              if url and #url > 0 then
+                vim.schedule(function()
+                  vim.notify('Created: ' .. url, vim.log.levels.INFO, { title = 'tg' })
+                end)
+              end
+            end,
+          })
+        end)
+      end)
+
+    elseif choice:match('Close') then
+      vim.notify('Fetching open issues...', vim.log.levels.INFO, { title = 'tg' })
+      local stdout = {}
+      vim.fn.jobstart({ 'gh', 'issue', 'list', '--repo', 'ChuYanLon/telegram.nvim', '--limit', '20', '--json', 'number,title' }, {
+        stdout_buffered = true,
+        on_stdout = function(_, data) stdout = data end,
+        on_exit = function()
+          vim.schedule(function()
+            local ok, issues = pcall(vim.json.decode, table.concat(stdout, '\n'))
+            if not ok or not issues then return end
+            local items = {}
+            for _, issue in ipairs(issues) do
+              table.insert(items, { num = issue.number, label = '#' .. issue.number .. ' ' .. issue.title })
+            end
+            vim.ui.select(items, {
+              prompt = 'Select issue to close',
+              format_item = function(item) return item.label end,
+            }, function(choice)
+              if choice then
+                vim.fn.jobstart({ 'gh', 'issue', 'close', tostring(choice.num), '--repo', 'ChuYanLon/telegram.nvim' }, {
+                  on_exit = function()
+                    vim.schedule(function()
+                      vim.notify('#' .. choice.num .. ' closed', vim.log.levels.INFO, { title = 'tg' })
+                    end)
+                  end,
+                })
+              end
+            end)
+          end)
+        end,
+      })
+
+    elseif choice:match('Assign') then
+      vim.notify('Fetching open issues...', vim.log.levels.INFO, { title = 'tg' })
+      local stdout = {}
+      vim.fn.jobstart({ 'gh', 'issue', 'list', '--repo', 'ChuYanLon/telegram.nvim', '--limit', '20', '--json', 'number,title,assignees' }, {
+        stdout_buffered = true,
+        on_stdout = function(_, data) stdout = data end,
+        on_exit = function()
+          vim.schedule(function()
+            local ok, issues = pcall(vim.json.decode, table.concat(stdout, '\n'))
+            if not ok or not issues then return end
+            local items = {}
+            for _, issue in ipairs(issues) do
+              local assigned = ''
+              if issue.assignees and #issue.assignees > 0 then
+                assigned = ' 👤' .. issue.assignees[1].login
+              end
+              table.insert(items, { num = issue.number, label = '#' .. issue.number .. ' ' .. issue.title .. assigned })
+            end
+            vim.ui.select(items, {
+              prompt = 'Select issue to assign to yourself',
+              format_item = function(item) return item.label end,
+            }, function(choice)
+              if choice then
+                vim.fn.jobstart({ 'gh', 'issue', 'edit', tostring(choice.num), '--repo', 'ChuYanLon/telegram.nvim', '--add-assignee', 'ChuYanLon' }, {
+                  on_exit = function()
+                    vim.schedule(function()
+                      vim.notify('#' .. choice.num .. ' assigned to you', vim.log.levels.INFO, { title = 'tg' })
+                    end)
+                  end,
+                })
+              end
+            end)
+          end)
+        end,
+      })
+    end
+  end)
+end, {})
+
 return M
