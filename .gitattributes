@@ -1,0 +1,14 @@
+* text=auto
+
+*.js text
+*.json text
+*.lua text
+*.md text
+*.yml text
+*.yaml text
+*.sh text eol=lf
+*.bat text eol=crlf
+
+*.svg binary
+*.png binary
+*.jpg binary
