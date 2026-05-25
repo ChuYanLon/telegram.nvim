@@ -7,6 +7,7 @@ M.http_port = http_port
 local ws_port = 8081
 local server_job = nil
 local server_pid = nil
+local server_owner = false
 local cached_groups = nil
 
 local function base_url() return 'http://localhost:' .. http_port end
@@ -115,6 +116,7 @@ function M.start_server()
     vim.notify('Port ' .. http_port .. ' is occupied by another process', vim.log.levels.WARN, { title = 'tg' })
     return false
   end
+  server_owner = true
   local env = {
     TG_DATA_DIR = config.config.data_dir,
     TG_PORT = tostring(http_port),
@@ -154,6 +156,7 @@ function M.start_server()
 end
 
 function M.stop_server()
+  if not server_owner then return end
   if server_pid then
     vim.fn.system({ 'sh', '-c', 'kill ' .. server_pid .. ' 2>/dev/null; true' })
     server_pid = nil
@@ -163,6 +166,7 @@ function M.stop_server()
     server_job = nil
     vim.notify('Stopped', vim.log.levels.INFO, { title = 'tg' })
   end
+  server_owner = false
 end
 
 ---@param chat_id any
