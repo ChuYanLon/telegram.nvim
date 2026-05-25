@@ -26,8 +26,12 @@ describe('_extractText', () => {
     expect(client._extractText({ _: 'messageText', text: { text: 'hi' } })).toBe('hi');
   });
 
-  it('returns type for non-text messages', () => {
-    expect(client._extractText({ _: 'messagePhoto' })).toBe('messagePhoto');
+  it('returns empty string for non-text messages without caption', () => {
+    expect(client._extractText({ _: 'messagePhoto' })).toBe('');
+  });
+
+  it('extracts caption from media messages', () => {
+    expect(client._extractText({ _: 'messagePhoto', caption: { text: 'a photo' } })).toBe('a photo');
   });
 });
 
