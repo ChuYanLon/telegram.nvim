@@ -123,6 +123,6 @@ describe('_formatReplyTo', () => {
       },
     };
     const result = await client._formatReplyTo(msg);
-    expect(result).toEqual({ id: 5, sender: { id: null, name: 'TelegramUser' } });
+    expect(result).toEqual({ id: 5, chat_id: -1001, sender: { id: null, name: 'TelegramUser' }, text: '' });
   });
 });
