@@ -24,7 +24,29 @@ local function get_renderer(msg)
   return other
 end
 
+local service_styles = {
+  messageBasicGroupChatCreate = { prefix = '>', text = 'created this group' },
+  messageChatAddMembers = { prefix = '+', text = 'joined this group' },
+  messageChatJoinByLink = { prefix = '+', text = 'joined this group via invite link' },
+  messageChatJoinByRequest = { prefix = '+', text = 'joined this group' },
+  messageChatDeleteMember = { prefix = '-', text = 'left the group' },
+  messageChatChangeTitle = { prefix = '~', text = 'changed the group name' },
+  messageChatChangePhoto = { prefix = '~', text = 'changed the group photo' },
+  messageChatDeletePhoto = { prefix = '~', text = 'removed the group photo' },
+  messagePinMessage = { prefix = '*', text = 'pinned a message' },
+  messageMessagePinned = { prefix = '*', text = 'pinned a message' },
+  messageForumTopicCreated = { prefix = '>', text = 'created a topic' },
+  messageChatSetMessageAutoDeleteTime = { prefix = '!', text = 'set auto-delete timer' },
+}
+
 function M.render(msg)
+  local style = msg.type and service_styles[msg.type]
+  if style then
+    local sender = msg.sender and msg.sender.name or (msg.own and 'You' or 'Someone')
+    local time_str = os.date('%H:%M:%S on %B %d, %Y', msg.date)
+    local text = style.prefix .. ' ' .. sender .. ' ' .. style.text .. ' at ' .. time_str
+    return { text }
+  end
   local date_str = os.date('%m-%d %H:%M', msg.date)
   local sender = msg.own and 'You' or (msg.sender and msg.sender.name or 'unknown')
   local content = get_renderer(msg).render(msg)

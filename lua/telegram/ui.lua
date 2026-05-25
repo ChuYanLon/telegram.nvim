@@ -102,6 +102,9 @@ local function apply_highlights()
   for line = 0, total - 1 do
     local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
     if not text then break end
+    if text:match('^[+>~*!-] .- at %d+:%d+:%d+ on %w+ %d+, %d+$') then
+      vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgService', line, 0, -1)
+    end
     local rs, re = text:find('\xE2\x94\x83')
     if rs then
       vim.api.nvim_buf_add_highlight(buf, hl_ns, 'TgReplyIndicator', line, rs - 1, re)
