@@ -241,7 +241,7 @@ vim.api.nvim_create_user_command("TgPr", function()
   if title and #title > 0 then
     vim.list_extend(args, { '--title', title })
   else
-    table.insert(args, '--fill')
+    table.insert(args, '--fill-first')
   end
 
   vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
