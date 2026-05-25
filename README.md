@@ -130,22 +130,74 @@ In the groups panel:
 | `<CR>` | Open selected chat |
 | `<C-h/j/k/l>` | Navigate panels |
 
-## Features
+## Progress
 
-- **Online member count** — shows `N online` in the menu bar when a group is open
-- **Typing indicators** — displays when another user is typing/recording/etc.
-- **Own typing broadcast** — sends `typing...` indicator while composing, cancels on close
-- **Cursor position persistence** — Esc saves cursor position, reopening restores it
-- **Multi-line input editor** — NuiPopup-based editor with placeholder, reply/edit mode indicators
-- **Context window** — `Enter` on a reply reference or picking a search result navigates to the message with surrounding context (~15 messages before and after), not a jump to raw message
-- **Search messages** — `/` to search, pick a result to jump to it with full context
-- **Bidirectional auto-load** — scroll past the top to load older messages, scroll past the bottom to load newer messages; both paginate from your current position, not from the chat's absolute newest
-- **Operation feedback** — success notifications for send/reply/edit/delete/recall/forward
-- **Async UI** — message operations, search, and scroll loading don't block the UI or cause scroll jumps
-- **Startup feedback** — immediate "Starting server..." notification before blocking operations
-- **Reply/Edit/Delete/Forward target highlight** — target message is highlighted with "● Replying" / "● Editing" / "● Deleting" / "● Forwarding" indicator
-- **Virtual-scrolled groups panel** — only renders visible groups; `j/k` automatically pages when reaching the boundary; handles hundreds of groups efficiently
-- **Read-only message window** — main chat buffer is not modifiable
+| Category | Done | Total | Progress |
+|----------|------|-------|----------|
+| Messaging | 7 | 14 | ████████░░░░░ 50% |
+| UI & Interaction | 16 | 21 | ████████████░░ 76% |
+| Infrastructure | 6 | 10 | ████████░░░░ 60% |
+| **Total** | **29** | **45** | █████████░░ 64% |
+
+### Messaging
+
+| | Feature | Status |
+|--|---------|--------|
+| ✓ | **Send text messages** — plain text to any group | ✅ Done |
+| ✓ | **Edit messages** — edit own message text | ✅ Done |
+| ✓ | **Delete / recall** — delete for self or revoke for everyone | ✅ Done |
+| ✓ | **Forward messages** — forward to another group | ✅ Done |
+| ✓ | **Reply to messages** — reply with quoted context | ✅ Done |
+| ✓ | **Search messages** — `/` to search within a chat | ✅ Done |
+| ✓ | **Bidirectional auto-load** — scroll older/newer from current position | ✅ Done |
+| ☐ | **Rich text rendering** — bold/italic/code/links/markdown | 📝 Planned |
+| ☐ | **Media files** — download and view images/documents/voice | 📝 Planned |
+| ☐ | **Message reactions** — add/remove emoji reactions | 📝 Planned |
+| ☐ | **Pinned messages** — view, pin, unpin | 📝 Planned |
+| ☐ | **Polls** — create and vote | 📝 Planned |
+| ☐ | **Multi-select mode** — batch delete / batch forward | 📝 Planned |
+| ☐ | **Message details** — edit history, message info | 📝 Planned |
+
+### UI & Interaction
+
+| | Feature | Status |
+|--|---------|--------|
+| ✓ | **Group list** — all supergroups and basic groups | ✅ Done |
+| ✓ | **Real-time push** — WebSocket instant message arrival | ✅ Done |
+| ✓ | **Online member count** — `N online` in menu bar | ✅ Done |
+| ✓ | **Typing indicators** — see when others are typing | ✅ Done |
+| ✓ | **Own typing broadcast** — auto-send typing indicator | ✅ Done |
+| ✓ | **Multi-line input editor** — NuiPopup with placeholder/mode indicators | ✅ Done |
+| ✓ | **Context window** — reply/search result with surrounding messages | ✅ Done |
+| ✓ | **Target highlighting** — reply/edit/delete/forward indicator | ✅ Done |
+| ✓ | **Cursor persistence** — save/restore position across sessions | ✅ Done |
+| ✓ | **Unread indicator** — `[N]` on title bar | ✅ Done |
+| ✓ | **Virtual-scrolled groups** — efficient for hundreds of groups | ✅ Done |
+| ✓ | **Read-only message window** — buffer not modifiable | ✅ Done |
+| ✓ | **Async UI** — non-blocking operations | ✅ Done |
+| ✓ | **Operation feedback** — success notifications | ✅ Done |
+| ✓ | **Startup feedback** — immediate status | ✅ Done |
+| ✓ | **Help popup** — `?` shows keymap reference | ✅ Done |
+| ☐ | **Direct messages / user search** — private chats | 📝 Planned |
+| ☐ | **Chat filters** — unread only, specific types | 📝 Planned |
+| ☐ | **Cross-chat global search** — search all chats | 📝 Planned |
+| ☐ | **Session persistence** — restore state across Neovim restart | 📝 Planned |
+| ☐ | **Message translation** — via external API | 📝 Planned |
+
+### Infrastructure
+
+| | Feature | Status |
+|--|---------|--------|
+| ✓ | **Auth flow** — phone → code → 2FA, async | ✅ Done |
+| ✓ | **Proxy support** — SOCKS5/HTTP for TDLib | ✅ Done |
+| ✓ | **Auto-detect libtdjson** — Linux/macOS/Windows | ✅ Done |
+| ✓ | **Port conflict handling** — auto-increment on conflict | ✅ Done |
+| ✓ | **Server lifecycle** — auto-start/stop with Neovim | ✅ Done |
+| ✓ | **`vim.notify` with title** — `[tg]` as title, not text | ✅ Done |
+| ☐ | **WebSocket auto-reconnect** — reconnect on disconnect | 📝 Planned |
+| ☐ | **Chat cache persistence** — avoid re-fetch on restart | 📝 Planned |
+| ☐ | **Batch sender resolve** — optimize bulk message loading | 📝 Planned |
+| ☐ | **HTTP error retry** — retry with backoff on failure | 📝 Planned |
 
 ## Auth Flow
 
