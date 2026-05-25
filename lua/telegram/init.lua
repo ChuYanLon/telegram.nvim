@@ -245,8 +245,7 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 })
 
 local function git(args)
-  local dir = vim.fn.shellescape(config.plugin_root)
-  return vim.fn.systemlist('git -C ' .. dir .. ' ' .. args .. ' 2>/dev/null')
+  return vim.fn.systemlist({ 'git', '-C', config.plugin_root, args })
 end
 
 local function get_branches()
