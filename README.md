@@ -1,5 +1,10 @@
 # telegram.nvim
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
+[![CI](https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml)
+[![Neovim](https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet)](https://neovim.io)
+
 A Telegram chat tool for neovim, similar to telegra.el
 
 Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket communication.
