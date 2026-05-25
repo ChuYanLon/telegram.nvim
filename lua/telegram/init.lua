@@ -245,25 +245,50 @@ vim.api.nvim_create_user_command("TgPr", function()
   end
 
   vim.notify('Creating PR ' .. src .. ' → ' .. dst .. '...', vim.log.levels.INFO, { title = 'tg' })
-  local out = vim.fn.system({ 'gh', unpack(args) })
-  if vim.v.shell_error ~= 0 then
-    vim.notify('PR creation failed:\n' .. (out or ''), vim.log.levels.ERROR, { title = 'tg' })
-    return
-  end
-  local url = vim.split(out or '', '\n')[1] or ''
-  vim.notify('PR created: ' .. url, vim.log.levels.INFO, { title = 'tg' })
 
-  if dst == 'main' then
-    local merge = vim.fn.input('Merge to main directly? (y/N): ')
-    if merge:lower() == 'y' then
-      local pr_num = url:match('/(%d+)$')
-      if pr_num then
-        vim.notify('Merging PR #' .. pr_num .. ' with admin bypass...', vim.log.levels.INFO, { title = 'tg' })
-        vim.fn.system({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' })
-        vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
+  local stdout = {}
+  vim.fn.jobstart({ 'gh', unpack(args) }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        local err = table.concat(stdout, '\n')
+        vim.schedule(function()
+          vim.notify('PR creation failed:\n' .. err, vim.log.levels.ERROR, { title = 'tg' })
+        end)
+        return
       end
-    end
-  end
+      local url = table.concat(stdout, '\n'):match('https[%w:/.%-]+')
+      vim.schedule(function()
+        vim.notify('PR created: ' .. (url or '?'), vim.log.levels.INFO, { title = 'tg' })
+
+        if dst == 'main' and url then
+          local pr_num = url:match('/(%d+)$')
+          if pr_num then
+            vim.ui.select({ 'Yes (merge now)', 'No (just PR)' }, {
+              prompt = 'Merge PR #' .. pr_num .. ' to main?',
+              format_item = function(item) return item end,
+            }, function(choice)
+              if choice and choice:match('^Yes') then
+                vim.notify('Merging...', vim.log.levels.INFO, { title = 'tg' })
+                vim.fn.jobstart({ 'gh', 'pr', 'merge', pr_num, '--repo', 'ChuYanLon/telegram.nvim', '--merge', '--admin' }, {
+                  on_exit = function(_, mc)
+                    vim.schedule(function()
+                      if mc == 0 then
+                        vim.notify('Merged!', vim.log.levels.INFO, { title = 'tg' })
+                      else
+                        vim.notify('Merge failed', vim.log.levels.ERROR, { title = 'tg' })
+                      end
+                    end)
+                  end,
+                })
+              end
+            end)
+          end
+        end
+      end)
+    end,
+  })
 end, {})
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
