@@ -267,16 +267,18 @@ class TelegramLSPClient {
     if (!replyTo.sender && r.origin_sender_name) {
       replyTo.sender = { id: null, name: r.origin_sender_name };
     }
-    if (r.chat_id === msg.chat_id) {
-      try {
-        const orig = await this.client.invoke({ _: 'getMessage', chat_id: msg.chat_id, message_id: r.message_id });
-        if (orig) {
-          replyTo.text = this._extractText(orig.content);
-          if (!replyTo.sender) {
-            replyTo.sender = await this._resolveSender(orig.sender_id);
-          }
+    const origChatId = r.chat_id || msg.chat_id;
+    try {
+      const orig = await this.client.invoke({ _: 'getMessage', chat_id: origChatId, message_id: r.message_id });
+      if (orig) {
+        replyTo.text = this._extractText(orig.content);
+        if (!replyTo.sender) {
+          replyTo.sender = await this._resolveSender(orig.sender_id);
         }
-      } catch {}
+      }
+    } catch {}
+    if (r.chat_id && r.chat_id !== msg.chat_id) {
+      replyTo.chat_id = r.chat_id;
     }
     return replyTo;
   }
