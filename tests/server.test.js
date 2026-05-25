@@ -10,7 +10,8 @@ mock.module('tdl', {
     configure: () => {},
     createClient: () => ({
       on: () => {},
-      invoke: async () => ({}),
+      invoke: async () => ({ value: '1.8.64' }),
+      login: async () => {},
       close: async () => {},
     }),
   },
