@@ -18,7 +18,7 @@ local function get_renderer(msg)
     end
     return text
   end
-  if t == 'messagePhoto' or t == 'messageVideo' or t == 'messageAnimation' or t == 'messageDocument' then
+  if t == 'messagePhoto' or t == 'messageVideo' or t == 'messageAnimation' or t == 'messageDocument' or t == 'messageVoiceNote' or t == 'messageVideoNote' or t == 'messageAudio' then
     return media
   end
   return other
