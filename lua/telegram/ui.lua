@@ -937,11 +937,11 @@ function M.load_older()
       local new_msgs = data.messages or {}
       if #new_msgs == 0 then state.exhausted = true; state.loading = false; return end
       local seen = {}
-      for _, m in ipairs(state.messages) do seen[m.id] = true end
+      for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
       local new_lines = 0
       for i = 1, #new_msgs do
-        if not seen[new_msgs[i].id] then
-          seen[new_msgs[i].id] = true
+        if not seen[tostring(new_msgs[i].id)] then
+          seen[tostring(new_msgs[i].id)] = true
           table.insert(state.messages, 1, new_msgs[i])
           new_lines = new_lines + #fmt_msg(new_msgs[i]) + 1
         end
@@ -971,8 +971,13 @@ function M.load_newer()
         state.loading_newer = false
         return
       end
+      local seen = {}
+      for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
       for _, m in ipairs(new_msgs) do
-        table.insert(state.messages, m)
+        if not seen[tostring(m.id)] then
+          seen[tostring(m.id)] = true
+          table.insert(state.messages, m)
+        end
       end
       if #new_msgs > 0 then
         render()
@@ -997,8 +1002,8 @@ function M.refresh_messages(on_complete)
       local seen = {}
       for i = #raw, 1, -1 do
         local msg = raw[i]
-        if not seen[msg.id] then
-          seen[msg.id] = true
+        if not seen[tostring(msg.id)] then
+          seen[tostring(msg.id)] = true
           table.insert(state.messages, msg)
         end
       end

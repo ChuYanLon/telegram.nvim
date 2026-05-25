@@ -81,18 +81,18 @@ local function finish_init()
 					local preview = "[" .. ts .. "] " .. (msg.sender and msg.sender.name or "?") .. ": " .. (msg.text or "")
 					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
-				local mid = msg.id
-				if mid ~= nil then
-					local chat_key = msg.chat and tostring(msg.chat.id)
-					if seen_ids[chat_key or '_'][mid] then return end
-					seen_ids[chat_key or '_'][mid] = true
-					for _, m in ipairs(st.messages) do
-						if m.id == mid then return end
+					local mid = msg.id
+					if mid ~= nil then
+						local chat_key = msg.chat and tostring(msg.chat.id)
+						if seen_ids[chat_key or '_'][mid] then return end
+						seen_ids[chat_key or '_'][mid] = true
+						for _, m in ipairs(st.messages) do
+							if tostring(m.id) == tostring(mid) then return end
+						end
+					else
+						mid = os.time() .. math.random()
 					end
-				else
-					mid = os.time() .. math.random()
-				end
-				table.insert(st.messages, { id = mid, type = msg.type, date = msg.date, sender = msg.sender, text = msg.text, own = msg.own, replyTo = msg.replyTo })
+					table.insert(st.messages, { id = mid, type = msg.type, date = msg.date, sender = msg.sender, text = msg.text, own = msg.own, replyTo = msg.replyTo })
 					ui.render()
 					if at_bottom then
 						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
