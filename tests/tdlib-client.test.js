@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import FakeTdClient from './fake-td-client';
-import TelegramLSPClient from '../src/tdlib-client';
 
 let client;
 
-beforeAll(() => {
+beforeAll(async () => {
+  process.env.TG_TDLIB_PATH = '/dev/null';
+  const { default: TelegramLSPClient } = await import('../src/tdlib-client');
   const fake = new FakeTdClient();
   fake.addUser({ id: 1, first_name: 'Alice', last_name: null });
   fake.addUser({ id: 2, first_name: 'Bob', last_name: 'Lee' });
