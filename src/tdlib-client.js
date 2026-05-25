@@ -632,7 +632,8 @@ class TelegramLSPClient {
       (result.messages || []).map(m => this._formatMessage(m))
     )).filter(Boolean);
     const newer = msgs.filter(m => m.id > afterId).reverse().slice(0, limit);
-    return { messages: newer };
+    const chat = this._chats.get(chatId);
+    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: newer };
   }
 
   async getMessagesAround(chatId, messageId, limit = 31) {
@@ -643,7 +644,10 @@ class TelegramLSPClient {
     try {
       target = await this.getMessage(chatId, messageId);
     } catch {}
-    if (!target) return { messages: [] };
+    if (!target) {
+      const ch = this._chats.get(chatId);
+      return { chat: { id: chatId, title: ch ? ch.title : 'Unknown group' }, messages: [] };
+    }
 
     const [olderResult, newerResult] = await Promise.all([
       this.client.invoke({
@@ -672,7 +676,8 @@ class TelegramLSPClient {
       (newerResult.messages || []).map(m => this._formatMessage(m))
     )).filter(Boolean).filter(m => m.id > messageId).reverse().slice(0, half);
 
-    return { messages: [...older, target, ...newer], targetIndex: older.length };
+    const chat = this._chats.get(chatId);
+    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: [...older, target, ...newer], targetIndex: older.length };
   }
 
 }
