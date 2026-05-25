@@ -28,6 +28,8 @@ Backend powered by TDLib + Node.js, frontend in pure Lua with HTTP + WebSocket c
 - **Node.js** (>= 18)
 - **curl**
 - **libtdjson** — TDLib shared library (minimum version **1.8.64**) — `libtdjson.so` (Linux), `libtdjson.dylib` (macOS), `tdjson.dll` (Windows)
+- **nui.nvim** — used for popups, layout, and input editor (automatically installed by lazy.nvim)
+- **gh** (GitHub CLI) — optional, required for `:TgPr` and `:TgIssue` commands
 
 ### Installing libtdjson
 
@@ -67,6 +69,7 @@ ldconfig 2>/dev/null || true
   "ChuYanLon/telegram.nvim",
   build = "npm i",
   event = "VeryLazy",
+  dependencies = { "MunifTanjim/nui.nvim" },
   keys = {
     { "<leader>tt", "<cmd>Tg<Cr>", desc = "Toggle Telegram" },
     { "<leader>tL", "<cmd>TgLogout<Cr>", desc = "Logout Telegram" },
