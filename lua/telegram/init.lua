@@ -320,7 +320,7 @@ vim.api.nvim_create_user_command("TgPr", function()
   local function pick_target()
     vim.ui.select(branches, {
       prompt = 'Target branch',
-      format_item = function(b) return (b == 'main' and b .. ' ⭐' or b) end,
+      format_item = function(b) return (b == 'main' and b .. ' (protected)' or b) end,
     }, function(choice)
       if not choice then return end
       dst = choice
@@ -331,7 +331,7 @@ vim.api.nvim_create_user_command("TgPr", function()
   check_perm(function()
     vim.ui.select(branches, {
       prompt = 'Source branch',
-      format_item = function(b) return (b == cur and b .. ' ← current' or b) end,
+      format_item = function(b) return (b == cur and b .. ' (current)' or b) end,
     }, function(choice)
       if not choice then return end
       src = choice
@@ -358,5 +358,127 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 		vim.notify("Message sent", vim.log.levels.INFO, { title = 'tg' })
 	end
 end, { nargs = "+" })
+
+vim.api.nvim_create_user_command("TgIssue", function()
+  if vim.fn.executable('gh') ~= 1 then
+    vim.notify("gh (GitHub CLI) not found", vim.log.levels.ERROR, { title = 'tg' })
+    return
+  end
+  vim.ui.select({
+    'List issues',
+    'Create issue (web)',
+  }, {
+    prompt = 'Issue actions',
+  }, function(choice)
+    if not choice then return end
+
+    if choice:match('List') then
+      vim.notify('Fetching issues...', vim.log.levels.INFO, { title = 'tg' })
+      local git_root = vim.fn.shellescape(config.plugin_root)
+      local is_admin = false
+      vim.fn.jobstart({ 'gh', 'api', 'repos/ChuYanLon/telegram.nvim', '-q', '.permissions.admin' }, {
+        stdout_buffered = true,
+        on_stdout = function(_, d)
+          is_admin = d and d[1] and d[1]:match('true')
+        end,
+        on_exit = function()
+          vim.schedule(function()
+            local stdout = {}
+            vim.fn.jobstart({ 'gh', 'issue', 'list', '--repo', 'ChuYanLon/telegram.nvim', '--limit', '20', '--json', 'number,title,labels,assignees' }, {
+              stdout_buffered = true,
+              on_stdout = function(_, data) stdout = data end,
+              on_exit = function()
+                vim.schedule(function()
+                  local ok, issues = pcall(vim.json.decode, table.concat(stdout, '\n'))
+                  if not ok or not issues then
+                    vim.notify('Failed to parse issues', vim.log.levels.ERROR, { title = 'tg' })
+                    return
+                  end
+                  local items = {}
+                  for _, issue in ipairs(issues) do
+                    local tags = ''
+                    for _, l in ipairs(issue.labels or {}) do
+                      tags = tags .. '[' .. l.name .. '] '
+                    end
+                    if issue.assignees and #issue.assignees > 0 then
+                      tags = tags .. '(' .. issue.assignees[1].login .. ') '
+                    end
+                    table.insert(items, { num = issue.number, label = '#' .. issue.number .. ' ' .. tags .. issue.title })
+                  end
+                  vim.ui.select(items, {
+                    prompt = 'Select issue',
+                    format_item = function(item) return item.label end,
+                  }, function(issue)
+                    if not issue then return end
+                    vim.ui.select({
+                      'Create branch',
+                      'Open in browser',
+                      'Close issue',
+                      'Assign to me',
+                    }, {
+                      prompt = '#' .. issue.num .. ' — what next?',
+                    }, function(action)
+                      if not action then return end
+
+                      if action:match('branch') then
+                        local prefixes = { 'fix', 'feat', 'chore', 'docs', 'refactor', 'style' }
+                        vim.ui.select(prefixes, { prompt = 'Branch type' }, function(prefix)
+                          if not prefix then return end
+                          vim.ui.input({ prompt = 'Short description (e.g. login-crash): ' }, function(desc)
+                            if not desc or #desc == 0 then return end
+                            local branch = prefix .. '/' .. issue.num .. '-' .. desc
+                            local cmd = 'cd ' .. git_root .. ' && git checkout dev && git pull --rebase --autostash origin dev && git checkout -b ' .. vim.fn.shellescape(branch)
+                            if is_admin then
+                              cmd = cmd .. ' && git push -u origin ' .. vim.fn.shellescape(branch)
+                            else
+                              cmd = cmd .. ' || true'
+                              vim.notify('Branch created locally. Push to your fork:\n  git push -u <your-fork> ' .. branch, vim.log.levels.INFO, { title = 'tg' })
+                            end
+                            vim.notify('Creating branch ' .. branch .. '...', vim.log.levels.INFO, { title = 'tg' })
+                            vim.fn.jobstart({ 'sh', '-c', cmd }, {
+                              on_exit = function(_, sc)
+                                vim.schedule(function()
+                                  if sc == 0 or not is_admin then
+                                    vim.notify('Branch: ' .. branch, vim.log.levels.INFO, { title = 'tg' })
+                                  else
+                                    vim.notify('Branch creation failed', vim.log.levels.ERROR, { title = 'tg' })
+                                  end
+                                end)
+                              end,
+                            })
+                          end)
+                        end)
+
+                      elseif action:match('Open') then
+                        vim.fn.jobstart({ 'sh', '-c', 'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/' .. issue.num .. '" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/' .. issue.num .. '" 2>/dev/null || true' })
+
+                      elseif action:match('Close') then
+                        vim.fn.jobstart({ 'gh', 'issue', 'close', tostring(issue.num), '--repo', 'ChuYanLon/telegram.nvim' }, {
+                          on_exit = function()
+                            vim.schedule(function() vim.notify('#' .. issue.num .. ' closed', vim.log.levels.INFO, { title = 'tg' }) end)
+                          end,
+                        })
+
+                      elseif action:match('Assign') then
+                        vim.fn.jobstart({ 'gh', 'issue', 'edit', tostring(issue.num), '--repo', 'ChuYanLon/telegram.nvim', '--add-assignee', 'ChuYanLon' }, {
+                          on_exit = function()
+                            vim.schedule(function() vim.notify('#' .. issue.num .. ' assigned', vim.log.levels.INFO, { title = 'tg' }) end)
+                          end,
+                        })
+                      end
+                    end)
+                  end)
+                end)
+              end,
+            })
+          end)
+        end,
+      })
+
+    elseif choice:match('Create') then
+      vim.fn.jobstart({ 'sh', '-c', 'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/new/choose" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/new/choose" 2>/dev/null || true' })
+    end
+  end)
+end, {})
 
 return M
