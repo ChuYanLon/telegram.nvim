@@ -66,12 +66,16 @@ ldconfig 2>/dev/null || true
   build = "npm i",
   event = "VeryLazy",
   keys = {
-    { "<leader>tt", "<cmd>Tg<Cr>" },
-    { "<leader>tL", "<cmd>TgLogout<Cr>" },
+    { "<leader>tt", "<cmd>Tg<Cr>", desc = "Toggle Telegram" },
+    { "<leader>tL", "<cmd>TgLogout<Cr>", desc = "Logout Telegram" },
+    { "<leader>tp", "<cmd>TgPr<Cr>", desc = "Create PR" },
+    { "<leader>ti", "<cmd>TgIssue<Cr>", desc = "Manage Issues" },
   },
   cmd = {
     "Tg",
     "TgLogout",
+    "TgPr",
+    "TgIssue",
   },
   opts = {
     -- tdlib_path = "/path/to/libtdjson.so",         -- optional: .so (Linux) / .dylib (macOS) / .dll (Windows)
@@ -98,8 +102,10 @@ ldconfig 2>/dev/null || true
 
 ```lua
 -- Configure inside lazy.nvim `keys`, or map manually:
-vim.keymap.set("n", "<leader>tt", "<cmd>Tg<Cr>")
-vim.keymap.set("n", "<leader>tL", "<cmd>TgLogout<Cr>")
+vim.keymap.set("n", "<leader>tt", "<cmd>Tg<Cr>", { desc = "Toggle Telegram" })
+vim.keymap.set("n", "<leader>tL", "<cmd>TgLogout<Cr>", { desc = "Logout Telegram" })
+vim.keymap.set("n", "<leader>tp", "<cmd>TgPr<Cr>", { desc = "Create PR" })
+vim.keymap.set("n", "<leader>ti", "<cmd>TgIssue<Cr>", { desc = "Manage Issues" })
 ```
 
 ### Keymaps
@@ -145,8 +151,8 @@ In the groups panel:
 |----------|------|-------|----------|
 | Messaging | 7 | 14 | ████████░░░░░ 50% |
 | UI & Interaction | 16 | 21 | ████████████░░ 76% |
-| Infrastructure | 9 | 12 | ███████████░░ 75% |
-| **Total** | **32** | **47** | ██████████░░ 68% |
+| Infrastructure | 10 | 12 | ████████████░ 83% |
+| **Total** | **33** | **47** | ██████████░░ 70% |
 
 ### Messaging
 
@@ -205,6 +211,7 @@ In the groups panel:
 | ✓ | **`:TgPr` command** — interactive PR creation and merge | ✅ Done |
 | ✓ | **Unit tests** — Vitest + FakeTdClient, no TDLib dependency | ✅ Done |
 | ✓ | **GitHub CI** — automated tests on push/PR | ✅ Done |
+| ✓ | **`:TgIssue` command** — list, close, assign, create branch from issue | ✅ Done |
 | ✓ | **`vim.notify` with title** — `[tg]` as title, not text | ✅ Done |
 | ☐ | **WebSocket auto-reconnect** — reconnect on disconnect | 📝 Planned |
 | ☐ | **Chat cache persistence** — avoid re-fetch on restart | 📝 Planned |
