@@ -23,7 +23,24 @@ local ui = require("telegram.ui")
 local M = {}
 
 local initialized = false
-local seen_ids = setmetatable({}, { __index = function(t, k) t[k] = {}; return t[k] end })
+local seen_ids = {}
+local seen_ids_order = {}
+local SEEN_IDS_MAX = 3000
+
+local function trim_seen_ids(chat_key)
+  local keys = seen_ids[chat_key]
+  if not keys then return end
+  local n = 0
+  for _ in pairs(keys) do n = n + 1 end
+  if n <= SEEN_IDS_MAX then return end
+  local order = seen_ids_order[chat_key] or {}
+  local excess = n - SEEN_IDS_MAX
+  for i = 1, excess do
+    local id = order[i]
+    if id then keys[id] = nil end
+  end
+  for i = 1, excess do table.remove(order, 1) end
+end
 
 local notify_queue = {}
 local notify_timer_id = nil
@@ -83,9 +100,12 @@ local function finish_init()
 					ui.update_title()
 					local mid = msg.id
 					if mid ~= nil then
-						local chat_key = msg.chat and tostring(msg.chat.id)
-						if seen_ids[chat_key or '_'][mid] then return end
-						seen_ids[chat_key or '_'][mid] = true
+						local chat_key = msg.chat and tostring(msg.chat.id) or '_'
+						if not seen_ids[chat_key] then seen_ids[chat_key] = {}; seen_ids_order[chat_key] = {} end
+						if seen_ids[chat_key][mid] then return end
+						seen_ids[chat_key][mid] = true
+						table.insert(seen_ids_order[chat_key], mid)
+						trim_seen_ids(chat_key)
 						for _, m in ipairs(st.messages) do
 							if tostring(m.id) == tostring(mid) then return end
 						end
@@ -225,15 +245,19 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 })
 
 local function git(args)
-  local dir = vim.fn.shellescape(config.plugin_root)
-  return vim.fn.systemlist('git -C ' .. dir .. ' ' .. args .. ' 2>/dev/null')
+  return vim.fn.systemlist(vim.list_extend({ 'git', '-C', config.plugin_root }, vim.split(args, ' ')))
 end
 
-local function get_branches()
-  local out = git('branch --format=%(refname:short)')
-  if vim.v.shell_error ~= 0 or #out == 0 then return { 'dev', 'main' } end
-  table.sort(out)
-  return out
+local function git_async(args, cb)
+  local cmd = vim.list_extend({ 'git', '-C', config.plugin_root }, vim.split(args, ' '))
+  local stdout = {}
+  vim.fn.jobstart(cmd, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      vim.schedule(function() cb(code, stdout) end)
+    end,
+  })
 end
 
 local function current_branch()
@@ -247,10 +271,20 @@ vim.api.nvim_create_user_command("TgPr", function()
     vim.notify('gh (GitHub CLI) not found. Install it first:\n  sudo pacman -S github-cli  # Arch\n  brew install gh            # macOS', vim.log.levels.ERROR, { title = 'tg' })
     return
   end
-  vim.notify('Checking environment...', vim.log.levels.INFO, { title = 'tg' })
-  local branches = get_branches()
+  vim.notify('Fetching branches...', vim.log.levels.INFO, { title = 'tg' })
   local cur = current_branch()
   local src, dst, title, can_merge_main
+
+  git_async('ls-remote --heads --quiet origin', function(code, stdout)
+    local branches = {}
+    if code == 0 then
+      for _, line in ipairs(stdout) do
+        local name = line:match('refs/heads/(.+)')
+        if name then table.insert(branches, name) end
+      end
+      table.sort(branches)
+    end
+    if #branches == 0 then branches = { 'dev', 'main' } end
 
   local function check_perm(cb)
     vim.notify('Checking permissions...', vim.log.levels.INFO, { title = 'tg' })
@@ -344,6 +378,7 @@ vim.api.nvim_create_user_command("TgPr", function()
       pick_target()
     end)
   end)
+end)
 end, {})
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
