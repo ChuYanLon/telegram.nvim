@@ -21,14 +21,34 @@ function M.ws_url()
 	return ws_url_internal()
 end
 
+local RETRY_DELAYS = { 500, 1000, 2000 }
+
+---@param curl_args string[]
+---@return string|nil body, string|nil error_msg
+local function curl_with_retry(curl_args)
+	for attempt = 1, 4 do
+		local result = vim.fn.system(curl_args)
+		if vim.v.shell_error == 0 then
+			return result
+		end
+		-- Server responded with an error body — persistent, don't retry
+		if result and #result > 0 then
+			local ok, data = pcall(vim.json.decode, result)
+			local err = (ok and type(data) == "table" and data.error) or result
+			return nil, err
+		end
+		if attempt < 4 then
+			vim.wait(RETRY_DELAYS[attempt])
+		end
+	end
+	return nil, "connection failed after 4 retries"
+end
+
 ---@param path string
 ---@return table|nil
 local function http_get(path)
-	local url = base_url() .. path
-	local result = vim.fn.system({ "curl", "-s", "--fail-with-body", url })
-	if vim.v.shell_error ~= 0 then
-		local ok, data = pcall(vim.json.decode, result)
-		local err = (ok and type(data) == "table" and data.error) or result or "request failed"
+	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", base_url() .. path })
+	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
 	end
@@ -46,7 +66,7 @@ end
 local function http_post(path, body)
 	local url = base_url() .. path
 	local encoded = vim.json.encode(body)
-	local result = vim.fn.system({
+	local result, err = curl_with_retry({
 		"curl",
 		"-s",
 		"--fail-with-body",
@@ -58,9 +78,7 @@ local function http_post(path, body)
 		"-d",
 		encoded,
 	})
-	if vim.v.shell_error ~= 0 then
-		local ok, data = pcall(vim.json.decode, result)
-		local err = (ok and type(data) == "table" and data.error) or result or "request failed"
+	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
 	end
