@@ -308,7 +308,7 @@ end
 local function current_branch()
 	local out = git("rev-parse --abbrev-ref HEAD")
 	if vim.v.shell_error ~= 0 or #out == 0 then
-		return "dev"
+		return "main"
 	end
 	return out[1]
 end
@@ -324,12 +324,8 @@ vim.api.nvim_create_user_command("TgPr", function()
 	end
 	vim.notify("Checking environment...", vim.log.levels.INFO, { title = "tg" })
 	local cur = current_branch()
-	local src, dst, title, can_merge_main
-
-	local branches = git("branch --format=%(refname:short)")
-	if #branches == 0 then
-		branches = { "dev", "main" }
-	end
+	local src, title, can_merge_main
+	local dst = "main"
 
 	local function check_perm(cb)
 		vim.notify("Checking permissions...", vim.log.levels.INFO, { title = "tg" })
@@ -379,53 +375,47 @@ vim.api.nvim_create_user_command("TgPr", function()
 						if url then
 							local pr_num = url:match("/(%d+)$")
 							if pr_num and can_merge_main then
-								vim.ui.select({ "Yes (merge now)", "No (just PR)" }, {
+								vim.ui.select({ "Merge (squash)", "Merge (commit)", "No (just PR)" }, {
 									prompt = "Merge PR #" .. pr_num .. " to " .. dst .. "?",
 								}, function(choice)
-									if choice and choice:match("^Yes") then
-										vim.notify("Merging...", vim.log.levels.INFO, { title = "tg" })
-										vim.fn.jobstart(
-											{
-												"gh",
-												"pr",
-												"merge",
-												pr_num,
-												"--repo",
-												"ChuYanLon/telegram.nvim",
-												"--merge",
-												"--admin",
-											},
-											{
-												on_exit = function(_, mc)
-													vim.schedule(function()
-														if mc == 0 then
-															vim.notify("Merged!", vim.log.levels.INFO, { title = "tg" })
-															if src ~= "dev" and src ~= "main" then
-																local root = vim.fn.shellescape(config.plugin_root)
-																vim.fn.jobstart({
-																	"sh",
-																	"-c",
-																	"cd "
-																		.. root
-																		.. " && git push origin --delete "
-																		.. vim.fn.shellescape(src)
-																		.. " 2>/dev/null; git branch -D "
-																		.. vim.fn.shellescape(src)
-																		.. " 2>/dev/null; true",
-																})
-															end
-														else
-															vim.notify(
-																"Merge failed",
-																vim.log.levels.ERROR,
-																{ title = "tg" }
-															)
-														end
-													end)
-												end,
-											}
-										)
+									if not choice or choice:match("^No") then
+										return
 									end
+									local flag = choice:match("squash") and "--squash" or "--merge"
+									vim.notify("Merging (" .. flag:gsub("^%-%-", "") .. ")...", vim.log.levels.INFO, { title = "tg" })
+									vim.fn.jobstart(
+										{
+											"gh",
+											"pr",
+											"merge",
+											pr_num,
+											"--repo",
+											"ChuYanLon/telegram.nvim",
+											flag,
+											"--admin",
+											"--delete-branch",
+										},
+										{
+											on_exit = function(_, mc)
+												vim.schedule(function()
+													if mc == 0 then
+														vim.notify("Merged!", vim.log.levels.INFO, { title = "tg" })
+														if src ~= "main" then
+															local root = vim.fn.shellescape(config.plugin_root)
+															vim.fn.jobstart({ "sh", "-c", "cd " .. root .. " && git branch -D " .. vim.fn.shellescape(src) .. " 2>/dev/null; true" })
+															})
+														end
+													else
+														vim.notify(
+															"Merge failed",
+															vim.log.levels.ERROR,
+															{ title = "tg" }
+														)
+													end
+												end)
+											end,
+										}
+									)
 								end)
 							end
 						end
@@ -435,23 +425,17 @@ vim.api.nvim_create_user_command("TgPr", function()
 		end)
 	end
 
-	local function pick_target()
-		vim.ui.select(branches, {
-			prompt = "Target branch",
-			format_item = function(b)
-				return (b == "main" and b .. " (protected)" or b)
-			end,
-		}, function(choice)
-			if not choice then
-				return
-			end
-			dst = choice
-			pick_title()
-		end)
+	local sources = vim.tbl_filter(
+		function(b) return b ~= "main" end,
+		git("branch --format=%(refname:short)")
+	)
+	if #sources == 0 then
+		vim.notify("No feature branch to create PR from", vim.log.levels.WARN, { title = "tg" })
+		return
 	end
 
 	check_perm(function()
-		vim.ui.select(branches, {
+		vim.ui.select(sources, {
 			prompt = "Source branch",
 			format_item = function(b)
 				return (b == cur and b .. " (current)" or b)
@@ -461,7 +445,7 @@ vim.api.nvim_create_user_command("TgPr", function()
 				return
 			end
 			src = choice
-			pick_target()
+			pick_title()
 		end)
 	end)
 end, {})
@@ -519,8 +503,8 @@ vim.api.nvim_create_user_command("TgIssue", function()
 								"list",
 								"--repo",
 								"ChuYanLon/telegram.nvim",
-								"--limit",
-								"20",
+"--limit",
+"100",
 								"--json",
 								"number,title,labels,assignees",
 							},
@@ -590,7 +574,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 																local branch = prefix .. "/" .. issue.num .. "-" .. desc
 																local cmd = "cd "
 																	.. git_root
-																	.. " && git checkout dev && git pull --rebase --autostash origin dev && git checkout -b "
+																	.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
 																	.. vim.fn.shellescape(branch)
 																if is_admin then
 																	cmd = cmd
@@ -617,7 +601,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 																		"-c",
 																		"(cd "
 																			.. git_root
-																			.. " && git checkout dev && git pull --rebase --autostash origin dev && git checkout -b "
+																			.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
 																			.. vim.fn.shellescape(branch)
 																			.. " && git push -u origin "
 																			.. vim.fn.shellescape(branch)

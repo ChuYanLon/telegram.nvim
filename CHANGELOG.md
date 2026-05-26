@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- **`:TgPr` squash merge** — now offers "squash" and "commit" merge strategies when merging PRs
+
+### Changed
+
+- **Removed dev branch** — workflow is now main-only; CI only triggers on main; branch creation bases on main instead of dev
+
 ## [0.3.1] - 2026-05-26
 
 ### Changed
@@ -57,10 +65,9 @@
 ### Added
 
 - **`:TgIssue` command** — list, create branch, close, assign issues
-- **Branch auto-delete** — `:TgPr` deletes source branch after merge (except dev/main)
+- **Branch auto-delete** — `:TgPr` deletes source branch after merge (except main)
 - **Multi-instance support** — share one server across Neovim instances
 - **Unit tests** — Vitest + FakeTdClient, no TDLib dependency
-- **`dev` branch protection** — ruleset prevents direct pushes/deletion
 
 ## [0.1.0] - 2025-05-25
 

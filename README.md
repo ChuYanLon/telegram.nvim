@@ -197,8 +197,8 @@ ldconfig 2>/dev/null || true
 | `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
-| `:TgPr`       | Create a PR — select source/target branch, auto-fill title, optionally merge directly (admin bypass for `main`)                   |
-| `:TgIssue`    | Manage issues — list, create branch, close, assign, open in browser                                                              |
+| `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion |
+| `:TgIssue`    | Browse, create, close, and assign issues — create branches directly from an issue |
 
 > The server runs on a fixed port (8080). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
@@ -320,9 +320,18 @@ A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` direct
 **Q: Port conflict?**
 A: Default ports are 8080/8081. The plugin kills any leftover tg server process on the port before starting. If still occupied, it auto-increments until a free port is found. Server process is terminated on Neovim exit.
 
+## Development Workflow
+
+- **`main`** — stable branch, protected, no direct pushes
+- **`feat/*` / `fix/*` / `chore/*`** — feature/fix branches, created from `main`
+- PRs target `main` — use `:TgPr` to create and optionally merge
+- Merge options: **squash** or **commit**
+- After merge, GitHub auto-deletes the source branch (set in repo settings)
+- CI runs on every push and PR (test + typecheck)
+
 ## Contributing
 
-All contributions are welcome! Just open a pull request.
+All contributions are welcome! Just open a pull request targeting `main`. See the [full guide](CONTRIBUTING.md) for details.
 
 ## License
 
