@@ -567,23 +567,19 @@ end
 local function nav_h()
 	if cur_area() == "group" then
 		restore_group_cursor()
+		return
 	end
-	if cur_area() == "msg" then
-		focus_groups()
-	else
-		focus_msg()
-	end
+	focus_groups()
 end
 
 local function nav_l()
+	if cur_area() == "msg" then
+		return
+	end
 	if cur_area() == "group" then
 		restore_group_cursor()
 	end
-	if cur_area() == "group" then
-		focus_msg()
-	else
-		focus_groups()
-	end
+	focus_msg()
 end
 
 local function nav_j()
