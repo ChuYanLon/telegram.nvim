@@ -189,6 +189,36 @@ local function finish_init()
 	vim.notify("Ready", vim.log.levels.INFO, { title = "tg" })
 end
 
+local function finish_open(groups)
+	ui.set_groups(groups)
+	if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
+		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
+		return
+	end
+	if ui.state.layout and ui.state.layout._.mounted then
+		ui.refresh_messages()
+		return
+	end
+	if #groups > 0 then
+		ui.open_chat(groups[1].id, groups[1].title)
+	end
+end
+
+local function poll_groups(remaining, groups)
+	if remaining <= 0 then
+		finish_open(groups or {})
+		return
+	end
+	groups = server.get_groups()
+	if groups and #groups > 1 then
+		finish_open(groups)
+		return
+	end
+	vim.defer_fn(function()
+		poll_groups(remaining - 1, groups)
+	end, 1000)
+end
+
 function M.list_groups()
 	local function show_groups()
 		local groups = server.get_groups()
@@ -198,27 +228,10 @@ function M.list_groups()
 		end
 		if #groups <= 1 then
 			vim.notify("Syncing chats, please wait...", vim.log.levels.INFO, { title = "tg" })
-			local ok = vim.wait(15000, function()
-				vim.wait(1000)
-				groups = server.get_groups()
-				return groups and #groups > 1
-			end, 0, true)
-			if not ok or not groups or #groups <= 1 then
-				vim.notify("Synced " .. (#groups or 0) .. " groups", vim.log.levels.INFO, { title = "tg" })
-			end
-		end
-		ui.set_groups(groups)
-		if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
-			ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
+			poll_groups(15, groups)
 			return
 		end
-		if ui.state.layout and ui.state.layout._.mounted then
-			ui.refresh_messages()
-			return
-		end
-		if #groups > 0 then
-			ui.open_chat(groups[1].id, groups[1].title)
-		end
+		finish_open(groups)
 	end
 
 	if not initialized then
