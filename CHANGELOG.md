@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-26
+
+### Added
+
+- **WebSocket auto-reconnect** — exponential backoff (1s → 2s → 4s → ... → 30s max) on connection drop (#3)
+- **Lua HTTP retry** — `http_get`/`http_post` retry up to 3 times with backoff on transient failures (#6)
+- **Test coverage** — 13 new tests for `getChat`, `handleNewMessage`, `handleChatMemberUpdate`, `handleChatOnlineMemberCount`, `handleChatAction`, `handleUserChatAction`, `_formatMessage` with `messageChatAddMembers`
+- **`updateChatAction` handling** — separate handler resolves `sender_id` (MessageSender) instead of missing `user_id` (#62)
+
+### Fixed
+
+- **Blocking `vim.wait`** — replaced with `vim.defer_fn`-based async polling in `list_groups`, no more UI freeze (#64)
+- **`getChat` crash** — non-group/unknown chat types no longer throw 500 on `/chat` endpoint (#63)
+- **Member add display** — `messageChatAddMembers` now shows "X added Y" instead of "X joined" when someone invites another member (#98)
+- **Navigation direction** — `<C-h>`/`<C-l>` now consistently go to groups/msg instead of toggling (#61)
+
+### Performance
+
+- **Batch sender resolution** — pre-resolve all unique senders before formatting bulk messages, eliminating redundant `getUser` calls (#5)
+- **Break-early filter** — `getMessagesAfter` stops iterating once messages ≤ afterId are reached (#9)
+
+### Styles
+
+- **Consistent indentation** — all Lua files reformatted with `stylua` to use tab indentation, aligning with `.editorconfig` (#97)
+
 ## [0.2.1] - 2026-05-25
 
 ### Fixed
@@ -13,24 +38,9 @@
 ### Fixed
 
 - **Message dedup** — use message ID instead of text+time heuristic (#8)
-- `vim.notify` calls now use `title` option instead of `[tg]` text prefix
-- Issue templates (bug report, feature request)
-- Pull request template
-- Contributing guide
-- Code of Conduct
-- CI workflow
-
-### Fixed
-
-- Various `vim.notify` calls: `[tg]` prefix moved to notification title
-
-## [0.2.0] - 2026-05-25
-
-### Fixed
-
-- **Message dedup** — use message ID instead of text+time heuristic (#8)
 - **Cross-chat reply** — `_formatReplyTo` now fetches original message from source chat (#7)
 - **Chat wrapper** — `getMessagesAfter`/`getMessagesAround` now include `chat` object (#2)
+- `vim.notify` calls now use `title` option instead of `[tg]` text prefix
 
 ### Added
 
