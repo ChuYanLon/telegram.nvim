@@ -1,4 +1,4 @@
-local server = require('telegram.server')
+local server = require("telegram.server")
 
 local M = {}
 
@@ -8,62 +8,76 @@ local last_ids_order = {}
 local LAST_IDS_MAX = 3000
 
 local function trim_last_ids()
-  local n = 0
-  for _ in pairs(last_ids) do n = n + 1 end
-  if n <= LAST_IDS_MAX then return end
-  local excess = n - LAST_IDS_MAX
-  for i = 1, excess do
-    local key = last_ids_order[i]
-    if key then last_ids[key] = nil end
-  end
-  for i = 1, excess do table.remove(last_ids_order, 1) end
+	local n = 0
+	for _ in pairs(last_ids) do
+		n = n + 1
+	end
+	if n <= LAST_IDS_MAX then
+		return
+	end
+	local excess = n - LAST_IDS_MAX
+	for i = 1, excess do
+		local key = last_ids_order[i]
+		if key then
+			last_ids[key] = nil
+		end
+	end
+	for i = 1, excess do
+		table.remove(last_ids_order, 1)
+	end
 end
 
 ---@param on_msg fun(msg: table)
 function M.ws_start(on_msg)
-  if ws_job_id then
-    vim.fn.jobstop(ws_job_id)
-    ws_job_id = nil
-  end
-  local config = require('telegram.config')
-  local helper = config.plugin_root .. '/bin/tg-ws-helper.js'
-  ws_job_id = vim.fn.jobstart({ 'node', helper, server.ws_url() }, {
-    on_stdout = function(_, data)
-      if not data then return end
-      for _, line in ipairs(data) do
-        if line and #line > 0 then
-          local ok, msg = pcall(vim.json.decode, line)
-          if ok and on_msg then
-            if msg.id and msg.event == 'newMessage' then
-              local key = tostring(msg.id)
-              if last_ids[key] then return end
-              last_ids[key] = true
-              table.insert(last_ids_order, key)
-              trim_last_ids()
-            end
-            on_msg(msg)
-          end
-        end
-      end
-    end,
-    on_stderr = function(_, data)
-      if data then
-        for _, line in ipairs(data) do
-          if line and #line > 0 then
-            vim.notify(line, vim.log.levels.WARN, { title = 'tg-ws' })
-          end
-        end
-      end
-    end,
-    on_exit = function() ws_job_id = nil end,
-  })
+	if ws_job_id then
+		vim.fn.jobstop(ws_job_id)
+		ws_job_id = nil
+	end
+	local config = require("telegram.config")
+	local helper = config.plugin_root .. "/bin/tg-ws-helper.js"
+	ws_job_id = vim.fn.jobstart({ "node", helper, server.ws_url() }, {
+		on_stdout = function(_, data)
+			if not data then
+				return
+			end
+			for _, line in ipairs(data) do
+				if line and #line > 0 then
+					local ok, msg = pcall(vim.json.decode, line)
+					if ok and on_msg then
+						if msg.id and msg.event == "newMessage" then
+							local key = tostring(msg.id)
+							if last_ids[key] then
+								return
+							end
+							last_ids[key] = true
+							table.insert(last_ids_order, key)
+							trim_last_ids()
+						end
+						on_msg(msg)
+					end
+				end
+			end
+		end,
+		on_stderr = function(_, data)
+			if data then
+				for _, line in ipairs(data) do
+					if line and #line > 0 then
+						vim.notify(line, vim.log.levels.WARN, { title = "tg-ws" })
+					end
+				end
+			end
+		end,
+		on_exit = function()
+			ws_job_id = nil
+		end,
+	})
 end
 
 function M.ws_stop()
-  if ws_job_id then
-    vim.fn.jobstop(ws_job_id)
-    ws_job_id = nil
-  end
+	if ws_job_id then
+		vim.fn.jobstop(ws_job_id)
+		ws_job_id = nil
+	end
 end
 
 return M
