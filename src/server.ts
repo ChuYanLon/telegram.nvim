@@ -207,7 +207,7 @@ app.post('/editMessage', async (req, res) => {
       res.status(400).json({ error: 'chatId, messageId and text are required' });
       return;
     }
-    const result = await tgClient.editMessage(chatId, messageId, text);
+    const result = await tgClient.editMessage(Number(chatId), Number(messageId), text);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
