@@ -26,7 +26,6 @@ end
 
 local service_styles = {
   messageBasicGroupChatCreate = { prefix = '>', text = 'created this group' },
-  messageChatAddMembers = { prefix = '+', text = 'joined this group' },
   messageChatJoinByLink = { prefix = '+', text = 'joined this group via invite link' },
   messageChatJoinByRequest = { prefix = '+', text = 'joined this group' },
   messageChatDeleteMember = { prefix = '-', text = 'left the group' },
@@ -40,6 +39,25 @@ local service_styles = {
 }
 
 function M.render(msg)
+  if msg.type == 'messageChatAddMembers' then
+    local time_str = os.date('%H:%M:%S on %B %d, %Y', msg.date)
+    local sender = msg.sender and msg.sender.name or (msg.own and 'You' or 'Someone')
+    local is_self_join = false
+    if msg.memberUserIds and msg.sender and msg.sender.id then
+      for _, uid in ipairs(msg.memberUserIds) do
+        if uid == msg.sender.id then
+          is_self_join = true
+          break
+        end
+      end
+    end
+    if is_self_join then
+      return { '+ ' .. sender .. ' joined this group at ' .. time_str }
+    else
+      local names = msg.addedMemberNames and table.concat(msg.addedMemberNames, ', ') or 'someone'
+      return { '+ ' .. sender .. ' added ' .. names .. ' at ' .. time_str }
+    end
+  end
   local style = msg.type and service_styles[msg.type]
   if style then
     local sender = msg.sender and msg.sender.name or (msg.own and 'You' or 'Someone')
