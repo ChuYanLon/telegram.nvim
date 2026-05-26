@@ -293,6 +293,12 @@ class TelegramLSPClient {
       date: msg.date,
       own: msg.is_outgoing || false,
     };
+    if (msg.content && msg.content._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
+      formatted.memberUserIds = msg.content.member_user_ids;
+      formatted.addedMemberNames = await Promise.all(
+        msg.content.member_user_ids.map(id => this._getUserName(id))
+      );
+    }
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
     return formatted;
@@ -352,6 +358,9 @@ class TelegramLSPClient {
         case 'updateChatOnlineMemberCount':
           this.handleChatOnlineMemberCount(update);
           break;
+        case 'updateChatMember':
+          await this.handleChatMemberUpdate(update);
+          break;
         default:
           console.log(update);
       }
@@ -391,6 +400,26 @@ class TelegramLSPClient {
         online_member_count: update.online_member_count,
       });
     }
+  }
+
+  async handleChatMemberUpdate(update) {
+    if (typeof global.broadcast !== 'function') return;
+    const chat = this._chats.get(update.chat_id);
+    const memberUserId = update.member.user_id;
+    const actorUserId = update.actor_user_id;
+    const memberName = await this._getUserName(memberUserId);
+    const actorName = actorUserId === memberUserId
+      ? memberName
+      : await this._getUserName(actorUserId);
+    global.broadcast({
+      event: 'chatMember',
+      chat_id: update.chat_id,
+      chat_title: chat ? chat.title : 'Unknown',
+      member: { id: memberUserId, name: memberName },
+      actor: { id: actorUserId, name: actorName },
+      old_status: update.old_status,
+      new_status: update.new_status,
+    });
   }
 
   isReady() {
