@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-26
+
+### Changed
+
+- **Migrated from JS to TypeScript** — full type annotations, module split (auth, format, resolve, updates, tdlib), tsconfig, tsx runtime
+- **Converted tests to TypeScript** — client.test.ts, fake-td-client.ts, server.test.ts
+
+### Fixed
+
+- **editMessage** — ensure chatId/messageId are numbers to avoid TDLib "Message not found"
+- **Editor state** — clear edit target highlight and border indicator after editing
+
 ## [0.3.0] - 2026-05-26
 
 ### Added
