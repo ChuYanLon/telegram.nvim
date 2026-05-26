@@ -1,6 +1,6 @@
 import express from 'express';
 import { WebSocketServer } from 'ws';
-import TelegramLSPClient from './tdlib-client';
+import TelegramLSPClient from './client';
 
 const PORT = Number(process.env.TG_PORT) || 8080;
 const WS_PORT = Number(process.env.TG_WS_PORT) || PORT + 1;

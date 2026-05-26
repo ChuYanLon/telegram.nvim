@@ -21,7 +21,7 @@ afterAll(() => {
 
 describe('Express server', () => {
   it('starts and responds to health check', async () => {
-    const { default: TelegramLSPClient } = await import('../src/tdlib-client');
+    const { default: TelegramLSPClient } = await import('../src/client');
     const FakeTdClient = (await import('./fake-td-client')).default;
 
     const fake = new FakeTdClient();
