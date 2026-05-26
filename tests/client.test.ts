@@ -5,7 +5,7 @@ let client;
 
 beforeAll(async () => {
   process.env.TG_TDLIB_PATH = '/dev/null';
-  const { default: TelegramLSPClient } = await import('../src/tdlib-client');
+  const { default: TelegramLSPClient } = await import('../src/client');
   const fake = new FakeTdClient();
   fake.addUser({ id: 1, first_name: 'Alice', last_name: null });
   fake.addUser({ id: 2, first_name: 'Bob', last_name: 'Lee' });
@@ -14,9 +14,9 @@ beforeAll(async () => {
   fake.addChat({ id: -1002, title: 'Private Chat', type: { _: 'chatTypePrivate' } });
   client = new TelegramLSPClient({ client: fake });
   // Pre-populate internal caches so resolveSender works
-  client._users.set(1, 'Alice');
-  client._users.set(2, 'Bob Lee');
-  client._users.set(3, 'Charlie');
+  client.resolver._users.set(1, 'Alice');
+  client.resolver._users.set(2, 'Bob Lee');
+  client.resolver._users.set(3, 'Charlie');
   client._chats.set(-1001, { id: -1001, title: 'Test Group' });
 });
 

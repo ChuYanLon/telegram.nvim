@@ -189,8 +189,8 @@ function M.start_server()
 	if config.config.proxy then
 		env.TG_PROXY = config.config.proxy
 	end
-	local server_script = config.plugin_root .. "/src/server.js"
-	server_job = vim.fn.jobstart({ "node", server_script }, {
+	local server_script = config.plugin_root .. "/src/server.ts"
+	server_job = vim.fn.jobstart({ "npx", "tsx", server_script }, {
 		cwd = config.plugin_root,
 		env = env,
 		on_stderr = function(_, data)

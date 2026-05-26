@@ -1,13 +1,11 @@
 class FakeTdClient {
-  constructor() {
-    this.handlers = {};
-    this._users = new Map();
-    this._chats = new Map();
-    this._nextUserId = 100;
-    this._nextChatId = -1000;
-  }
+  handlers: Record<string, (...args: unknown[]) => void> = {};
+  _users: Map<number, { id: number; first_name?: string; last_name?: string; username?: string; type: { _: string } }> = new Map();
+  _chats: Map<number, { id: number; title: string; type: { _: string; supergroup_id?: number; is_channel?: boolean }; last_message: null; unread_count: number }> = new Map();
+  _nextUserId = 100;
+  _nextChatId = -1000;
 
-  addUser(overrides = {}) {
+  addUser(overrides: { id?: number; first_name?: string; last_name?: string; username?: string } = {}) {
     const id = overrides.id || this._nextUserId++;
     const user = {
       id,
@@ -20,7 +18,7 @@ class FakeTdClient {
     return user;
   }
 
-  addChat(overrides = {}) {
+  addChat(overrides: { id?: number; title?: string; type?: { _: string; supergroup_id?: number } } = {}) {
     const id = overrides.id || this._nextChatId--;
     const chat = {
       id,
@@ -33,23 +31,23 @@ class FakeTdClient {
     return chat;
   }
 
-  on(event, handler) {
+  on(event: string, handler: (...args: unknown[]) => void) {
     this.handlers[event] = handler;
   }
 
-  async invoke(query) {
+  async invoke(query: Record<string, unknown>) {
     switch (query._) {
       case 'getOption':
         return { value: '1.8.64' };
       case 'getUser': {
-        const user = this._users.get(query.user_id);
+        const user = this._users.get(query.user_id as number);
         if (user) return user;
         return { first_name: 'Unknown', last_name: '', type: { _: 'userTypeRegular' } };
       }
       case 'getChat':
-        return this._chats.get(query.chat_id) || { id: query.chat_id, title: 'Unknown Group' };
+        return this._chats.get(query.chat_id as number) || { id: query.chat_id, title: 'Unknown Group' };
       case 'searchPublicChat':
-        return { id: query.username.charCodeAt(0) };
+        return { id: (query.username as string).charCodeAt(0) };
       case 'getChatHistory':
         return { messages: [] };
       case 'getSupergroup':
@@ -65,7 +63,7 @@ class FakeTdClient {
       case 'sendMessage':
         return {
           id: Date.now(),
-          content: { _: 'messageText', text: { text: query.input_message_content.text } },
+          content: { _: 'messageText', text: { text: (query.input_message_content as Record<string, unknown>).text } },
           sender_id: { _: 'messageSenderUser', user_id: 1 },
           date: Math.floor(Date.now() / 1000),
           is_outgoing: true,
@@ -88,4 +86,4 @@ class FakeTdClient {
   async close() {}
 }
 
-module.exports = FakeTdClient;
+export default FakeTdClient;

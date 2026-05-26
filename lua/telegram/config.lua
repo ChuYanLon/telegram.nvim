@@ -59,14 +59,19 @@ function M.ensure_deps()
 	if M.config.tdlib_path then
 		vim.notify("tdlib_path: " .. M.config.tdlib_path, vim.log.levels.INFO, { title = "tg" })
 	end
-	local ws_helper = plugin_root .. "/bin/tg-ws-helper.js"
+	local ws_helper = plugin_root .. "/bin/tg-ws-helper.ts"
 	if vim.fn.filereadable(ws_helper) ~= 1 then
 		vim.notify("Missing ws helper", vim.log.levels.ERROR, { title = "tg" })
 		return false
 	end
-	local server_src = plugin_root .. "/src/server.js"
+	local server_src = plugin_root .. "/src/server.ts"
 	if vim.fn.filereadable(server_src) ~= 1 then
 		vim.notify("Missing server source. Run npm install", vim.log.levels.ERROR, { title = "tg" })
+		return false
+	end
+	local tsx_bin = plugin_root .. "/node_modules/.bin/tsx"
+	if vim.fn.executable("npx") ~= 1 and vim.fn.filereadable(tsx_bin) ~= 1 then
+		vim.notify("tsx not found. Run npm install", vim.log.levels.ERROR, { title = "tg" })
 		return false
 	end
 	return true
