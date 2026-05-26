@@ -304,6 +304,9 @@ A: The server auto-detects the library on startup. If auto-detection fails, inst
 **Q: Do I need to re-authenticate every time Neovim restarts?**
 A: No. TDLib caches session state in `tdlib_db/`. Auth persists across restarts.
 
+**Q: Why does the server use TypeScript?**
+A: The backend was migrated from JavaScript to TypeScript (v0.3.0) for better type safety and maintainability in a multi-contributor project. The server runs via `tsx`, which is installed automatically by `npm install` — no extra setup needed.
+
 **Q: How do I switch accounts?**
 A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` directories.
 
