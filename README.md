@@ -73,7 +73,14 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Private chats** (direct 1-on-1 messages)
 - [ ] **Chat folders**
 - [ ] **Pinned chats** section
-- [ ] **Group management** (add/remove members, change title/photo)
+- [ ] **Leave group**
+- [ ] **Change group name / description**
+- [ ] **Add / kick / ban members**
+- [ ] **Promote / demote admins**
+- [ ] **View member list**
+- [ ] **Pin / unpin messages**
+- [ ] **Generate invite link**
+- [ ] **Change group photo**
 - [ ] **Voice message** recording and sending
 - [ ] **Inline bots** / bot commands
 - [ ] **Message threads** / topic view
