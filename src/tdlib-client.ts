@@ -1,8 +1,10 @@
-const tdl = require('tdl');
-const path = require('path');
-const fs = require('fs');
-const { execSync } = require('child_process');
-require('dotenv').config();
+import * as tdl from 'tdl';
+import path from 'path';
+import fs from 'fs';
+import { execSync } from 'child_process';
+import * as dotenv from 'dotenv';
+dotenv.config();
+import { extractText } from './utils/extract-text';
 
 const TG_API_ID = Number(process.env.TG_API_ID) || 1025907;
 const TG_API_HASH = process.env.TG_API_HASH || '452b0359b988148995f22ff0f4229750';
@@ -10,7 +12,7 @@ const TG_TDLIB_PATH = process.env.TG_TDLIB_PATH;
 const TG_PROXY = process.env.TG_PROXY;
 const dataDir = process.env.TG_DATA_DIR || process.cwd();
 
-function detectTdlibPath() {
+function detectTdlibPath(): string | undefined {
   if (TG_TDLIB_PATH) {
     if (fs.existsSync(TG_TDLIB_PATH)) return TG_TDLIB_PATH;
     console.warn(`TG_TDLIB_PATH set but not found: ${TG_TDLIB_PATH}`);
@@ -27,7 +29,7 @@ function detectTdlibPath() {
         const m = line.match(/=>\s*(\S+libtdjson\S+)/);
         if (m && fs.existsSync(m[1])) return m[1];
       }
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   if (isMac) {
@@ -36,7 +38,7 @@ function detectTdlibPath() {
       for (const f of out.trim().split('\n')) {
         if (f && (f.endsWith('.dylib') || f.endsWith('.so')) && fs.existsSync(f)) return f;
       }
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   if (isWin) {
@@ -45,7 +47,7 @@ function detectTdlibPath() {
       for (const f of out.trim().split('\n')) {
         if (f && fs.existsSync(f)) return f;
       }
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -88,13 +90,13 @@ function detectTdlibPath() {
         const p = path.join(dir, 'libtdjson.so');
         if (fs.existsSync(p)) return p;
       }
-    } catch {}
+    } catch { /* ignore */ }
     try {
       const out = execSync('find /usr/lib /usr/local/lib /opt/lib /home -name "libtdjson.so*" -type f,l 2>/dev/null | head -3', { encoding: 'utf8' });
       for (const f of out.trim().split('\n')) {
         if (f && fs.existsSync(f)) return f;
       }
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   return undefined;
@@ -112,11 +114,106 @@ if (resolvedTdlibPath) {
   console.log('TDLib library: auto');
 }
 
-const { extractText } = require('./utils/extract-text');
+// --- Types ---
+
+type SenderInfo = { id: number | string; name: string } | null;
+
+interface FormattedMessage {
+  id: number;
+  type: string;
+  text: string;
+  sender: SenderInfo;
+  date: number;
+  own: boolean;
+  replyTo?: {
+    id: number;
+    sender?: SenderInfo;
+    text?: string;
+    chat_id?: number;
+  };
+  memberUserIds?: number[];
+  addedMemberNames?: string[];
+}
+
+interface RawTdMessage {
+  id: number;
+  chat_id: number;
+  content: {
+    _: string;
+    text?: { text: string };
+    caption?: { text: string };
+    member_user_ids?: number[];
+    [key: string]: unknown;
+  };
+  sender_id: { _: string; user_id?: number; chat_id?: number } | null;
+  date: number;
+  is_outgoing: boolean;
+  reply_to: {
+    _: string;
+    message_id: number;
+    origin_sender_id?: { _: string; user_id?: number; chat_id?: number };
+    origin_sender_name?: string;
+    chat_id?: number;
+  } | null;
+}
+
+interface RawTdChat {
+  id: number;
+  title: string;
+  type: { _: string; supergroup_id?: number; basic_group_id?: number; is_channel?: boolean };
+  unread_count?: number;
+  online_member_count?: number;
+  last_message?: RawTdMessage | null;
+  positions?: { list: { _: string }; order: string }[];
+}
+
+interface GroupInfo {
+  id: number;
+  title: string;
+  unreadCount: number;
+  onlineMemberCount: number;
+  lastMessage?: FormattedMessage | null;
+  memberCount?: number;
+  owner?: SenderInfo;
+  description?: string;
+}
+
+interface TdUpdate {
+  _: string;
+  chat_id?: number;
+  user_id?: number;
+  member?: { user_id: number };
+  actor_user_id?: number;
+  old_status?: { _: string };
+  new_status?: { _: string };
+  action?: { _: string };
+  sender_id?: { _: string; user_id?: number; chat_id?: number };
+  online_member_count?: number;
+  message?: RawTdMessage;
+  chat?: RawTdChat;
+  [key: string]: unknown;
+}
+
+interface AuthState {
+  state: string;
+  hint: string | null;
+  error: string | null;
+  canInput: boolean;
+}
 
 class TelegramLSPClient {
-  constructor(opts) {
-    if (opts && opts.client) {
+  client: ReturnType<typeof tdl.createClient> | { invoke: (q: unknown) => Promise<unknown>; on: (e: string, h: (...args: unknown[]) => void) => void; login: (opts: unknown) => Promise<void> };
+  _ready = false;
+  _chats: Map<number, RawTdChat> = new Map();
+  _chatsLoaded = false;
+  _users: Map<number, string> = new Map();
+  _authState = 'initializing';
+  _authResolve: ((value: string) => void) | null = null;
+  _authHint: string | null = null;
+  _authError: string | null = null;
+
+  constructor(opts?: { client?: typeof TelegramLSPClient.prototype.client }) {
+    if (opts?.client) {
       this.client = opts.client;
     } else {
       tdl.configure({ tdjson: resolvedTdlibPath });
@@ -127,17 +224,9 @@ class TelegramLSPClient {
         filesDirectory: path.join(dataDir, 'tdlib_files'),
       });
     }
-    this._ready = false;
-    this._chats = new Map();
-    this._chatsLoaded = false;
-    this._users = new Map();
-    this._authState = 'initializing';
-    this._authResolve = null;
-    this._authHint = null;
-    this._authError = null;
   }
 
-  getAuthState() {
+  getAuthState(): AuthState {
     return {
       state: this._authState,
       hint: this._authHint,
@@ -146,7 +235,7 @@ class TelegramLSPClient {
     };
   }
 
-  async submitAuthInput(value) {
+  async submitAuthInput(value: string): Promise<boolean> {
     if (this._authResolve) {
       const resolve = this._authResolve;
       this._authResolve = null;
@@ -158,8 +247,8 @@ class TelegramLSPClient {
 
   async start() {
     try {
-      const verOption = await this.client.invoke({ _: 'getOption', name: 'version' });
-      if (verOption && verOption.value) {
+      const verOption = await this.client.invoke({ _: 'getOption', name: 'version' }) as { value?: string };
+      if (verOption?.value) {
         const parts = verOption.value.split('.').map(Number);
         if (parts[0] < 1 || (parts[0] === 1 && parts[1] < 8) || (parts[0] === 1 && parts[1] === 8 && parts[2] < 64)) {
           throw new Error(`TDLib version ${verOption.value} is too old. Minimum required: 1.8.64`);
@@ -171,49 +260,49 @@ class TelegramLSPClient {
         try {
           const url = new URL(TG_PROXY);
           const type = url.protocol === 'socks5:' || url.protocol === 'socks5h:'
-            ? { _: 'proxyTypeSocks5', username: url.username || '', password: url.password || '' }
-            : { _: 'proxyTypeHttp', username: url.username || '', password: url.password || '', http_only: false };
+            ? { _: 'proxyTypeSocks5' as const, username: url.username || '', password: url.password || '' }
+            : { _: 'proxyTypeHttp' as const, username: url.username || '', password: url.password || '', http_only: false };
           await this.client.invoke({
             _: 'addProxy',
             proxy: { _: 'proxy', server: url.hostname, port: parseInt(url.port) || 1080, type },
             enable: true,
           });
           console.log(`Proxy enabled: ${url.protocol}//${url.host}`);
-        } catch (e) {
-          console.error('Failed to set proxy:', e.message);
+        } catch (e: unknown) {
+          console.error('Failed to set proxy:', (e as Error).message);
         }
       }
 
       await this.client.login({
         type: 'user',
-        getPhoneNumber: async (retry) => {
+        getPhoneNumber: async (retry: boolean) => {
           this._authState = 'waitPhone';
           this._authError = retry ? 'Invalid phone number, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'phoneNumber', retry });
           }
-          return new Promise((resolve) => {
+          return new Promise<string>((resolve) => {
             this._authResolve = resolve;
           });
         },
-        getAuthCode: async (retry) => {
+        getAuthCode: async (retry: boolean) => {
           this._authState = 'waitCode';
           this._authError = retry ? 'Invalid code, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'authCode', retry });
           }
-          return new Promise((resolve) => {
+          return new Promise<string>((resolve) => {
             this._authResolve = resolve;
           });
         },
-        getPassword: async (hint, retry) => {
+        getPassword: async (hint: string, retry: boolean) => {
           this._authState = 'waitPassword';
           this._authHint = hint || null;
           this._authError = retry ? 'Wrong password, please re-enter' : null;
           if (typeof global.broadcast === 'function') {
             global.broadcast({ event: 'authNeeded', type: 'password', hint, retry });
           }
-          return new Promise((resolve) => {
+          return new Promise<string>((resolve) => {
             this._authResolve = resolve;
           });
         },
@@ -222,18 +311,18 @@ class TelegramLSPClient {
       this._authState = 'ready';
       this.listenUpdates();
       console.log('TDLib client ready');
-    } catch (err) {
+    } catch (err: unknown) {
       this._authState = 'error';
-      this._authError = err.message;
-      console.error('Error:', err.message);
+      this._authError = (err as Error).message;
+      console.error('Error:', (err as Error).message);
     }
   }
 
-  async _getUserName(userId) {
+  async _getUserName(userId: number): Promise<string> {
     const cached = this._users.get(userId);
     if (cached) return cached;
     try {
-      const user = await this.client.invoke({ _: 'getUser', user_id: userId });
+      const user = await this.client.invoke({ _: 'getUser', user_id: userId }) as { first_name?: string; last_name?: string };
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${userId}`;
       this._users.set(userId, name);
       return name;
@@ -242,25 +331,27 @@ class TelegramLSPClient {
     }
   }
 
-  async _resolveSender(senderId) {
+  async _resolveSender(senderId: { _: string; user_id?: number; chat_id?: number } | null): Promise<SenderInfo> {
     if (!senderId) return null;
     if (senderId._ === 'messageSenderUser') {
-      const name = await this._getUserName(senderId.user_id);
-      return { id: senderId.user_id, name };
+      const name = await this._getUserName(senderId.user_id!);
+      return { id: senderId.user_id!, name };
     }
     if (senderId._ === 'messageSenderChat') {
-      const chat = this._chats.get(senderId.chat_id);
-      return { id: senderId.chat_id, name: chat ? chat.title : `chat_${senderId.chat_id}` };
+      const chat = this._chats.get(senderId.chat_id!);
+      return { id: senderId.chat_id!, name: chat ? chat.title : `chat_${senderId.chat_id}` };
     }
     return null;
   }
 
-  _extractText(content) { return extractText(content); }
+  _extractText(content: { _: string; text?: { text: string }; caption?: { text: string }; [key: string]: unknown } | null | undefined): string {
+    return extractText(content as never);
+  }
 
-  async _formatReplyTo(msg) {
+  async _formatReplyTo(msg: RawTdMessage): Promise<FormattedMessage['replyTo'] | null> {
     if (!msg.reply_to || msg.reply_to._ !== 'messageReplyToMessage') return null;
     const r = msg.reply_to;
-    const replyTo = { id: r.message_id };
+    const replyTo: FormattedMessage['replyTo'] = { id: r.message_id };
     if (r.origin_sender_id) {
       replyTo.sender = await this._resolveSender(r.origin_sender_id);
     }
@@ -269,38 +360,40 @@ class TelegramLSPClient {
     }
     const origChatId = r.chat_id || msg.chat_id;
     try {
-      const orig = await this.client.invoke({ _: 'getMessage', chat_id: origChatId, message_id: r.message_id });
+      const orig = await this.client.invoke({ _: 'getMessage', chat_id: origChatId, message_id: r.message_id }) as RawTdMessage | null;
       if (orig) {
         replyTo.text = this._extractText(orig.content);
         if (!replyTo.sender) {
           replyTo.sender = await this._resolveSender(orig.sender_id);
         }
       }
-    } catch {}
+    } catch { /* ignore */ }
     if (r.chat_id && r.chat_id !== msg.chat_id) {
       replyTo.chat_id = r.chat_id;
     }
     return replyTo;
   }
 
-  _senderKey(senderId) {
+  _senderKey(senderId: { _: string; user_id?: number; chat_id?: number } | null): string | null {
     if (!senderId) return null;
     if (senderId._ === 'messageSenderUser') return `u:${senderId.user_id}`;
     if (senderId._ === 'messageSenderChat') return `c:${senderId.chat_id}`;
     return null;
   }
 
-  async _formatMessage(msg, senderCache) {
+  async _formatMessage(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>): Promise<FormattedMessage | null> {
     if (!msg) return null;
-    let sender;
+    let sender: SenderInfo;
     if (senderCache && msg.sender_id) {
       const key = this._senderKey(msg.sender_id);
       sender = key ? senderCache.get(key) : undefined;
+    } else {
+      sender = undefined;
     }
     if (!sender) {
       sender = await this._resolveSender(msg.sender_id);
     }
-    const formatted = {
+    const formatted: FormattedMessage = {
       id: msg.id,
       type: msg.content ? msg.content._ : 'unknown',
       text: this._extractText(msg.content),
@@ -308,10 +401,10 @@ class TelegramLSPClient {
       date: msg.date,
       own: msg.is_outgoing || false,
     };
-    if (msg.content && msg.content._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
+    if (msg.content?._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
       formatted.memberUserIds = msg.content.member_user_ids;
       formatted.addedMemberNames = await Promise.all(
-        msg.content.member_user_ids.map(id => this._getUserName(id))
+        msg.content.member_user_ids.map((id: number) => this._getUserName(id))
       );
     }
     const replyTo = await this._formatReplyTo(msg);
@@ -319,21 +412,21 @@ class TelegramLSPClient {
     return formatted;
   }
 
-  async _preloadSenders(rawMessages) {
-    const unique = new Map();
+  async _preloadSenders(rawMessages: RawTdMessage[]): Promise<Map<string, SenderInfo>> {
+    const unique = new Map<string, { _: string; user_id?: number; chat_id?: number }>();
     for (const m of rawMessages) {
       const key = this._senderKey(m.sender_id);
-      if (key && !unique.has(key)) unique.set(key, m.sender_id);
+      if (key && m.sender_id && !unique.has(key)) unique.set(key, m.sender_id);
     }
-    const cache = new Map();
+    const cache = new Map<string, SenderInfo>();
     await Promise.all([...unique].map(async ([key, senderId]) => {
       cache.set(key, await this._resolveSender(senderId));
     }));
     return cache;
   }
 
-  async _enrichGroup(chat) {
-    const group = {
+  async _enrichGroup(chat: RawTdChat): Promise<GroupInfo | null> {
+    const group: GroupInfo = {
       id: chat.id,
       title: chat.title,
       unreadCount: chat.unread_count || 0,
@@ -346,38 +439,37 @@ class TelegramLSPClient {
 
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
-        const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { status: { _: string; member_id?: { _: string; user_id?: number; chat_id?: number } }; member_count: number };
         if (sg.status._ === 'chatMemberStatusLeft' || sg.status._ === 'chatMemberStatusBanned') return null;
         group.memberCount = sg.member_count;
         if (sg.status._ === 'chatMemberStatusCreator') {
-          group.owner = await this._resolveSender(sg.status.member_id);
+          group.owner = await this._resolveSender(sg.status.member_id!);
         }
-        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id });
+        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as { description: string };
         group.description = info.description;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
-        const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { status: { _: string; member_id?: { _: string; user_id?: number; chat_id?: number } }; member_count: number; is_active: boolean };
         if (bg.status._ === 'chatMemberStatusLeft' || bg.status._ === 'chatMemberStatusBanned' || !bg.is_active) return null;
         group.memberCount = bg.member_count;
         if (bg.status._ === 'chatMemberStatusCreator') {
-          group.owner = await this._resolveSender(bg.status.member_id);
+          group.owner = await this._resolveSender(bg.status.member_id!);
         }
-        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id });
+        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as { description: string };
         group.description = info.description;
       }
-    } catch (_) {
-    }
+    } catch { /* ignore */ }
 
     return group;
   }
 
   listenUpdates() {
-    this.client.on('update', async (update) => {
+    this.client.on('update', async (update: TdUpdate) => {
       switch (update._) {
         case 'updateNewChat':
-          this._chats.set(update.chat.id, update.chat);
+          this._chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
           break;
         case 'updateNewMessage':
-          await this.handleNewMessage(update.message);
+          await this.handleNewMessage(update.message as RawTdMessage);
           break;
         case 'updateUserChatAction':
           await this.handleUserChatAction(update);
@@ -397,7 +489,7 @@ class TelegramLSPClient {
     });
   }
 
-  async handleNewMessage(msg) {
+  async handleNewMessage(msg: RawTdMessage) {
     if (typeof global.broadcast === 'function') {
       const chat = this._chats.get(msg.chat_id);
       const formatted = await this._formatMessage(msg);
@@ -409,7 +501,7 @@ class TelegramLSPClient {
     }
   }
 
-  async handleUserChatAction(update) {
+  async handleUserChatAction(update: TdUpdate) {
     if (typeof global.broadcast === 'function') {
       const userName = update.user_id ? await this._getUserName(update.user_id) : 'unknown';
       global.broadcast({
@@ -422,7 +514,7 @@ class TelegramLSPClient {
     }
   }
 
-  async handleChatAction(update) {
+  async handleChatAction(update: TdUpdate) {
     if (typeof global.broadcast !== 'function') return;
     const sender = update.sender_id ? await this._resolveSender(update.sender_id) : null;
     global.broadcast({
@@ -434,7 +526,7 @@ class TelegramLSPClient {
     });
   }
 
-  handleChatOnlineMemberCount(update) {
+  handleChatOnlineMemberCount(update: TdUpdate) {
     if (typeof global.broadcast === 'function') {
       global.broadcast({
         event: 'chatOnlineMemberCount',
@@ -444,11 +536,11 @@ class TelegramLSPClient {
     }
   }
 
-  async handleChatMemberUpdate(update) {
+  async handleChatMemberUpdate(update: TdUpdate) {
     if (typeof global.broadcast !== 'function') return;
-    const chat = this._chats.get(update.chat_id);
-    const memberUserId = update.member.user_id;
-    const actorUserId = update.actor_user_id;
+    const chat = this._chats.get(update.chat_id!);
+    const memberUserId = update.member!.user_id;
+    const actorUserId = update.actor_user_id!;
     const memberName = await this._getUserName(memberUserId);
     const actorName = actorUserId === memberUserId
       ? memberName
@@ -464,11 +556,11 @@ class TelegramLSPClient {
     });
   }
 
-  isReady() {
+  isReady(): boolean {
     return this._ready;
   }
 
-  async getChats(force) {
+  async getChats(force?: boolean): Promise<RawTdChat[]> {
     if (!this._ready) throw new Error('Client not ready yet');
     if (this._chatsLoaded && !force) return [...this._chats.values()];
 
@@ -483,12 +575,12 @@ class TelegramLSPClient {
         offset_order: offsetOrder,
         offset_chat_id: offsetChatId,
         limit,
-      });
+      }) as { chat_ids: number[] };
       const chatIds = result.chat_ids;
       if (!chatIds || chatIds.length === 0) break;
 
       for (const id of chatIds) {
-        const chat = await this.client.invoke({ _: 'getChat', chat_id: id });
+        const chat = await this.client.invoke({ _: 'getChat', chat_id: id }) as RawTdChat;
         const inMainList = (chat.positions || []).some(
           p => p.list && p.list._ === 'chatListMain'
         );
@@ -513,7 +605,7 @@ class TelegramLSPClient {
     return [...this._chats.values()];
   }
 
-  async getGroups() {
+  async getGroups(): Promise<GroupInfo[]> {
     const chats = await this.getChats();
     const groups = chats.filter((c) => {
       const t = c.type._;
@@ -522,12 +614,12 @@ class TelegramLSPClient {
       return !c.type.is_channel;
     });
     const enriched = await Promise.all(groups.map(g => this._enrichGroup(g)));
-    return enriched.filter(Boolean);
+    return enriched.filter(Boolean) as GroupInfo[];
   }
 
-  async sendMessage(chatId, text, replyTo) {
+  async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const params = {
+    const params: Record<string, unknown> = {
       _: 'sendMessage',
       chat_id: chatId,
       input_message_content: {
@@ -538,11 +630,11 @@ class TelegramLSPClient {
     if (replyTo) {
       params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
     }
-    const result = await this.client.invoke(params);
+    const result = await this.client.invoke(params) as RawTdMessage;
     return this._formatMessage(result);
   }
 
-  async editMessage(chatId, messageId, text) {
+  async editMessage(chatId: number, messageId: number, text: string): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
     await this.client.invoke({
       _: 'editMessageText',
@@ -556,7 +648,7 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
-  async deleteMessage(chatId, messageId, revoke = true) {
+  async deleteMessage(chatId: number, messageId: number, revoke = true): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
     await this.client.invoke({
       _: 'deleteMessages',
@@ -567,7 +659,7 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
-  async forwardMessages(fromChatId, messageIds, toChatId) {
+  async forwardMessages(fromChatId: number, messageIds: number | number[], toChatId: number): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
     await this.client.invoke({
       _: 'forwardMessages',
@@ -578,19 +670,19 @@ class TelegramLSPClient {
     return { ok: true };
   }
 
-  async getChat(chatId) {
+  async getChat(chatId: number) {
     if (!this._ready) throw new Error('Client not ready yet');
-    const chat = await this.client.invoke({ _: 'getChat', chat_id: chatId });
+    const chat = await this.client.invoke({ _: 'getChat', chat_id: chatId }) as RawTdChat;
     let memberCount = 0;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
-        const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
         memberCount = sg.member_count;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
-        const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
       }
-    } catch {}
+    } catch { /* ignore */ }
     return {
       id: chat.id,
       title: chat.title,
@@ -600,7 +692,7 @@ class TelegramLSPClient {
     };
   }
 
-  async viewMessages(chatId, messageId) {
+  async viewMessages(chatId: number, messageId?: number) {
     if (!this._ready) return;
     try {
       await this.client.invoke({
@@ -609,24 +701,24 @@ class TelegramLSPClient {
         message_ids: messageId ? [messageId] : [],
         force_read: true,
       });
-    } catch {}
+    } catch { /* ignore */ }
   }
 
-  async openChat(chatId) {
+  async openChat(chatId: number) {
     if (!this._ready) return;
     try {
       await this.client.invoke({ _: 'openChat', chat_id: chatId });
-    } catch {}
+    } catch { /* ignore */ }
   }
 
-  async closeChat(chatId) {
+  async closeChat(chatId: number) {
     if (!this._ready) return;
     try {
       await this.client.invoke({ _: 'closeChat', chat_id: chatId });
-    } catch {}
+    } catch { /* ignore */ }
   }
 
-  async sendChatAction(chatId, action) {
+  async sendChatAction(chatId: number, action: string) {
     if (!this._ready) return;
     try {
       await this.client.invoke({
@@ -634,17 +726,17 @@ class TelegramLSPClient {
         chat_id: chatId,
         action: { _: action },
       });
-    } catch {}
+    } catch { /* ignore */ }
   }
 
-  async searchMessages(chatId, query, limit = 50) {
+  async searchMessages(chatId: number, query: string, limit = 50) {
     if (!this._ready) throw new Error('Client not ready yet');
     const result = await this.client.invoke({
       _: 'searchChatMessages',
       chat_id: chatId,
       query,
       limit,
-    });
+    }) as { messages?: RawTdMessage[] };
     const chat = this._chats.get(chatId);
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
@@ -652,19 +744,18 @@ class TelegramLSPClient {
     };
   }
 
-  async getMessage(chatId, messageId) {
+  async getMessage(chatId: number, messageId: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const msg = await this.client.invoke({
       _: 'getMessage',
       chat_id: chatId,
       message_id: messageId,
-    });
+    }) as RawTdMessage;
     return this._formatMessage(msg);
   }
 
-  async getMessages(chatId, limit = 50, before) {
+  async getMessages(chatId: number, limit = 50, before?: number) {
     if (!this._ready) throw new Error('Client not ready yet');
-
     const fromMessageId = before || 0;
     const offset = before ? -1 : 0;
     const t0 = Date.now();
@@ -675,7 +766,7 @@ class TelegramLSPClient {
       offset,
       limit,
       only_local: false,
-    });
+    }) as { messages?: RawTdMessage[] };
     const tdlibMs = Date.now() - t0;
     const chat = this._chats.get(chatId);
     const t1 = Date.now();
@@ -691,7 +782,7 @@ class TelegramLSPClient {
     };
   }
 
-  async getMessagesAfter(chatId, afterId, limit = 50) {
+  async getMessagesAfter(chatId: number, afterId: number, limit = 50) {
     if (!this._ready) throw new Error('Client not ready yet');
     const result = await this.client.invoke({
       _: 'getChatHistory',
@@ -700,16 +791,13 @@ class TelegramLSPClient {
       offset: -limit,
       limit,
       only_local: false,
-    });
+    }) as { messages?: RawTdMessage[] };
     const raw = result.messages || [];
     const senderCache = raw.length > 1 ? await this._preloadSenders(raw) : null;
     const msgs = (await Promise.all(
       raw.map(m => this._formatMessage(m, senderCache))
-    )).filter(Boolean);
-    // Messages come newest-first. Since offset goes toward newer from
-    // afterId, all messages > afterId appear before any ≤ afterId, so
-    // we can break early once we hit one that isn't.
-    const newer = [];
+    )).filter(Boolean) as FormattedMessage[];
+    const newer: FormattedMessage[] = [];
     for (const m of msgs) {
       if (m.id > afterId) newer.push(m);
       else break;
@@ -718,14 +806,14 @@ class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: newer.reverse() };
   }
 
-  async getMessagesAround(chatId, messageId, limit = 31) {
+  async getMessagesAround(chatId: number, messageId: number, limit = 31) {
     if (!this._ready) throw new Error('Client not ready yet');
     const half = Math.floor(limit / 2);
 
-    let target = null;
+    let target: FormattedMessage | null = null;
     try {
       target = await this.getMessage(chatId, messageId);
-    } catch {}
+    } catch { /* ignore */ }
 
     const [olderResult, newerResult] = await Promise.all([
       this.client.invoke({
@@ -744,24 +832,23 @@ class TelegramLSPClient {
         limit: half,
         only_local: false,
       }).catch(() => ({ messages: [] })),
-    ]);
+    ]) as [{ messages?: RawTdMessage[] }, { messages?: RawTdMessage[] }];
 
     const allRaw = [...(olderResult.messages || []), ...(newerResult.messages || [])];
     const senderCache = allRaw.length > 1 ? await this._preloadSenders(allRaw) : null;
 
     const older = (await Promise.all(
       (olderResult.messages || []).map(m => this._formatMessage(m, senderCache))
-    )).filter(Boolean).filter(m => !target || m.id !== messageId).reverse();
+    )).filter(Boolean).filter(m => !target || (m as FormattedMessage).id !== messageId).reverse() as FormattedMessage[];
 
     const newer = (await Promise.all(
       (newerResult.messages || []).map(m => this._formatMessage(m, senderCache))
-    )).filter(Boolean).filter(m => !target || m.id > messageId).reverse().slice(0, half);
+    )).filter(Boolean).filter(m => !target || (m as FormattedMessage).id > messageId).reverse().slice(0, half) as FormattedMessage[];
 
     const allMsgs = [...older, ...(target ? [target] : []), ...newer];
     const chat = this._chats.get(chatId);
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
-
 }
 
-module.exports = TelegramLSPClient;
+export = TelegramLSPClient;
