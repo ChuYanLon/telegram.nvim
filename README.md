@@ -198,7 +198,7 @@ ldconfig 2>/dev/null || true
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
 | `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion |
-| `:TgIssue`    | Browse, create, close, and assign issues — create branches directly from an issue |
+| `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue |
 
 > The server runs on a fixed port (8080). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
