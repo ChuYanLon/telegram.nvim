@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import FakeTdClient from './fake-td-client';
 
 let client;
@@ -128,5 +128,116 @@ describe('_formatReplyTo', () => {
     };
     const result = await client._formatReplyTo(msg);
     expect(result).toEqual({ id: 5, chat_id: -1001, sender: { id: null, name: 'TelegramUser' }, text: '' });
+  });
+});
+
+describe('handleUserChatAction', () => {
+  afterEach(() => {
+    delete global.broadcast;
+  });
+
+  it('broadcasts userAction with resolved user name', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleUserChatAction({
+      chat_id: -1001,
+      user_id: 1,
+      action: { _: 'chatActionTyping' },
+    });
+    expect(broadcastData).toEqual({
+      event: 'userAction',
+      chat_id: -1001,
+      user_id: 1,
+      user_name: 'Alice',
+      action: { _: 'chatActionTyping' },
+    });
+  });
+
+  it('falls back to unknown when user_id is missing', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleUserChatAction({
+      chat_id: -1001,
+      action: { _: 'chatActionCancel' },
+    });
+    expect(broadcastData).toEqual({
+      event: 'userAction',
+      chat_id: -1001,
+      user_id: undefined,
+      user_name: 'unknown',
+      action: { _: 'chatActionCancel' },
+    });
+  });
+
+  it('does nothing when global.broadcast is not set', async () => {
+    let called = false;
+    global.broadcast = () => { called = true; };
+    delete global.broadcast;
+    await client.handleUserChatAction({ chat_id: -1001, user_id: 1, action: { _: 'chatActionTyping' } });
+    expect(called).toBe(false);
+  });
+});
+
+describe('handleChatAction', () => {
+  afterEach(() => {
+    delete global.broadcast;
+  });
+
+  it('broadcasts userAction with sender resolved from messageSenderUser', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleChatAction({
+      chat_id: -1001,
+      sender_id: { _: 'messageSenderUser', user_id: 2 },
+      action: { _: 'chatActionRecordingVideo' },
+    });
+    expect(broadcastData).toEqual({
+      event: 'userAction',
+      chat_id: -1001,
+      user_id: 2,
+      user_name: 'Bob Lee',
+      action: { _: 'chatActionRecordingVideo' },
+    });
+  });
+
+  it('broadcasts userAction with sender resolved from messageSenderChat', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleChatAction({
+      chat_id: -1001,
+      sender_id: { _: 'messageSenderChat', chat_id: -1001 },
+      action: { _: 'chatActionChoosingContact' },
+    });
+    expect(broadcastData).toEqual({
+      event: 'userAction',
+      chat_id: -1001,
+      user_id: -1001,
+      user_name: 'Test Group',
+      action: { _: 'chatActionChoosingContact' },
+    });
+  });
+
+  it('falls back to unknown when sender_id is missing', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleChatAction({
+      chat_id: -1001,
+      action: { _: 'chatActionCancel' },
+    });
+    expect(broadcastData).toEqual({
+      event: 'userAction',
+      chat_id: -1001,
+      user_id: null,
+      user_name: 'unknown',
+      action: { _: 'chatActionCancel' },
+    });
+  });
+
+  it('does nothing when global.broadcast is not set', async () => {
+    let called = false;
+    global.broadcast = () => { called = true; };
+    delete global.broadcast;
+    await client.handleChatAction({ chat_id: -1001, sender_id: { _: 'messageSenderUser', user_id: 1 }, action: { _: 'chatActionTyping' } });
+    expect(called).toBe(false);
   });
 });
