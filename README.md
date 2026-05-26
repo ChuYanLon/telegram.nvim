@@ -88,6 +88,7 @@ System messages (members added, group renamed, etc.) are rendered as readable te
 | Prefix | Display | Example |
 |--------|---------|---------|
 | `+` | Member joined | `+ Kitty joined this group at 19:49:58 on May 09, 2026` |
+| `+` | Member added | `+ Kitty added Bob at 19:49:58 on May 09, 2026` |
 | `-` | Member left | `- Kitty left the group at ...` |
 | `~` | Group changed | `~ Kitty changed the group name to 'New Name' at ...` |
 | `*` | Message pinned | `* Kitty pinned a message at ...` |
