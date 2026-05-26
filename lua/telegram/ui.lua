@@ -466,9 +466,9 @@ local function input_send()
 	end
 	if state.input_mode == "edit" and state.edit_target then
 		local target = state.edit_target
-		if server.edit_message(state.chat_id, target.id, text) then
+		local ok = server.edit_message(state.chat_id, target.id, text)
+		if ok then
 			target.text = text
-			render()
 			vim.notify("Message edited", vim.log.levels.INFO, { title = "tg" })
 		end
 		state.editor:clear()
@@ -476,6 +476,7 @@ local function input_send()
 		state.reply_to = nil
 		state.edit_target = nil
 		state.sending = false
+		render()
 		update_input_border()
 		return
 	end
