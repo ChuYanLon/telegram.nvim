@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import FakeTdClient from './fake-td-client';
 
 let client;
@@ -9,11 +9,14 @@ beforeAll(async () => {
   const fake = new FakeTdClient();
   fake.addUser({ id: 1, first_name: 'Alice', last_name: null });
   fake.addUser({ id: 2, first_name: 'Bob', last_name: 'Lee' });
+  fake.addUser({ id: 3, first_name: 'Charlie', last_name: null });
   fake.addChat({ id: -1001, title: 'Test Group' });
+  fake.addChat({ id: -1002, title: 'Private Chat', type: { _: 'chatTypePrivate' } });
   client = new TelegramLSPClient({ client: fake });
   // Pre-populate internal caches so resolveSender works
   client._users.set(1, 'Alice');
   client._users.set(2, 'Bob Lee');
+  client._users.set(3, 'Charlie');
   client._chats.set(-1001, { id: -1001, title: 'Test Group' });
 });
 
@@ -238,6 +241,204 @@ describe('handleChatAction', () => {
     global.broadcast = () => { called = true; };
     delete global.broadcast;
     await client.handleChatAction({ chat_id: -1001, sender_id: { _: 'messageSenderUser', user_id: 1 }, action: { _: 'chatActionTyping' } });
+    expect(called).toBe(false);
+  });
+});
+
+describe('_formatMessage with messageChatAddMembers', () => {
+  it('includes memberUserIds and addedMemberNames for add-members messages', async () => {
+    const msg = {
+      id: 10,
+      content: {
+        _: 'messageChatAddMembers',
+        member_user_ids: [2],
+      },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 4000000,
+      is_outgoing: false,
+      reply_to: null,
+    };
+    const result = await client._formatMessage(msg);
+    expect(result.memberUserIds).toEqual([2]);
+    expect(result.addedMemberNames).toEqual(['Bob Lee']);
+  });
+
+  it('handles multiple added members', async () => {
+    const msg = {
+      id: 11,
+      content: {
+        _: 'messageChatAddMembers',
+        member_user_ids: [2, 3],
+      },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 5000000,
+      is_outgoing: false,
+      reply_to: null,
+    };
+    const result = await client._formatMessage(msg);
+    expect(result.memberUserIds).toEqual([2, 3]);
+    expect(result.addedMemberNames).toEqual(['Bob Lee', 'Charlie']);
+  });
+
+  it('does not inject fields for non-add-members messages', async () => {
+    const msg = {
+      id: 12,
+      content: { _: 'messageText', text: { text: 'hi' } },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 6000000,
+      is_outgoing: false,
+      reply_to: null,
+    };
+    const result = await client._formatMessage(msg);
+    expect(result.memberUserIds).toBeUndefined();
+    expect(result.addedMemberNames).toBeUndefined();
+  });
+});
+
+describe('getChat', () => {
+  beforeEach(() => {
+    client._ready = true;
+  });
+
+  it('returns memberCount for supergroup chats', async () => {
+    const result = await client.getChat(-1001);
+    expect(result.id).toBe(-1001);
+    expect(result.title).toBe('Test Group');
+    expect(result.memberCount).toBe(42);
+  });
+
+  it('returns 0 memberCount for non-group chats without throwing', async () => {
+    const result = await client.getChat(-1002);
+    expect(result.id).toBe(-1002);
+    expect(result.title).toBe('Private Chat');
+    expect(result.memberCount).toBe(0);
+  });
+
+  it('returns 0 memberCount for unknown chats without throwing', async () => {
+    const result = await client.getChat(-9999);
+    expect(result.id).toBe(-9999);
+    expect(result.title).toBe('Unknown Group');
+    expect(result.memberCount).toBe(0);
+  });
+});
+
+describe('handleNewMessage', () => {
+  afterEach(() => {
+    delete global.broadcast;
+  });
+
+  it('broadcasts newMessage event', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    const msg = {
+      id: 20,
+      chat_id: -1001,
+      content: { _: 'messageText', text: { text: 'hello world' } },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 7000000,
+      is_outgoing: false,
+      reply_to: null,
+    };
+    await client.handleNewMessage(msg);
+    expect(broadcastData).toMatchObject({
+      event: 'newMessage',
+      chat: { id: -1001, title: 'Test Group' },
+      id: 20,
+      text: 'hello world',
+      sender: { id: 1, name: 'Alice' },
+    });
+  });
+
+  it('does nothing when global.broadcast is not set', async () => {
+    let called = false;
+    global.broadcast = () => { called = true; };
+    delete global.broadcast;
+    await client.handleNewMessage({
+      id: 21, chat_id: -1001,
+      content: { _: 'messageText', text: { text: 'x' } },
+      sender_id: { _: 'messageSenderUser', user_id: 1 },
+      date: 8000000, is_outgoing: false, reply_to: null,
+    });
+    expect(called).toBe(false);
+  });
+});
+
+describe('handleChatOnlineMemberCount', () => {
+  afterEach(() => {
+    delete global.broadcast;
+  });
+
+  it('broadcasts online member count', () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    client.handleChatOnlineMemberCount({
+      chat_id: -1001,
+      online_member_count: 7,
+    });
+    expect(broadcastData).toEqual({
+      event: 'chatOnlineMemberCount',
+      chat_id: -1001,
+      online_member_count: 7,
+    });
+  });
+
+  it('does nothing when global.broadcast is not set', () => {
+    let called = false;
+    global.broadcast = () => { called = true; };
+    delete global.broadcast;
+    client.handleChatOnlineMemberCount({ chat_id: -1001, online_member_count: 3 });
+    expect(called).toBe(false);
+  });
+});
+
+describe('handleChatMemberUpdate', () => {
+  afterEach(() => {
+    delete global.broadcast;
+  });
+
+  it('broadcasts chatMember with actor and member', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleChatMemberUpdate({
+      chat_id: -1001,
+      member: { user_id: 2 },
+      actor_user_id: 1,
+      old_status: { _: 'chatMemberStatusLeft' },
+      new_status: { _: 'chatMemberStatusMember' },
+    });
+    expect(broadcastData).toMatchObject({
+      event: 'chatMember',
+      chat_id: -1001,
+      chat_title: 'Test Group',
+      member: { id: 2, name: 'Bob Lee' },
+      actor: { id: 1, name: 'Alice' },
+    });
+  });
+
+  it('uses same name for actor when actor is the member (self-join)', async () => {
+    let broadcastData = null;
+    global.broadcast = (data) => { broadcastData = data; };
+    await client.handleChatMemberUpdate({
+      chat_id: -1001,
+      member: { user_id: 1 },
+      actor_user_id: 1,
+      old_status: { _: 'chatMemberStatusLeft' },
+      new_status: { _: 'chatMemberStatusMember' },
+    });
+    expect(broadcastData).toMatchObject({
+      member: { id: 1, name: 'Alice' },
+      actor: { id: 1, name: 'Alice' },
+    });
+  });
+
+  it('does nothing when global.broadcast is not set', async () => {
+    let called = false;
+    global.broadcast = () => { called = true; };
+    delete global.broadcast;
+    await client.handleChatMemberUpdate({
+      chat_id: -1001, member: { user_id: 1 }, actor_user_id: 1,
+      old_status: { _: 'chatMemberStatusLeft' }, new_status: { _: 'chatMemberStatusMember' },
+    });
     expect(called).toBe(false);
   });
 });
