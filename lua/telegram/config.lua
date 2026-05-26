@@ -59,7 +59,7 @@ function M.ensure_deps()
 	if M.config.tdlib_path then
 		vim.notify("tdlib_path: " .. M.config.tdlib_path, vim.log.levels.INFO, { title = "tg" })
 	end
-	local ws_helper = plugin_root .. "/bin/tg-ws-helper.js"
+	local ws_helper = plugin_root .. "/bin/tg-ws-helper.ts"
 	if vim.fn.filereadable(ws_helper) ~= 1 then
 		vim.notify("Missing ws helper", vim.log.levels.ERROR, { title = "tg" })
 		return false

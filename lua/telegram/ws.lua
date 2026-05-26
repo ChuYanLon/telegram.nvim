@@ -36,7 +36,7 @@ local function start_ws_job(on_msg)
 	end
 	local config = require("telegram.config")
 	local helper = config.plugin_root .. "/bin/tg-ws-helper.js"
-	ws_job_id = vim.fn.jobstart({ "node", helper, server.ws_url() }, {
+	ws_job_id = vim.fn.jobstart({ "npx", "tsx", helper, server.ws_url() }, {
 		on_stdout = function(_, data)
 			if not data then
 				return
