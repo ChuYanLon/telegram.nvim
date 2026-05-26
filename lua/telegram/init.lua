@@ -551,7 +551,6 @@ vim.api.nvim_create_user_command("TgIssue", function()
 												"Create branch",
 												"Open in browser",
 												"Close issue",
-												"Assign to me",
 											}, {
 												prompt = "#" .. issue.num .. " — what next?",
 											}, function(action)
@@ -663,30 +662,6 @@ vim.api.nvim_create_user_command("TgIssue", function()
 																vim.schedule(function()
 																	vim.notify(
 																		"#" .. issue.num .. " closed",
-																		vim.log.levels.INFO,
-																		{ title = "tg" }
-																	)
-																end)
-															end,
-														}
-													)
-												elseif action:match("Assign") then
-													vim.fn.jobstart(
-														{
-															"gh",
-															"issue",
-															"edit",
-															tostring(issue.num),
-															"--repo",
-															"ChuYanLon/telegram.nvim",
-															"--add-assignee",
-															"ChuYanLon",
-														},
-														{
-															on_exit = function()
-																vim.schedule(function()
-																	vim.notify(
-																		"#" .. issue.num .. " assigned",
 																		vim.log.levels.INFO,
 																		{ title = "tg" }
 																	)
