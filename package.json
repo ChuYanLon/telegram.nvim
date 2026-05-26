@@ -1,6 +1,6 @@
 {
   "name": "telegram-lsp-backend",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "scripts": {
     "start": "node src/server.js",
     "pretest": "pgrep -f 'node src/server\\.js' | xargs -r kill 2>/dev/null; true",
