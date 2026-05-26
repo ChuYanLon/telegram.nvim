@@ -352,8 +352,10 @@ class TelegramLSPClient {
           await this.handleNewMessage(update.message);
           break;
         case 'updateUserChatAction':
-        case 'updateChatAction':
           await this.handleUserChatAction(update);
+          break;
+        case 'updateChatAction':
+          await this.handleChatAction(update);
           break;
         case 'updateChatOnlineMemberCount':
           this.handleChatOnlineMemberCount(update);
@@ -390,6 +392,18 @@ class TelegramLSPClient {
         action: update.action,
       });
     }
+  }
+
+  async handleChatAction(update) {
+    if (typeof global.broadcast !== 'function') return;
+    const sender = update.sender_id ? await this._resolveSender(update.sender_id) : null;
+    global.broadcast({
+      event: 'userAction',
+      chat_id: update.chat_id,
+      user_id: sender ? sender.id : null,
+      user_name: sender ? sender.name : 'unknown',
+      action: update.action,
+    });
   }
 
   handleChatOnlineMemberCount(update) {
