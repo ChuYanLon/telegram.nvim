@@ -403,7 +403,6 @@ vim.api.nvim_create_user_command("TgPr", function()
 														if src ~= "main" then
 															local root = vim.fn.shellescape(config.plugin_root)
 															vim.fn.jobstart({ "sh", "-c", "cd " .. root .. " && git branch -D " .. vim.fn.shellescape(src) .. " 2>/dev/null; true" })
-															})
 														end
 													else
 														vim.notify(
@@ -503,8 +502,10 @@ vim.api.nvim_create_user_command("TgIssue", function()
 								"list",
 								"--repo",
 								"ChuYanLon/telegram.nvim",
-"--limit",
-"100",
+								"--assignee",
+								"@me",
+								"--limit",
+								"20",
 								"--json",
 								"number,title,labels,assignees",
 							},
