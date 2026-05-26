@@ -476,6 +476,7 @@ local function input_send()
 		state.reply_to = nil
 		state.edit_target = nil
 		state.sending = false
+		update_input_border()
 		return
 	end
 	local function insert_msg(msg)
