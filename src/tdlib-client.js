@@ -674,9 +674,16 @@ class TelegramLSPClient {
     const msgs = (await Promise.all(
       (result.messages || []).map(m => this._formatMessage(m))
     )).filter(Boolean);
-    const newer = msgs.filter(m => m.id > afterId).reverse().slice(0, limit);
+    // Messages come newest-first. Since offset goes toward newer from
+    // afterId, all messages > afterId appear before any ≤ afterId, so
+    // we can break early once we hit one that isn't.
+    const newer = [];
+    for (const m of msgs) {
+      if (m.id > afterId) newer.push(m);
+      else break;
+    }
     const chat = this._chats.get(chatId);
-    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: newer };
+    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: newer.reverse() };
   }
 
   async getMessagesAround(chatId, messageId, limit = 31) {
