@@ -539,16 +539,22 @@ class TelegramLSPClient {
   async getChat(chatId) {
     if (!this._ready) throw new Error('Client not ready yet');
     const chat = await this.client.invoke({ _: 'getChat', chat_id: chatId });
+    let memberCount = 0;
+    try {
+      if (chat.type._ === 'chatTypeSupergroup') {
+        const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        memberCount = sg.member_count;
+      } else if (chat.type._ === 'chatTypeBasicGroup') {
+        const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        memberCount = bg.member_count;
+      }
+    } catch {}
     return {
       id: chat.id,
       title: chat.title,
       unreadCount: chat.unread_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
-      memberCount: chat.type._ === 'chatTypeSupergroup'
-        ? (await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id })).member_count
-        : chat.type._ === 'chatTypeBasicGroup'
-        ? (await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id })).member_count
-        : 0,
+      memberCount,
     };
   }
 
