@@ -283,13 +283,28 @@ class TelegramLSPClient {
     return replyTo;
   }
 
-  async _formatMessage(msg) {
+  _senderKey(senderId) {
+    if (!senderId) return null;
+    if (senderId._ === 'messageSenderUser') return `u:${senderId.user_id}`;
+    if (senderId._ === 'messageSenderChat') return `c:${senderId.chat_id}`;
+    return null;
+  }
+
+  async _formatMessage(msg, senderCache) {
     if (!msg) return null;
+    let sender;
+    if (senderCache && msg.sender_id) {
+      const key = this._senderKey(msg.sender_id);
+      sender = key ? senderCache.get(key) : undefined;
+    }
+    if (!sender) {
+      sender = await this._resolveSender(msg.sender_id);
+    }
     const formatted = {
       id: msg.id,
       type: msg.content ? msg.content._ : 'unknown',
       text: this._extractText(msg.content),
-      sender: await this._resolveSender(msg.sender_id),
+      sender,
       date: msg.date,
       own: msg.is_outgoing || false,
     };
@@ -302,6 +317,19 @@ class TelegramLSPClient {
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
     return formatted;
+  }
+
+  async _preloadSenders(rawMessages) {
+    const unique = new Map();
+    for (const m of rawMessages) {
+      const key = this._senderKey(m.sender_id);
+      if (key && !unique.has(key)) unique.set(key, m.sender_id);
+    }
+    const cache = new Map();
+    await Promise.all([...unique].map(async ([key, senderId]) => {
+      cache.set(key, await this._resolveSender(senderId));
+    }));
+    return cache;
   }
 
   async _enrichGroup(chat) {
@@ -651,7 +679,9 @@ class TelegramLSPClient {
     const tdlibMs = Date.now() - t0;
     const chat = this._chats.get(chatId);
     const t1 = Date.now();
-    const msgs = await Promise.all((result.messages || []).map(m => this._formatMessage(m)));
+    const raw = result.messages || [];
+    const senderCache = raw.length > 1 ? await this._preloadSenders(raw) : null;
+    const msgs = await Promise.all(raw.map(m => this._formatMessage(m, senderCache)));
     const fmtMs = Date.now() - t1;
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
@@ -671,8 +701,10 @@ class TelegramLSPClient {
       limit,
       only_local: false,
     });
+    const raw = result.messages || [];
+    const senderCache = raw.length > 1 ? await this._preloadSenders(raw) : null;
     const msgs = (await Promise.all(
-      (result.messages || []).map(m => this._formatMessage(m))
+      raw.map(m => this._formatMessage(m, senderCache))
     )).filter(Boolean);
     // Messages come newest-first. Since offset goes toward newer from
     // afterId, all messages > afterId appear before any ≤ afterId, so
@@ -714,12 +746,15 @@ class TelegramLSPClient {
       }).catch(() => ({ messages: [] })),
     ]);
 
+    const allRaw = [...(olderResult.messages || []), ...(newerResult.messages || [])];
+    const senderCache = allRaw.length > 1 ? await this._preloadSenders(allRaw) : null;
+
     const older = (await Promise.all(
-      (olderResult.messages || []).map(m => this._formatMessage(m))
+      (olderResult.messages || []).map(m => this._formatMessage(m, senderCache))
     )).filter(Boolean).filter(m => !target || m.id !== messageId).reverse();
 
     const newer = (await Promise.all(
-      (newerResult.messages || []).map(m => this._formatMessage(m))
+      (newerResult.messages || []).map(m => this._formatMessage(m, senderCache))
     )).filter(Boolean).filter(m => !target || m.id > messageId).reverse().slice(0, half);
 
     const allMsgs = [...older, ...(target ? [target] : []), ...newer];
