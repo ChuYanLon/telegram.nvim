@@ -77,7 +77,7 @@ app.post('/chat/open', async (req, res) => {
   try {
     const { chatId } = req.body;
     if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
-    await tgClient.openChat(chatId);
+    await tgClient.openChat(Number(chatId));
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -88,7 +88,7 @@ app.post('/chat/action', async (req, res) => {
   try {
     const { chatId, action } = req.body;
     if (!chatId || !action) { res.status(400).json({ error: 'chatId and action are required' }); return; }
-    await tgClient.sendChatAction(chatId, action);
+    await tgClient.sendChatAction(Number(chatId), action);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -110,7 +110,7 @@ app.post('/chat/close', async (req, res) => {
   try {
     const { chatId } = req.body;
     if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
-    await tgClient.closeChat(chatId);
+    await tgClient.closeChat(Number(chatId));
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -193,7 +193,7 @@ app.post('/sendMessage', async (req, res) => {
       res.status(400).json({ error: 'chatId and text are required' });
       return;
     }
-    const msg = await tgClient.sendMessage(chatId, text, replyTo);
+    const msg = await tgClient.sendMessage(Number(chatId), text, replyTo ? Number(replyTo) : undefined);
     res.json({ ok: true, message: msg });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -221,7 +221,7 @@ app.post('/deleteMessage', async (req, res) => {
       res.status(400).json({ error: 'chatId and messageId are required' });
       return;
     }
-    const result = await tgClient.deleteMessage(chatId, messageId, revoke !== false);
+    const result = await tgClient.deleteMessage(Number(chatId), Number(messageId), revoke !== false);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -235,7 +235,11 @@ app.post('/forwardMessages', async (req, res) => {
       res.status(400).json({ error: 'fromChatId, messageIds and toChatId are required' });
       return;
     }
-    const result = await tgClient.forwardMessages(fromChatId, messageIds, toChatId);
+    const result = await tgClient.forwardMessages(
+      Number(fromChatId),
+      Array.isArray(messageIds) ? messageIds.map(Number) : Number(messageIds),
+      Number(toChatId)
+    );
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
