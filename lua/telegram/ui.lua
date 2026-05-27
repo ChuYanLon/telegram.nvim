@@ -583,17 +583,12 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	if state.chat_id then
-		state.last_group = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
 	end
 
 	state.chat_id = chat_id
 	state.chat_title = chat_title
-	state.messages = {}
-	state.loading = false
-	state.exhausted = false
-	state.exhausted_forward = false
-	state.loading_newer = false
+	state.last_group = { id = chat_id, title = chat_title }
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
 	end
