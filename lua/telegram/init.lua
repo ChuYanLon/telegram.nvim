@@ -158,6 +158,24 @@ local function finish_init()
 							vim.cmd("redraw")
 						end)
 					end
+					local t = msg.type or ""
+					if t ~= "messageText" and t:find("^message") and (not msg.filePath or #msg.filePath == 0) then
+						vim.defer_fn(function()
+							local cid = msg.chat and msg.chat.id
+							if st.chat_id == cid then
+								local res = server.get_media(st.chat_id, mid)
+								if res and res.path and #res.path > 0 then
+									for _, m in ipairs(st.messages) do
+										if tostring(m.id) == tostring(mid) then
+											m.filePath = res.path
+											ui.render()
+											break
+										end
+									end
+								end
+							end
+						end, 2000)
+					end
 					if at_bottom then
 						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
 					end
