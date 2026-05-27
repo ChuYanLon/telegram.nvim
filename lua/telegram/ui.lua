@@ -465,6 +465,16 @@ function M.open_chat(chat_id, chat_title)
 	local safe_name = chat_title:gsub("[^%w%p]", "_"):sub(1, 30)
 	vim.api.nvim_buf_set_name(state.buf, "/tmp/tg-" .. safe_name)
 
+	vim.api.nvim_create_autocmd("BufWipeout", {
+		group = vim.api.nvim_create_augroup("TgBufCleanup", { clear = false }),
+		pattern = "/tmp/tg-*",
+		callback = function()
+			state.buf = nil
+			state.win = nil
+			state.mounted = false
+		end,
+	})
+
 	state.win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(state.win, state.buf)
 	vim.wo[state.win].wrap = true
