@@ -26,6 +26,7 @@ local function get_renderer(msg)
 		or t == "messageVoiceNote"
 		or t == "messageVideoNote"
 		or t == "messageAudio"
+		or t == "messageSticker"
 	then
 		return media
 	end

@@ -86,6 +86,7 @@ export class MessageFormatter {
       messageVoiceNote:  { key: 'voice_note', fileField: 'voice',    mimeField: 'mime_type' },
       messageVideoNote:  { key: 'video_note', fileField: 'video',    mimeField: 'mime_type' },
       messageAudio:      { key: 'audio',      fileField: 'audio',    mimeField: 'mime_type' },
+      messageSticker:    { key: 'sticker',    fileField: 'sticker',  mimeField: '' },
     };
 
     const cfg = mediaMap[t];

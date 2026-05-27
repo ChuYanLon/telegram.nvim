@@ -1,7 +1,6 @@
 local M = {}
 
 local type_labels = {
-	messageSticker = "[Sticker]",
 	messageVoiceNote = "[Voice]",
 	messageVideoNote = "[Video Note]",
 	messageAudio = "[Audio]",
