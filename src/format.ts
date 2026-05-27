@@ -51,12 +51,15 @@ export class MessageFormatter {
       if (fileInfo.fileId > 0) {
         this.invoke({ _: 'downloadFile', file_id: fileInfo.fileId, priority: 1 }).catch(() => {});
       }
+      if (fileInfo.priorityFileId && fileInfo.priorityFileId !== fileInfo.fileId) {
+        this.invoke({ _: 'downloadFile', file_id: fileInfo.priorityFileId, priority: 2 }).catch(() => {});
+      }
     }
 
     return formatted;
   }
 
-  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number } | null {
+  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number; priorityFileId?: number } | null {
     if (!content) return null;
     const t = content._ as string;
     if (t === 'messageText') return null;
@@ -91,18 +94,23 @@ export class MessageFormatter {
 
     if (t === 'messagePhoto') {
       let firstId = 0;
+      let lastId = 0;
       const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
       if (sizes && sizes.length > 0) {
+        const lastSize = sizes[sizes.length - 1];
+        const lastFile = lastSize[cfg.fileField] as Record<string, unknown> | undefined;
+        if (lastFile) lastId = (lastFile['id'] as number) || 0;
+
         for (let i = 0; i < sizes.length; i++) {
           const photoFile = sizes[i][cfg.fileField] as Record<string, unknown> | undefined;
           const info = getFileInfo(photoFile, 'image/jpeg');
           if (info) {
             if (firstId === 0) firstId = info.fileId;
-            if (info.path) return info;
+            if (info.path) return { path: info.path, mimeType: info.mimeType, fileId: info.fileId, priorityFileId: lastId };
           }
         }
       }
-      if (firstId > 0) return { path: '', mimeType: 'image/jpeg', fileId: firstId };
+      if (firstId > 0) return { path: '', mimeType: 'image/jpeg', fileId: firstId, priorityFileId: lastId };
       return null;
     }
 
