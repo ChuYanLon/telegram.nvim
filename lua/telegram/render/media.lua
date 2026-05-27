@@ -8,7 +8,7 @@ local labels = {
 	messageVoiceNote = "🎤 Voice",
 	messageVideoNote = "🎞 Video Note",
 	messageAudio = "🎵 Audio",
-	messageSticker = "🏷 Sticker",
+	messageSticker = "🎯 Sticker",
 }
 
 function M.render(msg)
