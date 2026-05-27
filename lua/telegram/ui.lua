@@ -583,7 +583,7 @@ function M.open_chat(chat_id, chat_title)
 			return
 		end
 		vim.cmd("botright vsplit")
-		vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
@@ -610,7 +610,7 @@ function M.open_chat(chat_id, chat_title)
 		pcall(vim.diagnostic.reset, state.buf)
 
 		vim.cmd("botright vsplit")
-		vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
@@ -645,7 +645,7 @@ function M.open_chat(chat_id, chat_title)
 							return
 						end
 						vim.cmd("botright vsplit")
-						vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 						vim.api.nvim_set_current_win(state.win)
 					end)
 				end
@@ -704,7 +704,7 @@ function M.open_chat(chat_id, chat_title)
 	else
 		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 			vim.cmd("botright vsplit")
-			vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+			vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 			state.win = vim.api.nvim_get_current_win()
 			vim.api.nvim_win_set_buf(state.win, state.buf)
 		end
