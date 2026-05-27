@@ -22,6 +22,8 @@ local type_labels = {
 	messageChatSetMessageAutoDeleteTime = "[Auto-delete Set]",
 	messagePinMessage = "[Message Pinned]",
 	messageForumTopicCreated = "[Topic Created]",
+	messageChatUpgradeFrom = "[Group Upgraded]",
+	messageChatUpgradeTo = "[Supergroup Upgrade]",
 }
 
 function M.render(msg)

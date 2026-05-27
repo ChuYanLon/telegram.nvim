@@ -44,6 +44,8 @@ local service_styles = {
 	messageMessagePinned = { prefix = "*", text = "pinned a message" },
 	messageForumTopicCreated = { prefix = ">", text = "created a topic" },
 	messageChatSetMessageAutoDeleteTime = { prefix = "!", text = "set auto-delete timer" },
+	messageChatUpgradeFrom = { prefix = ">", text = "upgraded from a basic group" },
+	messageChatUpgradeTo = { prefix = ">", text = "upgraded to a supergroup" },
 }
 
 function M.render(msg)
