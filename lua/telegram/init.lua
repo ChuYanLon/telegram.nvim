@@ -180,6 +180,9 @@ local function finish_init()
 				end
 				ui.update_group_online(msg.chat_id, msg.online_member_count)
 			end)
+		end
+				ui.update_group_online(msg.chat_id, msg.online_member_count)
+			end)
 		elseif msg.event == "fileUpdate" then
 			vim.schedule(function()
 				local st = ui.state

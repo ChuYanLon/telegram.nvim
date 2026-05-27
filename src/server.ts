@@ -246,6 +246,20 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
+app.get('/messageMedia', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.query;
+    if (!chatId || !messageId) {
+      res.status(400).json({ error: 'chatId and messageId required' });
+      return;
+    }
+    const result = await tgClient.getMessageMedia(Number(chatId), Number(messageId));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);

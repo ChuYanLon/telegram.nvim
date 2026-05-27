@@ -134,4 +134,33 @@ M.register("search", {
 	end,
 })
 
+M.register("refreshmedia", {
+	description = "Download and update image for message under cursor",
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local target = ui.curr_msg()
+		if not target or not target.id then
+			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local t = target.type or ""
+		if t == "messageText" or not t:find("^message") then
+			vim.notify("Not a media message", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.notify("Downloading media...", vim.log.levels.INFO, { title = "tg" })
+		local res = server.get_media(ui.state.chat_id, target.id)
+		if res and res.path and #res.path > 0 then
+			target.filePath = res.path
+			ui.render()
+			vim.notify("Media updated", vim.log.levels.INFO, { title = "tg" })
+		else
+			vim.notify("No media path found", vim.log.levels.INFO, { title = "tg" })
+		end
+	end,
+})
+
 return M

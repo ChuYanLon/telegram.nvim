@@ -302,6 +302,14 @@ function M.search_messages(chat_id, query)
 	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+"))
 end
 
+function M.get_media(chat_id, message_id)
+	local data = http_get("/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id)
+	if data then
+		return data
+	end
+	return nil
+end
+
 ---@param chat_id any
 ---@param limit integer|nil
 ---@param before any|nil

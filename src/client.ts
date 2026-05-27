@@ -435,6 +435,23 @@ export class TelegramLSPClient {
     const chat = this._chats.get(chatId);
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
+
+  async getMessageMedia(chatId: number, messageId: number): Promise<{ path: string } | null> {
+    try {
+      const msg = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
+      if (!msg || !msg.content) return null;
+      await this.client.invoke({ _: 'openMessageContent', chat_id: chatId, message_id: messageId }).catch(() => {});
+      const formatted = await this.formatter.format(msg);
+      if (formatted?.filePath) return { path: formatted.filePath };
+      await new Promise(r => setTimeout(r, 2000));
+      const msg2 = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
+      if (msg2?.content) {
+        const formatted2 = await this.formatter.format(msg2);
+        if (formatted2?.filePath) return { path: formatted2.filePath };
+      }
+      return { path: '' };
+    } catch { return null; }
+  }
 }
 
 export default TelegramLSPClient;

@@ -12,10 +12,6 @@ export class UpdateDispatcher {
 
   listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
     tdClient.on('update', async (update: TdUpdate) => {
-      const broadcast = this.getBroadcast();
-      if (broadcast && update._ === 'updateFile') {
-        broadcast({ event: 'fileUpdate', path: '', messageIds: [], debug: `switch matched: ${update._}` });
-      }
       switch (update._) {
         case 'updateNewChat':
           this.chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
@@ -34,9 +30,6 @@ export class UpdateDispatcher {
           break;
         case 'updateChatMember':
           await this.handleChatMemberUpdate(update);
-          break;
-        case 'updateFile':
-          this.handleFileUpdate(update);
           break;
         default:
           console.log(update);
@@ -111,35 +104,5 @@ export class UpdateDispatcher {
       old_status: update.old_status,
       new_status: update.new_status,
     });
-  }
-
-  handleFileUpdate(update: TdUpdate) {
-    const file = update.file as Record<string, unknown> | undefined;
-    if (!file) return;
-    const local = file['local'] as Record<string, unknown> | undefined;
-    if (!local) return;
-    const path = local['path'] as string;
-    const fileId = file['id'] as number;
-    const broadcast = this.getBroadcast();
-    const isDownloading = local['is_downloading'] as boolean;
-
-    if (broadcast) {
-      const name = path ? path.replace(/^.*[/\\]/, '') : '(empty)';
-      broadcast({
-        event: 'fileUpdate',
-        path: path || '',
-        messageIds: [],
-        debug: `id=${fileId} dl=${isDownloading} file=${name}`,
-      });
-    }
-
-    if (path && fileId > 0 && broadcast) {
-      const messageIds = this.formatter.fileMap.get(fileId);
-      broadcast({
-        event: 'fileUpdate',
-        path,
-        messageIds: messageIds ? [...messageIds] : [],
-      });
-    }
   }
 }
