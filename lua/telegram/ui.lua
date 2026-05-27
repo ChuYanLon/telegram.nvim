@@ -563,7 +563,9 @@ function M.open_chat(chat_id, chat_title)
 		state.buf = vim.api.nvim_create_buf(true, false)
 		vim.bo[state.buf].filetype = "markdown"
 
-		state.win = vim.api.nvim_get_current_win()
+		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+			state.win = vim.api.nvim_get_current_win()
+		end
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 
@@ -611,7 +613,6 @@ function M.open_chat(chat_id, chat_title)
 	state.mounted = true
 
 	server.open_chat(state.chat_id)
-	render()
 
 	M.refresh_messages(function()
 		if #state.messages > 0 then
