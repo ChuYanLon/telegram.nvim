@@ -594,6 +594,9 @@ function M.open_chat(chat_id, chat_title)
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		state.buf = vim.api.nvim_create_buf(true, false)
 		vim.bo[state.buf].filetype = "markdown"
+		pcall(vim.api.nvim_buf_set_var, state.buf, "no_node_textlint", 1)
+		pcall(vim.api.nvim_buf_set_var, state.buf, "markdownlint_disable", 1)
+		pcall(vim.diagnostic.disable, state.buf)
 
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
