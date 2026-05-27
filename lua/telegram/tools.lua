@@ -84,8 +84,8 @@ M.register("send", {
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		vim.ui.input({ prompt = "Message: " }, function(text)
-			if not text or #text == 0 then
+		ui.open_editor("Send", "", function(text)
+			if not text then
 				return
 			end
 			local msg = server.send_message(ui.state.chat_id, text)
