@@ -171,9 +171,7 @@ local function render()
 		end
 	end
 
-	vim.bo[buf].modifiable = true
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	vim.bo[buf].modifiable = false
 
 	apply_highlights()
 end
@@ -519,6 +517,9 @@ function M.close_chat()
 	if state.chat_id then
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
+	end
+	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		pcall(vim.api.nvim_buf_set_name, state.buf, "tg: " .. state.chat_title)
 	end
 	if state.editor then
 		state.editor:set_winid(nil)
