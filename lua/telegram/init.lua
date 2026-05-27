@@ -76,13 +76,6 @@ local function finish_init()
 					local total_before = vim.api.nvim_buf_line_count(st.buf)
 					local cur = vim.api.nvim_win_get_cursor(st.win)
 					local at_bottom = cur[1] >= total_before - 1
-					if not at_bottom and not msg.own then
-						st.unread = st.unread + 1
-						if st.groups[st.chat_id] then
-							st.groups[st.chat_id].unread_count = st.unread
-						end
-						queue_notify(sender .. ": " .. text)
-					end
 					local ts = os.date("%Y-%m-%d %H:%M", msg.date)
 					local preview = "["
 						.. ts
@@ -92,9 +85,9 @@ local function finish_init()
 						.. (msg.text or "")
 					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
-				local mid = msg.id
-				if mid ~= nil then
-					for _, m in ipairs(st.messages) do
+					local mid = msg.id
+					if mid ~= nil then
+						for _, m in ipairs(st.messages) do
 							if tostring(m.id) == tostring(mid) then
 								return
 							end
@@ -118,6 +111,15 @@ local function finish_init()
 								added = true
 								break
 							end
+						end
+					end
+					if not added then
+						st.unread = st.unread + 1
+						if st.groups[st.chat_id] then
+							st.groups[st.chat_id].unread_count = st.unread
+						end
+						if not at_bottom then
+							queue_notify(sender .. ": " .. text)
 						end
 					end
 					if not added then
@@ -162,7 +164,7 @@ local function finish_init()
 					end
 					st.exhausted = false
 					st.exhausted_forward = false
-				elseif not msg.own then
+				else
 					local group_title = msg.chat and msg.chat.title or "?"
 					ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
 					queue_notify("[" .. group_title .. "] " .. sender .. ": " .. text)
