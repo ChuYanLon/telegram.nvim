@@ -593,6 +593,10 @@ function M.open_chat(chat_id, chat_title)
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 		vim.wo[state.win].winfixwidth = true
+		vim.wo[state.win].number = false
+		vim.wo[state.win].relativenumber = false
+		vim.wo[state.win].signcolumn = "no"
+		vim.wo[state.win].foldcolumn = "0"
 		return
 	end
 
@@ -620,6 +624,10 @@ function M.open_chat(chat_id, chat_title)
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 		vim.wo[state.win].winfixwidth = true
+		vim.wo[state.win].number = false
+		vim.wo[state.win].relativenumber = false
+		vim.wo[state.win].signcolumn = "no"
+		vim.wo[state.win].foldcolumn = "0"
 
 		vim.api.nvim_create_autocmd("BufWriteCmd", {
 			group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
@@ -714,6 +722,10 @@ function M.open_chat(chat_id, chat_title)
 			vim.api.nvim_win_set_buf(state.win, state.buf)
 		end
 		vim.wo[state.win].wrap = true
+		vim.wo[state.win].number = false
+		vim.wo[state.win].relativenumber = false
+		vim.wo[state.win].signcolumn = "no"
+		vim.wo[state.win].foldcolumn = "0"
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
