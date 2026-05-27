@@ -172,6 +172,7 @@ local function render()
 	end
 
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+	vim.bo[buf].modified = false
 
 	apply_highlights()
 end
@@ -254,7 +255,8 @@ function M.update_title()
 	end
 	title = title .. " | " .. (state.online_count or 0) .. " online"
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		pcall(vim.api.nvim_buf_set_name, state.buf, "tg: " .. title)
+		local safe = title:gsub("[^%w%p]", "_"):sub(1, 60)
+		pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe)
 	end
 end
 
@@ -458,12 +460,20 @@ function M.open_chat(chat_id, chat_title)
 
 	state.buf = vim.api.nvim_create_buf(true, false)
 	vim.bo[state.buf].filetype = "markdown"
-	vim.api.nvim_buf_set_name(state.buf, "tg: " .. chat_title)
+	local safe_name = chat_title:gsub("[^%w%p]", "_"):sub(1, 30)
+	vim.api.nvim_buf_set_name(state.buf, "/tmp/tg-" .. safe_name)
 
 	state.win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(state.win, state.buf)
 	vim.wo[state.win].wrap = true
-	vim.bo[state.buf].filetype = "markdown"
+
+	vim.api.nvim_create_autocmd("BufWriteCmd", {
+		group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
+		buffer = state.buf,
+		callback = function()
+			vim.bo[state.buf].modified = false
+		end,
+	})
 
 	state.mounted = true
 
@@ -519,7 +529,8 @@ function M.close_chat()
 		server.close_chat(state.chat_id)
 	end
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		pcall(vim.api.nvim_buf_set_name, state.buf, "tg: " .. state.chat_title)
+		local safe = (state.chat_title or "chat"):gsub("[^%w%p]", "_"):sub(1, 30)
+		pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe .. "-cached")
 	end
 	if state.editor then
 		state.editor:set_winid(nil)
