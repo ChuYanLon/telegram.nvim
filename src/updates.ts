@@ -31,6 +31,9 @@ export class UpdateDispatcher {
         case 'updateChatMember':
           await this.handleChatMemberUpdate(update);
           break;
+        case 'updateFile':
+          this.handleFileUpdate(update);
+          break;
         default:
           console.log(update);
       }
@@ -104,5 +107,29 @@ export class UpdateDispatcher {
       old_status: update.old_status,
       new_status: update.new_status,
     });
+  }
+
+  handleFileUpdate(update: TdUpdate) {
+    const file = update.file as Record<string, unknown> | undefined;
+    if (!file) return;
+    const local = file['local'] as Record<string, unknown> | undefined;
+    if (!local) return;
+    const isDownloading = local['is_downloading'] as boolean;
+    const path = local['path'] as string;
+    const fileId = file['id'] as number;
+
+    if (!isDownloading && path && fileId > 0) {
+      const messageIds = this.formatter.fileMap.get(fileId);
+      if (messageIds && messageIds.size > 0) {
+        const broadcast = this.getBroadcast();
+        if (broadcast) {
+          broadcast({
+            event: 'fileUpdate',
+            path,
+            messageIds: [...messageIds],
+          });
+        }
+      }
+    }
   }
 }

@@ -9,6 +9,8 @@ export function extractText(content: { _: string; text?: { text: string }; capti
 }
 
 export class MessageFormatter {
+  fileMap: Map<number, Set<number>> = new Map();
+
   constructor(private resolver: Resolver, private invoke: (q: unknown) => Promise<unknown>) {}
 
   async format(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>): Promise<FormattedMessage | null> {
@@ -49,9 +51,17 @@ export class MessageFormatter {
       formatted.filePath = fileInfo.path;
       formatted.mimeType = fileInfo.mimeType;
       if (fileInfo.fileId > 0) {
+        if (!this.fileMap.has(fileInfo.fileId)) {
+          this.fileMap.set(fileInfo.fileId, new Set());
+        }
+        this.fileMap.get(fileInfo.fileId)!.add(msg.id);
         this.invoke({ _: 'downloadFile', file_id: fileInfo.fileId, priority: 1 }).catch(() => {});
       }
       if (fileInfo.priorityFileId && fileInfo.priorityFileId !== fileInfo.fileId) {
+        if (!this.fileMap.has(fileInfo.priorityFileId)) {
+          this.fileMap.set(fileInfo.priorityFileId, new Set());
+        }
+        this.fileMap.get(fileInfo.priorityFileId)!.add(msg.id);
         this.invoke({ _: 'downloadFile', file_id: fileInfo.priorityFileId, priority: 2 }).catch(() => {});
       }
     }

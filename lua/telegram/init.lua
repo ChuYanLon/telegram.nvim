@@ -180,6 +180,26 @@ local function finish_init()
 				end
 				ui.update_group_online(msg.chat_id, msg.online_member_count)
 			end)
+		elseif msg.event == "fileUpdate" then
+			vim.schedule(function()
+				local st = ui.state
+				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) then
+					return
+				end
+				local changed = false
+				for _, mid in ipairs(msg.messageIds) do
+					for i, m in ipairs(st.messages) do
+						if tostring(m.id) == tostring(mid) then
+							m.filePath = msg.path
+							changed = true
+							break
+						end
+					end
+				end
+				if changed then
+					ui.render()
+				end
+			end)
 		end
 	end)
 	initialized = true
