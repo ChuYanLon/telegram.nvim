@@ -567,6 +567,16 @@ function M.open_chat(chat_id, chat_title)
 		and vim.api.nvim_buf_is_valid(state.buf)
 		and vim.bo[state.buf].buflisted
 	then
+		if state.win and vim.api.nvim_win_is_valid(state.win) then
+			vim.api.nvim_set_current_win(state.win)
+			M.update_title()
+			return
+		end
+		vim.cmd("vsplit")
+		state.win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(state.win, state.buf)
+		vim.wo[state.win].wrap = true
+		state.mounted = true
 		M.update_title()
 		return
 	end
@@ -598,6 +608,7 @@ function M.open_chat(chat_id, chat_title)
 		pcall(vim.diagnostic.disable, state.buf)
 		pcall(vim.diagnostic.reset, state.buf)
 
+		vim.cmd("vsplit")
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
