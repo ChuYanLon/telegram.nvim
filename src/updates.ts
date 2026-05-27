@@ -111,11 +111,12 @@ export class UpdateDispatcher {
 
   handleFileUpdate(update: TdUpdate) {
     const file = update.file as Record<string, unknown> | undefined;
-    if (!file) return;
+    if (!file) { console.log('updateFile: no file'); return; }
     const local = file['local'] as Record<string, unknown> | undefined;
-    if (!local) return;
+    if (!local) { console.log('updateFile: no local'); return; }
     const path = local['path'] as string;
     const fileId = file['id'] as number;
+    console.log(`updateFile: id=${fileId} path="${path}" is_downloading=${local['is_downloading']}`);
 
     if (path && fileId > 0) {
       const broadcast = this.getBroadcast();
@@ -126,13 +127,6 @@ export class UpdateDispatcher {
           path,
           messageIds: messageIds ? [...messageIds] : [],
         });
-      }
-
-      const messageIds = this.formatter.fileMap.get(fileId);
-      if (messageIds && messageIds.size > 0) {
-        for (const mid of messageIds) {
-          this.formatter._scheduleHighResDownload(mid).catch(() => {});
-        }
       }
     }
   }

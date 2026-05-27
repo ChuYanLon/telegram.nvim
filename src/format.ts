@@ -70,7 +70,9 @@ export class MessageFormatter {
     }
 
     if (msg.content && msg.content._ && msg.content._ !== 'messageText') {
-      this.invoke({ _: 'openMessageContent', chat_id: msg.chat_id, message_id: msg.id }).catch(() => {});
+      this.invoke({ _: 'openMessageContent', chat_id: msg.chat_id, message_id: msg.id }).catch((e: Error) => {
+        console.error('openMessageContent error:', e.message);
+      });
     }
 
     return formatted;
