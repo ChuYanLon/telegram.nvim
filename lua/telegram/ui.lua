@@ -82,42 +82,6 @@ local function apply_highlights()
 	local buf = state.buf
 	vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
 	vim.api.nvim_buf_clear_namespace(buf, target_ns, 0, -1)
-	local total = vim.api.nvim_buf_line_count(buf)
-
-	for line = 0, total - 1 do
-		local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
-		if not text then
-			break
-		end
-
-		if text:match("^> [+>~*!-] ") then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgService", line, 0, -1)
-		end
-
-		if text:match("^## ") then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgHeader", line, 0, 2)
-			local s, e = text:find("(%d+%-%d+ %d+:%d+)$")
-			if s then
-				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgTimestamp", line, s - 1, e)
-			end
-		end
-
-		if text:match("^> %S+:") and not text:match("^> [%+%>%*%~%!%-] ") then
-			local _, se = text:find("^> %S+:")
-			if se then
-				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyQuote", line, 0, se)
-				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyBg", line, se, -1)
-			end
-		end
-
-		if text == SEPARATOR then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgSeparator", line, 0, -1)
-		end
-
-		if text:match("^```") then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgCodeBlock", line, 0, -1)
-		end
-	end
 
 	local target_id = state.reply_to
 		or (state.edit_target and state.edit_target.id)
