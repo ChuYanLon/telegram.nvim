@@ -172,14 +172,16 @@ local function show_intro()
 		virt_text = { { "  Press @ for tools", "Comment" } },
 		virt_text_pos = "overlay",
 	})
-	vim.api.nvim_create_autocmd({ "InsertEnter", "BufWriteCmd", "CursorMoved" }, {
-		group = vim.api.nvim_create_augroup("TgIntroClear", { clear = true }),
-		buffer = state.buf,
-		once = true,
-		callback = function()
-			pcall(vim.api.nvim_buf_clear_namespace, state.buf, ns, 0, -1)
-		end,
-	})
+	vim.defer_fn(function()
+		vim.api.nvim_create_autocmd({ "InsertEnter", "BufWriteCmd", "CursorMoved" }, {
+			group = vim.api.nvim_create_augroup("TgIntroClear", { clear = true }),
+			buffer = state.buf,
+			once = true,
+			callback = function()
+				pcall(vim.api.nvim_buf_clear_namespace, state.buf, ns, 0, -1)
+			end,
+		})
+	end, 100)
 end
 
 function M.set_groups(groups)
