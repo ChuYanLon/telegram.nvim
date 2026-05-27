@@ -90,19 +90,37 @@ export class MessageFormatter {
     const mimeType = cfg.mimeField ? (media[cfg.mimeField] as string) || '' : '';
 
     if (t === 'messagePhoto') {
+      let firstId = 0;
       const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
       if (sizes && sizes.length > 0) {
-        for (let i = sizes.length - 1; i >= 0; i--) {
+        for (let i = 0; i < sizes.length; i++) {
           const photoFile = sizes[i][cfg.fileField] as Record<string, unknown> | undefined;
           const info = getFileInfo(photoFile, 'image/jpeg');
-          if (info && info.path) return info;
+          if (info) {
+            if (firstId === 0) firstId = info.fileId;
+            if (info.path) return info;
+          }
         }
       }
+      if (firstId > 0) return { path: '', mimeType: 'image/jpeg', fileId: firstId };
       return null;
     }
 
     const file = media[cfg.fileField] as Record<string, unknown> | undefined;
-    return getFileInfo(file, mimeType);
+    if (file) {
+      const info = getFileInfo(file, mimeType);
+      if (info && info.path) return info;
+      if (info && info.fileId > 0) return info;
+    }
+
+    const thumb = media['thumbnail'] as Record<string, unknown> | undefined;
+    if (thumb) {
+      const thumbFile = thumb['file'] as Record<string, unknown> | undefined;
+      const info = getFileInfo(thumbFile, 'image/jpeg');
+      if (info) return info;
+    }
+
+    return null;
   }
 
   private async _formatReplyTo(msg: RawTdMessage): Promise<FormattedMessage['replyTo'] | null> {
