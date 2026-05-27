@@ -114,11 +114,10 @@ export class UpdateDispatcher {
     if (!file) return;
     const local = file['local'] as Record<string, unknown> | undefined;
     if (!local) return;
-    const isDownloading = local['is_downloading'] as boolean;
     const path = local['path'] as string;
     const fileId = file['id'] as number;
 
-    if (!isDownloading && path && fileId > 0) {
+    if (path && fileId > 0) {
       const messageIds = this.formatter.fileMap.get(fileId);
       if (messageIds && messageIds.size > 0) {
         const broadcast = this.getBroadcast();
@@ -129,6 +128,8 @@ export class UpdateDispatcher {
             messageIds: [...messageIds],
           });
         }
+      } else {
+        console.log(`updateFile: file ${fileId} path "${path}" but no messageIds in map`);
       }
     }
   }
