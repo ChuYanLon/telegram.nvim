@@ -92,13 +92,10 @@ export class MessageFormatter {
     if (t === 'messagePhoto') {
       const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
       if (sizes && sizes.length > 0) {
-        const last = sizes[sizes.length - 1];
-        const photoFile = last[cfg.fileField] as Record<string, unknown> | undefined;
-        const info = getFileInfo(photoFile, 'image/jpeg');
-        if (info && info.path) return info;
-        const mini = media['minithumbnail'] as Record<string, unknown> | undefined;
-        if (mini) {
-          return { path: mini['data'] as string || '', mimeType: 'image/jpeg', fileId: 0 };
+        for (let i = sizes.length - 1; i >= 0; i--) {
+          const photoFile = sizes[i][cfg.fileField] as Record<string, unknown> | undefined;
+          const info = getFileInfo(photoFile, 'image/jpeg');
+          if (info && info.path) return info;
         }
       }
       return null;
