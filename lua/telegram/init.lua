@@ -211,6 +211,11 @@ end
 
 function M.list_groups()
 	local function show_groups()
+		if ui.state.mounted then
+			ui.refresh_messages()
+			return
+		end
+
 		local groups = server.get_groups()
 		if not groups then
 			vim.notify("No groups found", vim.log.levels.WARN, { title = "tg" })
@@ -256,7 +261,6 @@ function M.list_groups()
 		return
 	end
 
-	ui.destroy_chat()
 	local groups = server.get_groups()
 	if groups and #groups > 0 then
 		ui.open_chat(groups[1].id, groups[1].title)

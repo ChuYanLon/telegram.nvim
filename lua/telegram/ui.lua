@@ -539,89 +539,85 @@ end
 function M.open_chat(chat_id, chat_title)
 	chat_title = chat_title or "Chat"
 
-	if state.buf and not vim.api.nvim_buf_is_valid(state.buf) then
-		state.buf = nil
-		state.win = nil
-		state.mounted = false
-	end
-
 	if state.chat_id == chat_id and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		if state.win and vim.api.nvim_win_is_valid(state.win) then
-			vim.api.nvim_set_current_win(state.win)
-			M.update_title()
-			return
-		end
-		state.win = vim.api.nvim_get_current_win()
-		vim.api.nvim_win_set_buf(state.win, state.buf)
-		vim.wo[state.win].wrap = true
-		state.mounted = true
 		M.update_title()
 		return
 	end
 
-	M.close_chat()
+	if state.chat_id then
+		server.close_chat(state.chat_id)
+	end
 
 	state.chat_id = chat_id
 	state.chat_title = chat_title
+	state.messages = {}
+	state.loading = false
+	state.exhausted = false
+	state.exhausted_forward = false
+	state.loading_newer = false
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
 	end
 
-	state.buf = vim.api.nvim_create_buf(true, false)
-	vim.bo[state.buf].filetype = "markdown"
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
+		state.buf = vim.api.nvim_create_buf(true, false)
+		vim.bo[state.buf].filetype = "markdown"
+
+		state.win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(state.win, state.buf)
+		vim.wo[state.win].wrap = true
+
+		vim.api.nvim_create_autocmd("BufWriteCmd", {
+			group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
+			buffer = state.buf,
+			callback = function()
+				vim.bo[state.buf].modified = false
+			end,
+		})
+
+		setup_chat_keymaps()
+
+		vim.api.nvim_create_autocmd("CursorMoved", {
+			group = vim.api.nvim_create_augroup("TgChatScroll", { clear = true }),
+			buffer = state.buf,
+			callback = function()
+				if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+					return
+				end
+				if vim.api.nvim_get_current_win() ~= state.win then
+					return
+				end
+				local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+				local total_lines = vim.api.nvim_buf_line_count(state.buf)
+				if state.unread > 0 and cursor_line >= total_lines - 1 then
+					state.unread = 0
+				end
+				if cursor_line <= 1 and not state.exhausted then
+					M.load_older()
+				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
+					M.load_newer()
+				end
+			end,
+		})
+	else
+		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+			state.win = vim.api.nvim_get_current_win()
+		end
+		vim.api.nvim_win_set_buf(state.win, state.buf)
+	end
+
 	local safe_name = chat_title:gsub("[^%w%p]", "_"):sub(1, 30)
-	vim.api.nvim_buf_set_name(state.buf, "/tmp/tg-" .. safe_name)
-
-	state.win = vim.api.nvim_get_current_win()
-	vim.api.nvim_win_set_buf(state.win, state.buf)
-	vim.wo[state.win].wrap = true
-
-	vim.api.nvim_create_autocmd("BufWriteCmd", {
-		group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
-		buffer = state.buf,
-		callback = function()
-			vim.bo[state.buf].modified = false
-		end,
-	})
-
+	pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe_name)
 	state.mounted = true
-	setup_chat_keymaps()
 
 	server.open_chat(state.chat_id)
 	render()
 
 	M.refresh_messages(function()
 		if #state.messages > 0 then
-			local total = 1
-			for _, msg in ipairs(state.messages) do
-				total = total + #fmt_msg(msg) + 1
-			end
 			M.jump_to_bottom()
 		end
 	end)
-
-	vim.api.nvim_create_autocmd("CursorMoved", {
-		group = vim.api.nvim_create_augroup("TgChatScroll", { clear = true }),
-		buffer = state.buf,
-		callback = function()
-			if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-				return
-			end
-			if vim.api.nvim_get_current_win() ~= state.win then
-				return
-			end
-			local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
-			local total_lines = vim.api.nvim_buf_line_count(state.buf)
-			if state.unread > 0 and cursor_line >= total_lines - 1 then
-				state.unread = 0
-			end
-			if cursor_line <= 1 and not state.exhausted then
-				M.load_older()
-			elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
-				M.load_newer()
-			end
-		end,
-	})
 end
 
 function M.jump_to_bottom()
