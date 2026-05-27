@@ -10,11 +10,14 @@ export function extractText(content: { _: string; text?: { text: string }; capti
 
 export class MessageFormatter {
   fileMap: Map<number, Set<number>> = new Map();
+  _pendingMessages: Map<number, RawTdMessage> = new Map();
 
   constructor(private resolver: Resolver, private invoke: (q: unknown) => Promise<unknown>) {}
 
   async format(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>): Promise<FormattedMessage | null> {
     if (!msg) return null;
+
+    this._pendingMessages.set(msg.id, msg);
 
     let sender: SenderInfo | undefined | null;
     if (senderCache && msg.sender_id) {
@@ -69,6 +72,27 @@ export class MessageFormatter {
     }
 
     return formatted;
+  }
+
+  async _scheduleHighResDownload(messageId: number) {
+    const msgs = this._pendingMessages;
+    if (!msgs) return;
+    const msg = msgs.get(messageId);
+    if (!msg) return;
+    const fresh = await this.invoke({ _: 'getMessage', chat_id: msg.chat_id, message_id: msg.id }).catch(() => null) as RawTdMessage | null;
+    if (!fresh) return;
+    msgs.set(messageId, fresh);
+    const info = this._extractFileInfo(fresh.content);
+    if (!info || !info.priorityFileId) return;
+    const prevFileId = info.fileId;
+    const targetFileId = info.priorityFileId;
+    if (targetFileId > 0 && targetFileId !== prevFileId) {
+      if (!this.fileMap.has(targetFileId)) {
+        this.fileMap.set(targetFileId, new Set());
+      }
+      this.fileMap.get(targetFileId)!.add(messageId);
+      this.invoke({ _: 'downloadFile', file_id: targetFileId, priority: 2 }).catch(() => {});
+    }
   }
 
   private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number; priorityFileId?: number } | null {

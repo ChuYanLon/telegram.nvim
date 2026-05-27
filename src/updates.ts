@@ -127,6 +127,13 @@ export class UpdateDispatcher {
           messageIds: messageIds ? [...messageIds] : [],
         });
       }
+
+      const messageIds = this.formatter.fileMap.get(fileId);
+      if (messageIds && messageIds.size > 0) {
+        for (const mid of messageIds) {
+          this.formatter._scheduleHighResDownload(mid).catch(() => {});
+        }
+      }
     }
   }
 }
