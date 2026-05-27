@@ -43,7 +43,69 @@ export class MessageFormatter {
 
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
+
+    const fileInfo = this._extractFileInfo(msg.content);
+    if (fileInfo) {
+      formatted.filePath = fileInfo.path;
+      formatted.mimeType = fileInfo.mimeType;
+      if (fileInfo.fileId > 0) {
+        this.invoke({ _: 'downloadFile', file_id: fileInfo.fileId, priority: 1 }).catch(() => {});
+      }
+    }
+
     return formatted;
+  }
+
+  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number } | null {
+    if (!content) return null;
+    const t = content._ as string;
+    if (t === 'messageText') return null;
+
+    const getFileInfo = (file: Record<string, unknown> | undefined, mimeType = ''): { path: string; mimeType: string; fileId: number } | null => {
+      if (!file) return null;
+      const local = file['local'] as Record<string, unknown> | undefined;
+      return {
+        path: (local?.['path'] as string) || '',
+        mimeType,
+        fileId: (file['id'] as number) || 0,
+      };
+    };
+
+    const mediaMap: Record<string, { key: string; fileField: string; mimeField: string }> = {
+      messagePhoto:      { key: 'photo',      fileField: 'photo',    mimeField: '' },
+      messageVideo:      { key: 'video',      fileField: 'video',    mimeField: 'mime_type' },
+      messageDocument:   { key: 'document',   fileField: 'document', mimeField: 'mime_type' },
+      messageAnimation:  { key: 'animation',  fileField: 'animation', mimeField: 'mime_type' },
+      messageVoiceNote:  { key: 'voice_note', fileField: 'voice',    mimeField: 'mime_type' },
+      messageVideoNote:  { key: 'video_note', fileField: 'video',    mimeField: 'mime_type' },
+      messageAudio:      { key: 'audio',      fileField: 'audio',    mimeField: 'mime_type' },
+    };
+
+    const cfg = mediaMap[t];
+    if (!cfg) return null;
+
+    const media = content[cfg.key] as Record<string, unknown> | undefined;
+    if (!media) return null;
+
+    const mimeType = cfg.mimeField ? (media[cfg.mimeField] as string) || '' : '';
+
+    if (t === 'messagePhoto') {
+      const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
+      if (sizes && sizes.length > 0) {
+        const last = sizes[sizes.length - 1];
+        const photoFile = last[cfg.fileField] as Record<string, unknown> | undefined;
+        const info = getFileInfo(photoFile, 'image/jpeg');
+        if (info && info.path) return info;
+        const mini = media['minithumbnail'] as Record<string, unknown> | undefined;
+        if (mini) {
+          return { path: mini['data'] as string || '', mimeType: 'image/jpeg', fileId: 0 };
+        }
+      }
+      return null;
+    }
+
+    const file = media[cfg.fileField] as Record<string, unknown> | undefined;
+    return getFileInfo(file, mimeType);
   }
 
   private async _formatReplyTo(msg: RawTdMessage): Promise<FormattedMessage['replyTo'] | null> {
