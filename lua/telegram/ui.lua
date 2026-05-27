@@ -411,7 +411,7 @@ local function setup_chat_keymaps()
 		end
 	end, { buffer = buf })
 	vim.keymap.set("n", "q", function()
-		M.close_chat()
+		M.destroy_chat()
 		state.last_chat = nil
 		require("telegram.ws").ws_stop()
 		server.stop_server()
@@ -419,10 +419,6 @@ local function setup_chat_keymaps()
 	end, { buffer = buf })
 	vim.keymap.set("n", "?", M.show_help, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "i", focus_input, { buffer = buf })
-	local no_insert = { "I", "a", "A", "o", "O", "s", "S" }
-	for _, k in ipairs(no_insert) do
-		pcall(vim.keymap.set, "n", k, "<Nop>", { buffer = buf, nowait = true })
-	end
 	vim.keymap.set("x", "y", '"+y', { buffer = buf })
 	vim.keymap.set("x", "Y", '"+Y', { buffer = buf })
 	vim.keymap.set("n", "@", show_group_selector, { buffer = buf, nowait = true })
@@ -661,7 +657,30 @@ end
 
 function M.open_chat(chat_id, chat_title)
 	chat_title = chat_title or "Chat"
-	if state.chat_id == chat_id and state.mounted then
+
+	if state.buf and not vim.api.nvim_buf_is_valid(state.buf) then
+		state.buf = nil
+		state.win = nil
+		state.mounted = false
+	end
+
+	if state.chat_id == chat_id and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		if state.win and vim.api.nvim_win_is_valid(state.win) then
+			M.update_title()
+			return
+		end
+		state.win = vim.api.nvim_open_win(state.buf, true, {
+			relative = "editor",
+			width = vim.o.columns,
+			height = vim.o.lines - 1,
+			row = 0,
+			col = 0,
+			border = "none",
+		})
+		vim.wo[state.win].wrap = true
+		vim.wo[state.win].winbar = state.chat_title
+		state.editor:set_winid(state.win)
+		state.mounted = true
 		M.update_title()
 		return
 	end
@@ -676,7 +695,7 @@ function M.open_chat(chat_id, chat_title)
 
 	state.buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[state.buf].buftype = "nofile"
-	vim.bo[state.buf].bufhidden = "wipe"
+	vim.bo[state.buf].bufhidden = "hide"
 
 	state.win = vim.api.nvim_open_win(state.buf, true, {
 		relative = "editor",
@@ -684,13 +703,12 @@ function M.open_chat(chat_id, chat_title)
 		height = vim.o.lines - 1,
 		row = 0,
 		col = 0,
-		style = "minimal",
 		border = "none",
 	})
 
 	vim.wo[state.win].wrap = true
-	vim.wo[state.win].cursorline = true
 	vim.wo[state.win].winbar = state.chat_title
+	vim.bo[state.buf].filetype = "markdown"
 
 	state.editor = Editor.new({ placeholder = "  Type a message..." })
 	state.editor:set_bufnr(state.buf)
@@ -768,11 +786,19 @@ function M.close_chat()
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
 		vim.api.nvim_win_close(state.win, true)
 	end
+	state.win = nil
+	if state.editor then
+		state.editor:set_winid(nil)
+	end
+	state.mounted = false
+end
+
+function M.destroy_chat()
+	M.close_chat()
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		vim.api.nvim_buf_delete(state.buf, { force = true })
 	end
 	state.buf = nil
-	state.win = nil
 	state.editor = nil
 	state.messages = {}
 	state.loading = false
@@ -782,7 +808,6 @@ function M.close_chat()
 	state.typing_users = {}
 	state.chat_id = nil
 	state.chat_title = ""
-	state.mounted = false
 end
 
 function M.message_at_cursor()
@@ -923,7 +948,7 @@ function M.load_newer()
 end
 
 function M.refresh_messages(on_complete)
-	if not state.buf then
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
 	end
 	state.loading = false
