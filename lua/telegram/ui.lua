@@ -163,6 +163,8 @@ function M.set_groups(groups)
 			id = g.id,
 			title = g.title,
 			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
+			member_count = g.memberCount or (existing and existing.member_count) or 0,
+			online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
 		}
 		table.insert(new_ids, g.id)
 	end
@@ -210,29 +212,38 @@ function M.update_title()
 	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 		return
 	end
-	local parts = {}
-	if state.chat_title and #state.chat_title > 0 then
-		table.insert(parts, state.chat_title)
-	end
+	local left = state.chat_title or ""
+
 	local typing_items = {}
 	for _, info in pairs(state.typing_users) do
 		table.insert(typing_items, info)
 	end
+	local center = ""
 	if #typing_items > 0 then
 		if #typing_items == 1 then
-			table.insert(parts, typing_items[1].name .. " " .. typing_items[1].action_desc)
+			center = typing_items[1].name .. " " .. typing_items[1].action_desc
 		else
-			table.insert(
-				parts,
-				typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
-			)
+			center = typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
 		end
 	end
-	table.insert(parts, (state.online_count or 0) .. " online")
-	if state.unread > 0 then
-		table.insert(parts, "\xE2\x97\x8F +" .. state.unread)
+
+	local online = state.online_count or 0
+	local total = 0
+	if state.chat_id and state.groups[state.chat_id] then
+		total = state.groups[state.chat_id].member_count or 0
 	end
-	pcall(vim.api.nvim_set_option_value, "winbar", "%= " .. table.concat(parts, " | ") .. " %=", { win = state.win })
+	local right = online .. "/" .. total
+	if state.unread > 0 then
+		right = right .. "  \xE2\x97\x8F+" .. state.unread
+	end
+
+	local winbar
+	if center == "" then
+		winbar = left .. "%= " .. right
+	else
+		winbar = left .. "%= " .. center .. " %= " .. right
+	end
+	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
 end
 
 local function show_group_selector()
