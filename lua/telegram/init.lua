@@ -274,10 +274,9 @@ function M.list_groups()
 
 	local groups = server.get_groups()
 	if groups and #groups > 0 then
-		vim.notify("tg: opening " .. groups[1].title, vim.log.levels.INFO, { title = "tg" })
 		ui.open_chat(groups[1].id, groups[1].title)
 	else
-		vim.notify("tg: no groups (" .. type(groups) .. ")", vim.log.levels.WARN, { title = "tg" })
+		vim.notify("No groups available", vim.log.levels.WARN, { title = "tg" })
 	end
 end
 
