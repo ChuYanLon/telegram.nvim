@@ -12,6 +12,10 @@ export class UpdateDispatcher {
 
   listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
     tdClient.on('update', async (update: TdUpdate) => {
+      const broadcast = this.getBroadcast();
+      if (broadcast && update._ === 'updateFile') {
+        broadcast({ event: 'fileUpdate', path: '', messageIds: [], debug: `switch matched: ${update._}` });
+      }
       switch (update._) {
         case 'updateNewChat':
           this.chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
