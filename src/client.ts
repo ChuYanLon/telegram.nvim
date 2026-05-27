@@ -99,9 +99,9 @@ export class TelegramLSPClient {
         getPassword: this.auth.getPassword.bind(this.auth),
       });
 
+      this.updates.listen(this.client);
       this._ready = true;
       this.auth.markReady();
-      this.updates.listen(this.client);
       console.log('TDLib client ready');
     } catch (err: unknown) {
       this.auth.markError((err as Error).message);

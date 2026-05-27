@@ -3,7 +3,7 @@ import type { Resolver } from './resolve';
 
 export function extractText(content: { _: string; text?: { text: string }; caption?: { text: string }; [key: string]: unknown } | null | undefined): string {
   if (!content) return '';
-  if (content._ === 'messageText') return content.text!.text;
+  if (content._ === 'messageText') return content.text?.text ?? '';
   if (content.caption?.text) return content.caption.text;
   return '';
 }

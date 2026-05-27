@@ -278,6 +278,10 @@ function M.get_groups()
 	return cached_groups
 end
 
+function M.invalidate_groups()
+	cached_groups = nil
+end
+
 ---@return table|nil
 function M.refresh_groups()
 	cached_groups = nil

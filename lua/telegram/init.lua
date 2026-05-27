@@ -536,7 +536,8 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 		return
 	end
 	local text = table.concat(args, " ", 2)
-	if server.send_message(chat_id, text) then
+	if not server.send_message(chat_id, text) then
+		vim.notify("Failed to send message", vim.log.levels.ERROR, { title = "tg" })
 	end
 end, { nargs = "+" })
 

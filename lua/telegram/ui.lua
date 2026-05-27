@@ -38,7 +38,6 @@ local state = {
 
 M.state = state
 
-local SEPARATOR = "────────────────────"
 local hl_ns = vim.api.nvim_create_namespace("TgChat")
 local target_ns = vim.api.nvim_create_namespace("TgTarget")
 
@@ -315,14 +314,10 @@ local function input_send()
 		local msg = server.send_message(state.chat_id, text, state.reply_to)
 		insert_msg(msg)
 		render()
-		if msg then
-		end
 	else
 		local msg = server.send_message(state.chat_id, text)
 		insert_msg(msg)
 		render()
-		if msg then
-		end
 	end
 	state.editor:clear()
 	state.input_mode = "send"

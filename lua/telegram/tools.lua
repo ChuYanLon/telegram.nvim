@@ -34,14 +34,6 @@ function M.pick()
 	end)
 end
 
-local function curr_msg()
-	local i = ui.message_at_cursor()
-	if not i then
-		return nil
-	end
-	return ui.state.messages[i]
-end
-
 M.register("groups", {
 	description = "Switch to another group",
 	callback = function()
