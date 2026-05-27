@@ -76,7 +76,7 @@ local function finish_init()
 					local total_before = vim.api.nvim_buf_line_count(st.buf)
 					local cur = vim.api.nvim_win_get_cursor(st.win)
 					local at_bottom = cur[1] >= total_before - 1
-					if not at_bottom then
+					if not at_bottom and not msg.own then
 						st.unread = st.unread + 1
 						if st.groups[st.chat_id] then
 							st.groups[st.chat_id].unread_count = st.unread
@@ -162,7 +162,7 @@ local function finish_init()
 					end
 					st.exhausted = false
 					st.exhausted_forward = false
-				else
+				elseif not msg.own then
 					local group_title = msg.chat and msg.chat.title or "?"
 					ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
 					queue_notify("[" .. group_title .. "] " .. sender .. ": " .. text)
