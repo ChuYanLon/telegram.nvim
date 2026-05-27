@@ -24,34 +24,6 @@ local tools = require("telegram.tools")
 local M = {}
 
 local initialized = false
-local seen_ids = {}
-local seen_ids_order = {}
-local SEEN_IDS_MAX = 3000
-
-local function trim_seen_ids(chat_key)
-	local keys = seen_ids[chat_key]
-	if not keys then
-		return
-	end
-	local n = 0
-	for _ in pairs(keys) do
-		n = n + 1
-	end
-	if n <= SEEN_IDS_MAX then
-		return
-	end
-	local order = seen_ids_order[chat_key] or {}
-	local excess = n - SEEN_IDS_MAX
-	for i = 1, excess do
-		local id = order[i]
-		if id then
-			keys[id] = nil
-		end
-	end
-	for i = 1, excess do
-		table.remove(order, 1)
-	end
-end
 
 local notify_queue = {}
 local notify_timer_id = nil
@@ -120,20 +92,9 @@ local function finish_init()
 						.. (msg.text or "")
 					st.last_msg = preview:sub(1, 60)
 					ui.update_title()
-					local mid = msg.id
-					if mid ~= nil then
-						local chat_key = msg.chat and tostring(msg.chat.id) or "_"
-						if not seen_ids[chat_key] then
-							seen_ids[chat_key] = {}
-							seen_ids_order[chat_key] = {}
-						end
-						if seen_ids[chat_key][mid] then
-							return
-						end
-						seen_ids[chat_key][mid] = true
-						table.insert(seen_ids_order[chat_key], mid)
-						trim_seen_ids(chat_key)
-						for _, m in ipairs(st.messages) do
+				local mid = msg.id
+				if mid ~= nil then
+					for _, m in ipairs(st.messages) do
 							if tostring(m.id) == tostring(mid) then
 								return
 							end
@@ -141,17 +102,37 @@ local function finish_init()
 					else
 						mid = os.time() .. math.random()
 					end
-					table.insert(st.messages, {
-						id = mid,
-						type = msg.type,
-						date = msg.date,
-						sender = msg.sender,
-						text = msg.text,
-						own = msg.own,
-						replyTo = msg.replyTo,
-						filePath = msg.filePath,
-						mimeType = msg.mimeType,
-					})
+					local added = false
+					if msg.own then
+						for i, m in ipairs(st.messages) do
+							if m.own and m.sender and msg.sender
+								and m.sender.id == msg.sender.id
+								and m.text == msg.text then
+								m.id = mid
+								m.date = msg.date
+								m.sender = msg.sender
+								m.text = msg.text
+								m.replyTo = msg.replyTo
+								m.filePath = msg.filePath
+								m.mimeType = msg.mimeType
+								added = true
+								break
+							end
+						end
+					end
+					if not added then
+						table.insert(st.messages, {
+							id = mid,
+							type = msg.type,
+							date = msg.date,
+							sender = msg.sender,
+							text = msg.text,
+							own = msg.own,
+							replyTo = msg.replyTo,
+							filePath = msg.filePath,
+							mimeType = msg.mimeType,
+						})
+					end
 					ui.render()
 					if st.win and vim.api.nvim_win_is_valid(st.win) then
 						pcall(vim.api.nvim_win_call, st.win, function()
