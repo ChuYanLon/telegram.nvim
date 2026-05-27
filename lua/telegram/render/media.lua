@@ -17,11 +17,7 @@ function M.render(msg)
 
 	local parts = {}
 	if file_path and #file_path > 0 then
-		local alt = label
-		if text and #text > 0 then
-			alt = label .. " " .. text:gsub("\n", " "):sub(1, 40)
-		end
-		table.insert(parts, "![" .. alt .. "](" .. file_path .. ")")
+		table.insert(parts, "![" .. label .. "](" .. file_path .. ")")
 		if text and #text > 0 then
 			for _, line in ipairs(vim.split(text, "\n")) do
 				table.insert(parts, line)
