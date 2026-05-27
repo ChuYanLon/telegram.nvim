@@ -565,7 +565,7 @@ function M.open_chat(chat_id, chat_title)
 		state.chat_id == chat_id
 		and state.buf
 		and vim.api.nvim_buf_is_valid(state.buf)
-		and vim.bo[state.buf].buflisted
+		and vim.bo[state.buf].filetype == "telegram"
 	then
 		if state.win and vim.api.nvim_win_is_valid(state.win) then
 			vim.api.nvim_set_current_win(state.win)
@@ -580,11 +580,6 @@ function M.open_chat(chat_id, chat_title)
 		state.mounted = true
 		M.update_title()
 		return
-	end
-
-	if state.chat_id and state.buf and not vim.bo[state.buf].buflisted then
-		state.buf = nil
-		state.win = nil
 	end
 
 	if state.chat_id then
@@ -603,7 +598,7 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
-		state.buf = vim.api.nvim_create_buf(true, false)
+		state.buf = vim.api.nvim_create_buf(false, false)
 		pcall(vim.treesitter.language.register, "markdown", "telegram")
 		vim.bo[state.buf].filetype = "telegram"
 		pcall(vim.diagnostic.disable, state.buf)
