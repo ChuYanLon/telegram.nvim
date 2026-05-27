@@ -154,6 +154,34 @@ end
 
 M.render = render
 
+local function show_intro()
+	if state._intro_shown then
+		return
+	end
+	state._intro_shown = true
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
+		return
+	end
+	local ns = vim.api.nvim_create_namespace("TgIntro")
+	vim.api.nvim_buf_clear_namespace(state.buf, ns, 0, -1)
+	local line = vim.api.nvim_buf_line_count(state.buf)
+	if line > 0 then
+		line = line - 1
+	end
+	vim.api.nvim_buf_set_extmark(state.buf, ns, line, 0, {
+		virt_text = { { "  Press @ for tools", "Comment" } },
+		virt_text_pos = "overlay",
+	})
+	vim.api.nvim_create_autocmd({ "InsertEnter", "BufWriteCmd", "CursorMoved" }, {
+		group = vim.api.nvim_create_augroup("TgIntroClear", { clear = true }),
+		buffer = state.buf,
+		once = true,
+		callback = function()
+			pcall(vim.api.nvim_buf_clear_namespace, state.buf, ns, 0, -1)
+		end,
+	})
+end
+
 function M.set_groups(groups)
 	local new_groups = {}
 	local new_ids = {}
@@ -732,6 +760,7 @@ function M.open_chat(chat_id, chat_title)
 						if state.chat_id == cid then
 							state.messages = data.messages or {}
 							render()
+							show_intro()
 							local l = line_of(saved_id)
 							if l then
 								pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
@@ -739,6 +768,7 @@ function M.open_chat(chat_id, chat_title)
 								M.jump_to_bottom()
 							end
 						end
+						show_intro()
 					end)
 				end
 			else
