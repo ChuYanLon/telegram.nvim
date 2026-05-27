@@ -158,15 +158,6 @@ local function show_intro()
 	if state._intro_shown then
 		return
 	end
-	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
-		return
-	end
-	state._intro_shown = true
-	local line = vim.api.nvim_buf_line_count(state.buf)
-	if line == 0 then
-		return
-	end
-	line = line - 1
 	state._intro_shown = true
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
@@ -752,10 +743,10 @@ function M.open_chat(chat_id, chat_title)
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	state.mounted = true
+
 	server.open_chat(state.chat_id)
 
 	M.refresh_messages(function()
-		state._intro_shown = false
 		if #state.messages > 0 then
 			local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
 			if saved_id then
