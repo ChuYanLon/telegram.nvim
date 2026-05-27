@@ -204,12 +204,15 @@ function M.update_group_online(chat_id, count)
 end
 
 function M.update_title()
+	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
+	end
 	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 		return
 	end
-	local title = ""
+	local parts = {}
 	if state.chat_title and #state.chat_title > 0 then
-		title = state.chat_title
+		table.insert(parts, state.chat_title)
 	end
 	local typing_items = {}
 	for _, info in pairs(state.typing_users) do
@@ -217,25 +220,19 @@ function M.update_title()
 	end
 	if #typing_items > 0 then
 		if #typing_items == 1 then
-			title = title .. " | " .. typing_items[1].name .. " " .. typing_items[1].action_desc
+			table.insert(parts, typing_items[1].name .. " " .. typing_items[1].action_desc)
 		else
-			title = title
-				.. " | "
-				.. typing_items[1].name
-				.. " +"
-				.. (#typing_items - 1)
-				.. " "
-				.. typing_items[1].action_desc
+			table.insert(
+				parts,
+				typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
+			)
 		end
 	end
-	title = title .. " | " .. (state.online_count or 0) .. " online"
+	table.insert(parts, (state.online_count or 0) .. " online")
 	if state.unread > 0 then
-		title = title .. " | \xE2\x97\x8F +" .. state.unread
+		table.insert(parts, "\xE2\x97\x8F +" .. state.unread)
 	end
-	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		local safe = title:gsub("[^%w%p]", "_"):sub(1, 60)
-		pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe)
-	end
+	pcall(vim.api.nvim_set_option_value, "winbar", table.concat(parts, " | "), { win = state.win })
 end
 
 local function show_group_selector()
@@ -652,8 +649,7 @@ function M.open_chat(chat_id, chat_title)
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 	end
 
-	local safe_name = chat_title:gsub("[^%w%p]", "_"):sub(1, 30)
-	pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe_name)
+	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	state.mounted = true
 
 	server.open_chat(state.chat_id)
