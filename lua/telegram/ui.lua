@@ -1,12 +1,9 @@
-local NuiLayout = require("nui.layout")
-local NuiPopup = require("nui.popup")
 local Editor = require("telegram.editor")
 local server = require("telegram.server")
 local render_msg = require("telegram.render").render
 
 local M = {}
 
----@type table
 local state = {
 	buf = nil,
 	win = nil,
@@ -20,18 +17,10 @@ local state = {
 	last_msg = nil,
 	online_count = nil,
 	typing_users = {},
-	saved_cursors = {},
 
-	layout = nil,
-	msg_popup = nil,
-	input_popup = nil,
-	group_popup = nil,
-
+	mounted = false,
 	groups = {},
 	group_ids = {},
-	group_cursor = 1,
-	group_offset = 1,
-	group_win_size = 20,
 
 	input_mode = "send",
 	reply_to = nil,
@@ -42,40 +31,16 @@ local state = {
 	sending = false,
 	loading_newer = false,
 	exhausted_forward = false,
+
+	separator_line = "────────────────────",
+	_input_start = 0,
 }
 
 M.state = state
 
----@param lines string[]
-local function set_lines(lines)
-	if not state.msg_popup then
-		return
-	end
-	local buf = state.msg_popup.bufnr
-	vim.bo[buf].modifiable = true
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	vim.bo[buf].modifiable = false
-end
-
----@param msg TgMessage
----@return string[]
-local function fmt_msg(msg)
-	return render_msg(msg)
-end
-
----@param target_id any
----@return integer|nil
-local function line_of(target_id)
-	for i, m in ipairs(state.messages) do
-		if m.id == target_id then
-			local line = 1
-			for j = 1, i - 1 do
-				line = line + #fmt_msg(state.messages[j]) + 1
-			end
-			return line
-		end
-	end
-end
+local SEPARATOR = "────────────────────"
+local hl_ns = vim.api.nvim_create_namespace("TgChat")
+local target_ns = vim.api.nvim_create_namespace("TgTarget")
 
 local action_descriptions = {
 	chatActionTyping = "typing...",
@@ -94,48 +59,66 @@ local action_descriptions = {
 	chatActionWatchingAnimations = "watching animations...",
 }
 
-local hl_ns = vim.api.nvim_create_namespace("TgChat")
-local target_ns = vim.api.nvim_create_namespace("TgTarget")
+local function fmt_msg(msg)
+	return render_msg(msg)
+end
+
+local function line_of(target_id)
+	for i, m in ipairs(state.messages) do
+		if m.id == target_id then
+			local line = 1
+			for j = 1, i - 1 do
+				line = line + #fmt_msg(state.messages[j]) + 1
+			end
+			return line
+		end
+	end
+end
 
 local function apply_highlights()
-	if not state.msg_popup then
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
 	end
-	local buf = state.msg_popup.bufnr
+	local buf = state.buf
 	vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
 	vim.api.nvim_buf_clear_namespace(buf, target_ns, 0, -1)
 	local total = vim.api.nvim_buf_line_count(buf)
+
 	for line = 0, total - 1 do
 		local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
 		if not text then
 			break
 		end
-		if text:match("^[+>~*!-] .- at %d+:%d+:%d+ on %w+ %d+, %d+$") then
+
+		if text:match("^> [+>~*!-] ") then
 			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgService", line, 0, -1)
 		end
-		local rs, re = text:find("\xE2\x94\x83")
-		if rs then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyIndicator", line, rs - 1, re)
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyBg", line, re, -1)
+
+		if text:match("^## ") then
+			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgHeader", line, 0, 2)
+			local s, e = text:find("(%d+%-%d+ %d+:%d+)$")
+			if s then
+				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgTimestamp", line, s - 1, e)
+			end
 		end
-		local _, ts_start = text:find("%[%d+%-%d+ %d+:%d+%] ")
-		if ts_start then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgTimestamp", line, 0, ts_start)
-			local _, se = text:find("%S.-:", ts_start + 1)
+
+		if text:match("^> %S+:") and not text:match("^> [%+%>%*%~%!%-] ") then
+			local _, se = text:find("^> %S+:")
 			if se then
-				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgSender", line, ts_start, se)
+				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyQuote", line, 0, se)
+				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgReplyBg", line, se, -1)
 			end
 		end
-		local ts_s, ts_e = text:find("%[%d+%-%d+ %d+:%d+%]$")
-		if ts_s then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgTimestamp", line, ts_s - 1, ts_e)
-			local pre = text:sub(1, ts_s - 1)
-			local ss, se = pre:find("%S+%s*$")
-			if ss then
-				vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgSender", line, ss - 1, se)
-			end
+
+		if text == SEPARATOR then
+			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgSeparator", line, 0, -1)
+		end
+
+		if text:match("^```") then
+			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgCodeBlock", line, 0, -1)
 		end
 	end
+
 	local target_id = state.reply_to
 		or (state.edit_target and state.edit_target.id)
 		or (state.delete_target and state.delete_target.id)
@@ -174,89 +157,77 @@ local function apply_highlights()
 	end
 end
 
-local function apply_group_highlights()
-	if not state.group_popup then
-		return
+local function save_input()
+	if not state.editor then
+		return ""
 	end
-	local buf = state.group_popup.bufnr
-	local win = state.group_popup.winid
-	vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
-	local total = vim.api.nvim_buf_line_count(buf)
-	for line = 0, total - 1 do
-		local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1]
-		if not text then
-			break
-		end
-		if line + 1 == state.group_cursor - state.group_offset + 1 then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgBorder", line, 0, -1)
-		end
-		local ds, de = text:find("\xE2\x97\x8F")
-		if ds then
-			vim.api.nvim_buf_add_highlight(buf, hl_ns, "TgKey", line, ds - 1, de)
-		end
-	end
-	local cursor_line = state.group_cursor - state.group_offset + 1
-	pcall(vim.api.nvim_win_set_cursor, win, { cursor_line, 0 })
+	return state.editor:get_text()
 end
 
-local function update_input_title()
-	if not state.input_popup then
-		return
-	end
-	local title = " Message "
-	if state.chat_title and #state.chat_title > 0 then
-		title = " " .. state.chat_title .. " "
-	end
-	local typing_items = {}
-	for _, info in pairs(state.typing_users) do
-		table.insert(typing_items, info)
-	end
-	if #typing_items > 0 then
-		if #typing_items == 1 then
-			title = title .. "| " .. typing_items[1].name .. " " .. typing_items[1].action_desc
+local function restore_input(text)
+	if state.editor then
+		if text and #text > 0 then
+			state.editor:set_text(text)
 		else
-			title = title
-				.. "| "
-				.. typing_items[1].name
-				.. " +"
-				.. (#typing_items - 1)
-				.. " "
-				.. typing_items[1].action_desc
+			state.editor:clear()
 		end
-	end
-	title = title .. "| " .. (state.online_count or 0) .. " online"
-	if state.msg_popup and state.msg_popup.border then
-		state.msg_popup.border:set_text("top", title)
 	end
 end
 
-local function update_input_border()
-	if not state.input_popup then
+local function render()
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
 	end
-	local text
-	if state.input_mode == "edit" and state.edit_target then
-		local name = (state.edit_target.sender and state.edit_target.sender.name) or "Unknown"
-		text = " Editing " .. name .. " "
-	elseif state.input_mode == "reply" and state.reply_to then
-		local target = nil
-		for _, msg in ipairs(state.messages) do
-			if msg.id == state.reply_to then
-				target = msg
-				break
-			end
+	local buf = state.buf
+	local input_text = save_input()
+
+	local lines = {}
+	for _, msg in ipairs(state.messages) do
+		local msg_lines = fmt_msg(msg)
+		for _, l in ipairs(msg_lines) do
+			table.insert(lines, l)
 		end
-		local name = (target and target.sender and target.sender.name) or "Unknown"
-		text = " Replying to " .. name .. " "
-	else
-		text = " Message "
 	end
-	pcall(function()
-		state.input_popup.border:set_text("top", text)
-	end)
+
+	table.insert(lines, SEPARATOR)
+
+	local input_lines = vim.split(input_text, "\n")
+	for _, l in ipairs(input_lines) do
+		table.insert(lines, l)
+	end
+	if #input_lines == 0 or (#input_lines == 1 and input_lines[1] == "") then
+		table.insert(lines, "")
+	end
+
+	vim.bo[buf].modifiable = true
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+	vim.bo[buf].modifiable = false
+
+	state._input_start = #lines - #input_lines
+	if state.editor then
+		state.editor:set_input_line(state._input_start)
+	end
+
+	apply_highlights()
 end
 
-M.update_title = update_input_title
+M.render = render
+
+function M.set_groups(groups)
+	local new_groups = {}
+	local new_ids = {}
+	for _, g in ipairs(groups or {}) do
+		local existing = state.groups[g.id]
+		new_groups[g.id] = {
+			id = g.id,
+			title = g.title,
+			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
+		}
+		table.insert(new_ids, g.id)
+	end
+	state.groups = new_groups
+	state.group_ids = new_ids
+end
 
 function M.set_typing(chat_id, user_id, user_name, action_type, active)
 	if chat_id ~= state.chat_id or not user_id then
@@ -268,20 +239,12 @@ function M.set_typing(chat_id, user_id, user_name, action_type, active)
 	else
 		state.typing_users[user_id] = nil
 	end
-	update_input_title()
+	M.update_title()
 end
 
 function M.set_online_count(count)
 	state.online_count = count
-	update_input_title()
-end
-
-function M.update_group_online(chat_id, count)
-	if not state.groups[chat_id] then
-		return
-	end
-	state.groups[chat_id].online_count = count
-	M.render_groups()
+	M.update_title()
 end
 
 function M.update_group_last_msg(chat_id, sender_name, text)
@@ -291,168 +254,71 @@ function M.update_group_last_msg(chat_id, sender_name, text)
 	if chat_id ~= state.chat_id then
 		state.groups[chat_id].unread_count = (state.groups[chat_id].unread_count or 0) + 1
 	end
-	local preview = (sender_name or "?") .. ": " .. (text or "")
-	if #preview > 40 then
-		preview = preview:sub(1, 40) .. "..."
-	end
-	state.groups[chat_id].last_msg_preview = preview
-	M.render_groups()
 end
 
-function M.set_groups(groups)
-	local new_groups = {}
-	local new_ids = {}
-	for _, g in ipairs(groups or {}) do
-		local existing = state.groups[g.id]
-		new_groups[g.id] = {
-			id = g.id,
-			title = g.title,
-			member_count = g.memberCount or 0,
-			online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
-			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
-			last_msg_preview = (existing and existing.last_msg_preview) or "",
-		}
-		table.insert(new_ids, g.id)
+function M.update_group_online(chat_id, count)
+	if state.groups[chat_id] then
+		state.groups[chat_id].online_count = count
 	end
-	state.groups = new_groups
-	state.group_ids = new_ids
-	if state.group_cursor > #new_ids then
-		state.group_cursor = #new_ids
-	end
-	if state.group_cursor < 1 and #new_ids > 0 then
-		state.group_cursor = 1
-	end
-	if state.group_popup and state.group_popup.winid then
-		local ok, h = pcall(vim.api.nvim_win_get_height, state.group_popup.winid)
-		if ok then
-			state.group_win_size = math.max(h, 5)
-		end
-	end
-	local half = math.floor(state.group_win_size / 2)
-	state.group_offset =
-		math.max(1, math.min(state.group_cursor - half, math.max(1, #new_ids - state.group_win_size + 1)))
-	if state.active_group_id and new_groups[state.active_group_id] then
-		for i, id in ipairs(new_ids) do
-			if id == state.active_group_id then
-				state.group_cursor = i
-				break
-			end
-		end
-	end
-	M.render_groups()
 end
 
-function M.render_groups()
-	if not state.group_popup then
+function M.update_title()
+	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 		return
 	end
-	local buf = state.group_popup.bufnr
-	local lines = {}
-	local total = #state.group_ids
-	local end_idx = math.min(state.group_offset + state.group_win_size - 1, total)
-	for i = state.group_offset, end_idx do
-		local id = state.group_ids[i]
+	local title = ""
+	if state.chat_title and #state.chat_title > 0 then
+		title = state.chat_title
+	end
+	local typing_items = {}
+	for _, info in pairs(state.typing_users) do
+		table.insert(typing_items, info)
+	end
+	if #typing_items > 0 then
+		if #typing_items == 1 then
+			title = title .. " | " .. typing_items[1].name .. " " .. typing_items[1].action_desc
+		else
+			title = title
+				.. " | "
+				.. typing_items[1].name
+				.. " +"
+				.. (#typing_items - 1)
+				.. " "
+				.. typing_items[1].action_desc
+		end
+	end
+	title = title .. " | " .. (state.online_count or 0) .. " online"
+	pcall(vim.api.nvim_set_option_value, "winbar", title, { win = state.win })
+end
+
+local function show_group_selector()
+	local items = {}
+	for _, id in ipairs(state.group_ids) do
 		local g = state.groups[id]
 		if g then
-			local total = (g.member_count or 0) > 0 and tostring(g.member_count) or "?"
-			local label = g.title .. "(" .. total .. ")"
-			if g.unread_count and g.unread_count > 0 and state.chat_id then
-				label = label .. "  ● +" .. g.unread_count
-			end
-			if #label > 36 then
-				label = label:sub(1, 33) .. "…"
-			end
-			table.insert(lines, "  " .. label)
+			table.insert(items, { id = g.id, label = g.title })
 		end
 	end
-	if total > end_idx then
-		table.insert(lines, "  ↓ " .. (total - end_idx) .. " more")
-	end
-	pcall(vim.api.nvim_buf_set_option, buf, "modifiable", true)
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	pcall(vim.api.nvim_buf_set_option, buf, "modifiable", false)
-	apply_group_highlights()
-end
-
-local function render()
-	if not state.msg_popup then
+	if #items == 0 then
+		vim.notify("No groups available", vim.log.levels.INFO, { title = "tg" })
 		return
 	end
-	local lines = {}
-	for _, msg in ipairs(state.messages) do
-		local msg_lines = fmt_msg(msg)
-		for _, l in ipairs(msg_lines) do
-			table.insert(lines, l)
+	vim.ui.select(items, {
+		prompt = "@ Groups",
+		format_item = function(item)
+			local g = state.groups[item.id]
+			local suffix = ""
+			if g and g.unread_count and g.unread_count > 0 then
+				suffix = "  \xE2\x97\x8F +" .. g.unread_count
+			end
+			return item.label .. suffix
+		end,
+	}, function(choice)
+		if choice then
+			M.open_chat(choice.id, choice.label)
 		end
-		table.insert(lines, "")
-	end
-	set_lines(lines)
-	apply_highlights()
+	end)
 end
-
-M.render = render
-
---- Help window (uses simple popup)
-
-local help_popup = nil
-
-local function close_help()
-	if help_popup then
-		help_popup:unmount()
-		help_popup = nil
-	end
-end
-
-M.close_help = close_help
-
-local function show_help()
-	close_help()
-	help_popup = NuiPopup({
-		relative = "editor",
-		position = { row = "50%", col = "50%" },
-		size = { width = 36, height = 28 },
-		zindex = 200,
-		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
-		buf_options = { buftype = "nofile", bufhidden = "wipe" },
-		win_options = { winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder" },
-		enter = true,
-		focusable = true,
-	})
-	local lines = {
-		"-- Global --",
-		" ?        help",
-		" <C-h>    go to groups",
-		" <C-l>    go to msg",
-		" <C-j>    go to input",
-		" <C-k>    go to msg",
-		"",
-		"-- Main window --",
-		" i        focus input",
-		" /        search history",
-		" <CR>     reply / jump to original",
-		" e        edit own message",
-		" d        delete / revoke message",
-		" f        forward message to another group",
-		" r        refresh",
-		" Esc Esc  close chat",
-		" q        quit plugin",
-		"",
-		"-- Groups --",
-		" j/k      move cursor",
-		" <CR>     open chat",
-		"",
-		"-- Input --",
-		" <CR>     send message",
-		" Esc      cancel reply/edit",
-	}
-	help_popup:mount()
-	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
-	vim.keymap.set("n", "<Esc>", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "q", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "?", close_help, { buffer = help_popup.bufnr, nowait = true })
-end
-
-M.show_help = show_help
 
 local function input_send()
 	if not state.editor or state.sending then
@@ -477,7 +343,6 @@ local function input_send()
 		state.edit_target = nil
 		state.sending = false
 		render()
-		update_input_border()
 		return
 	end
 	local function insert_msg(msg)
@@ -516,15 +381,6 @@ local function input_send()
 	state.edit_target = nil
 	state.sending = false
 	apply_highlights()
-	update_input_border()
-end
-
-local function focus_msg()
-	if not state.msg_popup then
-		return
-	end
-	vim.cmd("stopinsert")
-	pcall(vim.api.nvim_set_current_win, state.msg_popup.winid)
 end
 
 local function focus_input()
@@ -533,90 +389,16 @@ local function focus_input()
 	end
 end
 
-local function focus_groups()
-	if state.group_popup then
-		pcall(vim.api.nvim_set_current_win, state.group_popup.winid)
-	end
-end
-
 local function cur_area()
 	local win = vim.api.nvim_get_current_win()
-	if state.msg_popup and win == state.msg_popup.winid then
+	if state.win and win == state.win then
 		return "msg"
-	end
-	if state.editor and win == state.editor:winid() then
-		return "input"
-	end
-	if state.group_popup and win == state.group_popup.winid then
-		return "group"
 	end
 	return "msg"
 end
 
-local function restore_group_cursor()
-	for i, id in ipairs(state.group_ids) do
-		if id == state.active_group_id then
-			state.group_cursor = i
-			break
-		end
-	end
-	if state.group_popup then
-		pcall(vim.api.nvim_win_set_cursor, state.group_popup.winid, { state.group_cursor, 0 })
-		apply_group_highlights()
-	end
-end
-
-local function nav_h()
-	if cur_area() == "group" then
-		restore_group_cursor()
-		return
-	end
-	focus_groups()
-end
-
-local function nav_l()
-	if cur_area() == "msg" then
-		return
-	end
-	if cur_area() == "group" then
-		restore_group_cursor()
-	end
-	focus_msg()
-end
-
-local function nav_j()
-	if cur_area() == "msg" then
-		focus_input()
-	else
-		focus_msg()
-	end
-end
-
-local function nav_k()
-	if cur_area() == "input" then
-		focus_msg()
-	else
-		focus_input()
-	end
-end
-
----@param buf integer
-local function setup_nav_keymaps(buf)
-	vim.keymap.set("n", "<C-h>", nav_h, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<C-j>", nav_j, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<C-k>", nav_k, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<C-l>", nav_l, { buffer = buf, nowait = true })
-	vim.keymap.set("i", "<C-h>", nav_h, { buffer = buf, nowait = true })
-	vim.keymap.set("i", "<C-j>", nav_j, { buffer = buf, nowait = true })
-	vim.keymap.set("i", "<C-k>", nav_k, { buffer = buf, nowait = true })
-	vim.keymap.set("i", "<C-l>", nav_l, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf })
-end
-
---- Chat message popup keymaps
-local function setup_msg_keymaps()
-	local buf = state.msg_popup.bufnr
-	setup_nav_keymaps(buf)
+local function setup_chat_keymaps()
+	local buf = state.buf
 	vim.keymap.set("n", "<Esc>", function()
 		state.esc_count = state.esc_count + 1
 		if state.esc_count >= 2 then
@@ -631,12 +413,11 @@ local function setup_msg_keymaps()
 	vim.keymap.set("n", "q", function()
 		M.close_chat()
 		state.last_chat = nil
-		state.saved_cursors = {}
 		require("telegram.ws").ws_stop()
 		server.stop_server()
 		require("telegram").set_initialized(false)
 	end, { buffer = buf })
-	vim.keymap.set("n", "?", '<Cmd>lua require("telegram.ui").show_help()<CR>', { buffer = buf, nowait = true })
+	vim.keymap.set("n", "?", M.show_help, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "i", focus_input, { buffer = buf })
 	local no_insert = { "I", "a", "A", "o", "O", "s", "S" }
 	for _, k in ipairs(no_insert) do
@@ -644,7 +425,7 @@ local function setup_msg_keymaps()
 	end
 	vim.keymap.set("x", "y", '"+y', { buffer = buf })
 	vim.keymap.set("x", "Y", '"+Y', { buffer = buf })
-	vim.keymap.set("x", "<Esc>", "<Esc>", { buffer = buf })
+	vim.keymap.set("n", "@", show_group_selector, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "r", function()
 		if state.unread > 0 then
 			state.unread = 0
@@ -655,11 +436,11 @@ local function setup_msg_keymaps()
 			for _, msg in ipairs(state.messages) do
 				total = total + #fmt_msg(msg) + 1
 			end
-			pcall(vim.api.nvim_win_set_cursor, state.msg_popup.winid, { total - 2, 0 })
+			pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
 		end
 	end, { buffer = buf })
 	vim.keymap.set("n", "/", function()
-		if not state.msg_popup then
+		if not state.win then
 			return
 		end
 		local text = vim.fn.input("Search: ")
@@ -697,9 +478,9 @@ local function setup_msg_keymaps()
 		if not target then
 			return
 		end
-		local cursor_line = vim.api.nvim_win_get_cursor(state.msg_popup.winid)[1]
-		local text = vim.api.nvim_buf_get_lines(state.msg_popup.bufnr, cursor_line - 1, cursor_line, false)[1]
-		if text and text:find("\xE2\x94\x83") then
+		local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+		local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
+		if text and text:find("^> ") then
 			if target.replyTo then
 				M.jump_to_message(target.replyTo.id)
 			end
@@ -708,7 +489,6 @@ local function setup_msg_keymaps()
 		state.input_mode = "reply"
 		state.reply_to = target.id
 		apply_highlights()
-		update_input_border()
 		focus_input()
 	end, { buffer = buf })
 	vim.keymap.set("n", "e", function()
@@ -726,7 +506,6 @@ local function setup_msg_keymaps()
 		state.input_mode = "edit"
 		state.edit_target = target
 		apply_highlights()
-		update_input_border()
 		state.editor:set_text(target.text or "")
 		state.editor:focus()
 		vim.cmd("startinsert!")
@@ -804,55 +583,8 @@ local function setup_msg_keymaps()
 	end, { buffer = buf })
 end
 
-local function setup_group_keymaps()
-	local buf = state.group_popup.bufnr
-	setup_nav_keymaps(buf)
-	local function move_group_cursor(delta)
-		local new = state.group_cursor + delta
-		if new < 1 or new > #state.group_ids then
-			return
-		end
-		state.group_cursor = new
-		local rel = new - state.group_offset + 1
-		if rel > state.group_win_size then
-			state.group_offset = state.group_offset + (rel - state.group_win_size)
-			M.render_groups()
-		elseif rel < 1 then
-			state.group_offset = math.max(1, state.group_offset + rel - 1)
-			M.render_groups()
-		else
-			apply_group_highlights()
-		end
-	end
-
-	vim.keymap.set("n", "j", function()
-		move_group_cursor(1)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "k", function()
-		move_group_cursor(-1)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<Down>", function()
-		move_group_cursor(1)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<Up>", function()
-		move_group_cursor(-1)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<CR>", function()
-		local id = state.group_ids[state.group_cursor]
-		if not id then
-			return
-		end
-		local g = state.groups[id]
-		if not g then
-			return
-		end
-		M.open_chat(id, g.title)
-	end, { buffer = buf })
-end
-
 local function setup_input_keymaps()
 	local buf = state.editor:bufnr()
-	setup_nav_keymaps(buf)
 	vim.keymap.set("n", "<CR>", input_send, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "<Esc>", function()
 		if state.input_mode ~= "send" then
@@ -861,8 +593,7 @@ local function setup_input_keymaps()
 			state.edit_target = nil
 			state.editor:clear()
 			apply_highlights()
-			update_input_border()
-			focus_msg()
+			focus_input()
 		end
 	end, { buffer = buf })
 	vim.keymap.set("n", "p", function()
@@ -874,12 +605,64 @@ local function setup_input_keymaps()
 	end, { buffer = buf })
 end
 
----@param chat_id any
----@param chat_title string
+local help_popup = nil
+
+local function close_help()
+	if help_popup then
+		help_popup:unmount()
+		help_popup = nil
+	end
+end
+
+M.close_help = close_help
+
+function M.show_help()
+	close_help()
+	local NuiPopup = require("nui.popup")
+	help_popup = NuiPopup({
+		relative = "editor",
+		position = { row = "50%", col = "50%" },
+		size = { width = 36, height = 26 },
+		zindex = 200,
+		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
+		buf_options = { buftype = "nofile", bufhidden = "wipe" },
+		win_options = { winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder" },
+		enter = true,
+		focusable = true,
+	})
+	local lines = {
+		"-- Navigation --",
+		" i        focus input",
+		" @        switch group",
+		" /        search history",
+		"",
+		"-- Messages --",
+		" <CR>     reply / jump to original",
+		" e        edit own message",
+		" d        delete / revoke",
+		" f        forward",
+		" r        refresh",
+		"",
+		"-- General --",
+		" ?        help",
+		" Esc Esc  close chat",
+		" q        quit plugin",
+		"",
+		"-- Input --",
+		" <CR>     send message",
+		" Esc      cancel reply/edit",
+	}
+	help_popup:mount()
+	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
+	vim.keymap.set("n", "<Esc>", close_help, { buffer = help_popup.bufnr, nowait = true })
+	vim.keymap.set("n", "q", close_help, { buffer = help_popup.bufnr, nowait = true })
+	vim.keymap.set("n", "?", close_help, { buffer = help_popup.bufnr, nowait = true })
+end
+
 function M.open_chat(chat_id, chat_title)
 	chat_title = chat_title or "Chat"
-	if state.chat_id == chat_id and state.layout and state.layout._.mounted then
-		update_input_title()
+	if state.chat_id == chat_id and state.mounted then
+		M.update_title()
 		return
 	end
 
@@ -887,143 +670,83 @@ function M.open_chat(chat_id, chat_title)
 
 	state.chat_id = chat_id
 	state.chat_title = chat_title
-	state.active_group_id = chat_id
-	for i, id in ipairs(state.group_ids) do
-		if id == chat_id then
-			state.group_cursor = i
-			break
-		end
-	end
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
 	end
 
-	state.msg_popup = NuiPopup({
-		enter = true,
-		focusable = true,
-		border = {
-			style = "rounded",
-			text = { top = "", top_align = "center" },
-		},
-		buf_options = { buftype = "nofile", bufhidden = "wipe" },
-		win_options = {
-			wrap = true,
-			winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder",
-		},
+	state.buf = vim.api.nvim_create_buf(false, true)
+	vim.bo[state.buf].buftype = "nofile"
+	vim.bo[state.buf].bufhidden = "wipe"
+
+	state.win = vim.api.nvim_open_win(state.buf, true, {
+		relative = "editor",
+		width = vim.o.columns,
+		height = vim.o.lines - 1,
+		row = 0,
+		col = 0,
+		style = "minimal",
+		border = "none",
 	})
 
-	state.editor = Editor.new({
-		placeholder = "  Type a message...",
-	})
-	state.input_popup = state.editor.popup
+	vim.wo[state.win].wrap = true
+	vim.wo[state.win].cursorline = true
+	vim.wo[state.win].winbar = state.chat_title
 
-	state.group_popup = NuiPopup({
-		enter = false,
-		focusable = true,
-		border = { style = "rounded", text = { top = " Groups ", top_align = "center" } },
-		buf_options = { buftype = "nofile", bufhidden = "wipe" },
-		win_options = {
-			winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder",
-		},
-	})
+	state.editor = Editor.new({ placeholder = "  Type a message..." })
+	state.editor:set_bufnr(state.buf)
+	state.editor:set_winid(state.win)
+	state.editor:setup_autocmds()
+	state.mounted = true
 
-	state.layout = NuiLayout(
-		{
-			relative = "editor",
-			position = { row = "50%", col = "50%" },
-			size = { width = "80%", height = "80%" },
-		},
-		NuiLayout.Box({
-			NuiLayout.Box({
-				NuiLayout.Box(state.msg_popup, { grow = 1 }),
-				NuiLayout.Box(state.input_popup, { size = { height = 6 } }),
-			}, { dir = "col", grow = 1 }),
-			NuiLayout.Box(state.group_popup, { size = { width = 36, height = "100%" } }),
-		}, { dir = "row" })
-	)
-
-	state.layout:mount()
-	state.editor:setup()
-	update_input_border()
-
-	state.buf = state.msg_popup.bufnr
-	state.win = state.msg_popup.winid
-
-	setup_msg_keymaps()
+	setup_chat_keymaps()
 	setup_input_keymaps()
-	setup_group_keymaps()
 
 	server.open_chat(state.chat_id)
-	server.clear_groups_cache()
-	vim.defer_fn(function()
-		if not state.chat_id then
-			return
-		end
-		if state.group_popup and state.group_popup.winid then
-			local ok, h = pcall(vim.api.nvim_win_get_height, state.group_popup.winid)
-			if ok then
-				state.group_win_size = math.max(h, 5)
+	render()
+
+	M.refresh_messages(function()
+		if #state.messages > 0 then
+			local total = 1
+			for _, msg in ipairs(state.messages) do
+				total = total + #fmt_msg(msg) + 1
 			end
+			pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
 		end
-		M.render_groups()
-		local chat_data = server.get_chat(state.chat_id)
-		if chat_data and state.groups[state.chat_id] then
-			state.groups[state.chat_id].unread_count = chat_data.unreadCount or 0
-			M.render_groups()
-		end
-	end, 50)
-	update_input_title()
-	local restore = state.saved_cursors[state.chat_id]
-	if restore then
-		state.saved_cursors[state.chat_id] = nil
-		M.jump_to_message(restore, function(ok)
-			if not ok or #state.messages == 0 then
-				M.refresh_messages(function()
-					if #state.messages > 0 then
-						local total = 1
-						for _, msg in ipairs(state.messages) do
-							total = total + #fmt_msg(msg) + 1
-						end
-						pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
-					end
-				end)
-			end
-		end)
-	else
-		M.refresh_messages(function()
-			if #state.messages > 0 then
-				local total = 1
-				for _, msg in ipairs(state.messages) do
-					total = total + #fmt_msg(msg) + 1
-				end
-				pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
-			end
-		end)
-	end
+	end)
 
 	vim.api.nvim_create_autocmd("CursorMoved", {
 		group = vim.api.nvim_create_augroup("TgChatScroll", { clear = true }),
 		buffer = state.buf,
 		callback = function()
-			if not state.msg_popup or not vim.api.nvim_win_is_valid(state.msg_popup.winid) then
+			if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 				return
 			end
-			if vim.api.nvim_get_current_win() ~= state.msg_popup.winid then
+			if vim.api.nvim_get_current_win() ~= state.win then
 				return
 			end
-			local cursor_line = vim.api.nvim_win_get_cursor(state.msg_popup.winid)[1]
+			local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
 			local total_lines = vim.api.nvim_buf_line_count(state.buf)
 			if state.unread > 0 and cursor_line >= total_lines - 1 then
 				state.unread = 0
-				if state.groups[state.chat_id] then
-					state.groups[state.chat_id].unread_count = 0
-					M.render_groups()
-				end
 			end
 			if cursor_line <= 1 and not state.exhausted then
 				M.load_older()
 			elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
 				M.load_newer()
+			end
+		end,
+	})
+
+	vim.api.nvim_create_autocmd("VimResized", {
+		group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
+		callback = function()
+			if state.win and vim.api.nvim_win_is_valid(state.win) then
+				vim.api.nvim_win_set_config(state.win, {
+					width = vim.o.columns,
+					height = vim.o.lines - 1,
+					col = 0,
+					row = 0,
+				})
 			end
 		end,
 	})
@@ -1035,22 +758,22 @@ function M.close_chat()
 		if state.win and vim.api.nvim_win_is_valid(state.win) then
 			local idx = M.message_at_cursor()
 			if idx then
+				state.saved_cursors = state.saved_cursors or {}
 				state.saved_cursors[state.chat_id] = state.messages[idx].id
 			end
 		end
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
 	end
-	if state.layout then
-		state.layout:unmount()
-		state.layout = nil
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		vim.api.nvim_win_close(state.win, true)
 	end
-	state.msg_popup = nil
-	state.input_popup = nil
-	state.editor = nil
-	state.group_popup = nil
+	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		vim.api.nvim_buf_delete(state.buf, { force = true })
+	end
 	state.buf = nil
 	state.win = nil
+	state.editor = nil
 	state.messages = {}
 	state.loading = false
 	state.exhausted = false
@@ -1059,10 +782,13 @@ function M.close_chat()
 	state.typing_users = {}
 	state.chat_id = nil
 	state.chat_title = ""
+	state.mounted = false
 end
 
----@return integer|nil
 function M.message_at_cursor()
+	if not state.win then
+		return nil
+	end
 	local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
 	local line = 1
 	for idx, msg in ipairs(state.messages) do
@@ -1075,7 +801,6 @@ function M.message_at_cursor()
 	return nil
 end
 
----@return table|nil
 function M.curr_msg()
 	local i = M.message_at_cursor()
 	return i and state.messages[i]
@@ -1093,16 +818,12 @@ function M.jump_to_message(target_id, callback)
 	state.messages = {}
 	state.exhausted = false
 	state.exhausted_forward = false
-	if state.msg_popup and state.msg_popup.border then
-		state.msg_popup.border:set_text("top", " ⏳ Loading... ")
-	end
 	server.get_messages_around_async(state.chat_id, target_id, 31, function(data)
 		if not state.chat_id then
 			return
 		end
 		state.messages = data.messages or {}
 		render()
-		update_input_title()
 		local l = line_of(target_id)
 		if l then
 			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
@@ -1138,11 +859,11 @@ function M.load_older()
 			state.loading = false
 			return
 		end
+		local new_lines = 0
 		local seen = {}
 		for _, m in ipairs(state.messages) do
 			seen[tostring(m.id)] = true
 		end
-		local new_lines = 0
 		for i = 1, #new_msgs do
 			if not seen[tostring(new_msgs[i].id)] then
 				seen[tostring(new_msgs[i].id)] = true
@@ -1202,7 +923,7 @@ function M.load_newer()
 end
 
 function M.refresh_messages(on_complete)
-	if not state.msg_popup then
+	if not state.buf then
 		return
 	end
 	state.loading = false
@@ -1238,7 +959,6 @@ function M.refresh_messages(on_complete)
 				.. (latest.text or "")
 			server.view_messages(state.chat_id, latest.id)
 		end
-		update_input_title()
 		if on_complete then
 			on_complete()
 		end

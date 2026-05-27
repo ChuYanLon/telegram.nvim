@@ -1,16 +1,8 @@
----@class TgConfig
----@field data_dir string
----@field tdlib_path string|nil
----@field api_id integer|nil
----@field api_hash string|nil
----@field proxy string|nil
-
 local info = debug.getinfo(1, "S")
 local plugin_root = vim.fn.fnamemodify(info.source:match("@(.+)"), ":h:h:h")
 
 local M = {}
 
----@type TgConfig
 M.config = {
 	data_dir = plugin_root,
 	tdlib_path = nil,
@@ -19,7 +11,6 @@ M.config = {
 	proxy = nil,
 }
 
----@param opts TgConfig|nil
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 	local ok, comment_hl = pcall(vim.api.nvim_get_hl, 0, { name = "Comment" })
@@ -30,9 +21,11 @@ function M.setup(opts)
 	end
 	vim.api.nvim_set_hl(0, "TgPlaceholder", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgSender", { link = "Identifier", default = true })
-	vim.api.nvim_set_hl(0, "TgKey", { link = "Keyword", default = true })
-	vim.api.nvim_set_hl(0, "TgReplyIndicator", { bold = true, default = true })
-	vim.api.nvim_set_hl(0, "TgReplyBg", { bg = "#2e3a4e", default = true })
+	vim.api.nvim_set_hl(0, "TgHeader", { link = "Title", default = true })
+	vim.api.nvim_set_hl(0, "TgReplyQuote", { link = "Comment", default = true })
+	vim.api.nvim_set_hl(0, "TgService", { link = "Comment", default = true })
+	vim.api.nvim_set_hl(0, "TgSeparator", { link = "NonText", default = true })
+	vim.api.nvim_set_hl(0, "TgCodeBlock", { bg = "#1e1e2e", default = true })
 	vim.api.nvim_set_hl(0, "TgReplyTarget", { bg = "#2d4a3e", default = true })
 	vim.api.nvim_set_hl(0, "TgEditTarget", { bg = "#4a3e2d", default = true })
 	vim.api.nvim_set_hl(0, "TgDeleteTarget", { bg = "#4e2d2d", default = true })
@@ -40,13 +33,10 @@ function M.setup(opts)
 	vim.api.nvim_set_hl(0, "TgNoBg", { fg = "NONE", bg = "NONE", default = true })
 	local bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name("FloatBorder") }) or {}).fg or "#6c6c6c"
 	vim.api.nvim_set_hl(0, "TgBorder", { fg = bfg, bg = "NONE", default = true })
-	vim.api.nvim_set_hl(0, "TgService", { link = "Comment", default = true })
 end
 
----@type string
 M.plugin_root = plugin_root
 
----@return boolean
 function M.ensure_deps()
 	if vim.fn.executable("node") ~= 1 then
 		vim.notify("Node.js not found. Install nodejs first.", vim.log.levels.ERROR, { title = "tg" })

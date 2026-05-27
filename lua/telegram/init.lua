@@ -107,7 +107,6 @@ local function finish_init()
 						st.unread = st.unread + 1
 						if st.groups[st.chat_id] then
 							st.groups[st.chat_id].unread_count = st.unread
-							ui.render_groups()
 						end
 						queue_notify(sender .. ": " .. text)
 					end
@@ -191,11 +190,11 @@ end
 
 local function finish_open(groups)
 	ui.set_groups(groups)
-	if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
+	if ui.state.last_chat and not ui.state.mounted then
 		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
 		return
 	end
-	if ui.state.layout and ui.state.layout._.mounted then
+	if ui.state.mounted then
 		ui.refresh_messages()
 		return
 	end
