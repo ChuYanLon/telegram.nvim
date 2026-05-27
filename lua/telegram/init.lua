@@ -181,43 +181,6 @@ local function finish_init()
 				ui.update_group_online(msg.chat_id, msg.online_member_count)
 			end)
 		end
-				ui.update_group_online(msg.chat_id, msg.online_member_count)
-			end)
-		elseif msg.event == "fileUpdate" then
-			vim.schedule(function()
-				local st = ui.state
-				if msg.debug then
-					vim.notify("tg: " .. msg.debug, vim.log.levels.INFO, { title = "tg" })
-				end
-				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) or not msg.path or #msg.path == 0 then
-					return
-				end
-				local changed = false
-				if msg.messageIds and #msg.messageIds > 0 then
-					for _, mid in ipairs(msg.messageIds) do
-						for _, m in ipairs(st.messages) do
-							if tostring(m.id) == tostring(mid) then
-								m.filePath = msg.path
-								changed = true
-								break
-							end
-						end
-					end
-				end
-				if not changed then
-					for _, m in ipairs(st.messages) do
-						local t = m.type or ""
-						if t ~= "messageText" and t:find("^message") then
-							m.filePath = msg.path
-							changed = true
-						end
-					end
-				end
-				if changed then
-					ui.render()
-				end
-			end)
-		end
 	end)
 	initialized = true
 	vim.notify("Ready", vim.log.levels.INFO, { title = "tg" })
