@@ -229,6 +229,9 @@ function M.update_title()
 		end
 	end
 	title = title .. " | " .. (state.online_count or 0) .. " online"
+	if state.unread > 0 then
+		title = title .. " | \xE2\x97\x8F +" .. state.unread
+	end
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		local safe = title:gsub("[^%w%p]", "_"):sub(1, 60)
 		pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe)
