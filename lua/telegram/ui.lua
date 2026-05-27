@@ -348,7 +348,11 @@ local function setup_chat_keymaps()
 			M.jump_to_message(target.replyTo.id)
 			return
 		end
+		state.reply_to = target.id
+		apply_highlights()
 		M.open_editor("Reply", "", function(input)
+			state.reply_to = nil
+			apply_highlights()
 			if not input then
 				return
 			end
@@ -369,7 +373,11 @@ local function setup_chat_keymaps()
 			vim.notify("Can only edit your own messages", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
+		state.edit_target = target
+		apply_highlights()
 		M.open_editor("Edit", target.text or "", function(input)
+			state.edit_target = nil
+			apply_highlights()
 			if not input then
 				return
 			end
@@ -385,9 +393,13 @@ local function setup_chat_keymaps()
 		if not target or not target.id then
 			return
 		end
+		state.delete_target = target
+		apply_highlights()
 		local choices = target.own and { "Revoke (for everyone)", "Delete (for me)", "Cancel" }
 			or { "Delete (for me)", "Cancel" }
 		vim.ui.select(choices, { prompt = "Delete message?" }, function(choice)
+			state.delete_target = nil
+			apply_highlights()
 			if not choice or choice == "Cancel" then
 				return
 			end
@@ -409,8 +421,12 @@ local function setup_chat_keymaps()
 		if not target or not target.id then
 			return
 		end
+		state.forward_target = target
+		apply_highlights()
 		local groups = server.get_groups()
 		if not groups or #groups == 0 then
+			state.forward_target = nil
+			apply_highlights()
 			vim.notify("No groups to forward to", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
@@ -424,6 +440,8 @@ local function setup_chat_keymaps()
 				return item.label
 			end,
 		}, function(choice)
+			state.forward_target = nil
+			apply_highlights()
 			if choice then
 				local ok = server.forward_messages(state.chat_id, target.id, choice.id)
 				if ok then
