@@ -384,8 +384,8 @@ local function setup_chat_keymaps()
 			M.jump_to_message(target.replyTo.id)
 			return
 		end
-		vim.ui.input({ prompt = "Reply: " }, function(input)
-			if not input or #input == 0 then
+		M.open_editor("Reply", "", function(input)
+			if not input then
 				return
 			end
 			local msg = server.send_message(state.chat_id, input, target.id)
@@ -405,8 +405,8 @@ local function setup_chat_keymaps()
 			vim.notify("Can only edit your own messages", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		vim.ui.input({ prompt = "Edit: ", default = target.text or "" }, function(input)
-			if not input or #input == 0 then
+		M.open_editor("Edit", target.text or "", function(input)
+			if not input then
 				return
 			end
 			if server.edit_message(state.chat_id, target.id, input) then
@@ -480,6 +480,36 @@ local function close_help()
 end
 
 M.close_help = close_help
+
+function M.open_editor(title, default_text, callback)
+	local NuiPopup = require("nui.popup")
+	local popup = NuiPopup({
+		relative = "editor",
+		position = { row = "50%", col = "50%" },
+		size = { width = 60, height = 8 },
+		zindex = 150,
+		border = { style = "rounded", text = { top = " " .. title .. " ", top_align = "center" } },
+		buf_options = { buftype = "acwrite" },
+		enter = true,
+		focusable = true,
+	})
+	popup:mount()
+	local lines = vim.split(default_text or "", "\n")
+	vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, #lines == 0 and { "" } or lines)
+	vim.cmd("startinsert!")
+	vim.keymap.set("n", "<CR>", function()
+		local text = table.concat(vim.api.nvim_buf_get_lines(popup.bufnr, 0, -1, false), "\n")
+		text = text:gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
+		popup:unmount()
+		if #text > 0 then
+			callback(text)
+		end
+	end, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("n", "<Esc>", function()
+		popup:unmount()
+		callback(nil)
+	end, { buffer = popup.bufnr, nowait = true })
+end
 
 function M.show_help()
 	close_help()
