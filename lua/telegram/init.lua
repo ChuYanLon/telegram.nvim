@@ -197,10 +197,11 @@ local function finish_init()
 							end
 						end
 					end
-				else
+				end
+				if not changed then
 					for _, m in ipairs(st.messages) do
 						local t = m.type or ""
-						if t ~= "messageText" and t:find("^message") and (not m.filePath or #m.filePath == 0) then
+						if t ~= "messageText" and t:find("^message") then
 							m.filePath = msg.path
 							changed = true
 						end
