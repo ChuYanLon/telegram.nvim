@@ -605,12 +605,41 @@ function M.open_chat(chat_id, chat_title)
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
+		vim.wo[state.win].winfixwidth = true
 
 		vim.api.nvim_create_autocmd("BufWriteCmd", {
 			group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
 			buffer = state.buf,
 			callback = function()
 				vim.bo[state.buf].modified = false
+			end,
+		})
+
+		vim.api.nvim_create_autocmd("WinClosed", {
+			group = vim.api.nvim_create_augroup("TgWinFix", { clear = true }),
+			callback = function()
+				if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+					return
+				end
+				local wins = vim.api.nvim_list_wins()
+				if #wins == 1 and vim.api.nvim_win_get_buf(state.win) == state.buf then
+					vim.schedule(function()
+						if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+							return
+						end
+						local ok, curbuf = pcall(vim.api.nvim_win_get_buf, state.win)
+						if not ok or curbuf ~= state.buf then
+							return
+						end
+						local wins2 = vim.api.nvim_list_wins()
+						if #wins2 > 1 then
+							return
+						end
+						vim.cmd("vsplit")
+						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50) .. "%")
+						vim.api.nvim_set_current_win(state.win)
+					end)
+				end
 			end,
 		})
 
