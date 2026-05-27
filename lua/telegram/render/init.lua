@@ -44,8 +44,8 @@ local service_styles = {
 	messageMessagePinned = { prefix = "*", text = "pinned a message" },
 	messageForumTopicCreated = { prefix = ">", text = "created a topic" },
 	messageChatSetMessageAutoDeleteTime = { prefix = "!", text = "set auto-delete timer" },
-	messageChatUpgradeFrom = { prefix = ">", text = "upgraded from a basic group" },
-	messageChatUpgradeTo = { prefix = ">", text = "upgraded to a supergroup" },
+	messageChatUpgradeFrom = { prefix = "~", text = "upgraded from a basic group" },
+	messageChatUpgradeTo = { prefix = "~", text = "upgraded to a supergroup" },
 }
 
 function M.render(msg)
@@ -66,16 +66,16 @@ function M.render(msg)
 			end
 		end
 		if is_self_join then
-			table.insert(out, "> + " .. s .. " joined this group at " .. time_str)
+			table.insert(out, "+ " .. s .. " joined this group at " .. time_str)
 		else
 			local names = msg.addedMemberNames and table.concat(msg.addedMemberNames, ", ") or "someone"
-			table.insert(out, "> + " .. s .. " added " .. names .. " at " .. time_str)
+			table.insert(out, "+ " .. s .. " added " .. names .. " at " .. time_str)
 		end
 	elseif msg.type and service_styles[msg.type] then
 		local style = service_styles[msg.type]
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
-		table.insert(out, "> " .. style.prefix .. " " .. s .. " " .. style.text .. " at " .. time_str)
+		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. time_str)
 	else
 		table.insert(out, string.format("## %s (%s)", sender, date_str))
 
