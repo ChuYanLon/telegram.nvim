@@ -653,8 +653,13 @@ function M.open_chat(chat_id, chat_title)
 			end,
 		})
 	else
-		state.win = vim.api.nvim_get_current_win()
+		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+			vim.cmd("vsplit")
+			vim.cmd("vertical resize " .. (vim.g.telegram_width or 50) .. "%")
+			state.win = vim.api.nvim_get_current_win()
+		end
 		vim.api.nvim_win_set_buf(state.win, state.buf)
+		vim.wo[state.win].wrap = true
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
