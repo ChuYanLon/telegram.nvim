@@ -531,7 +531,6 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 	end
 	local text = table.concat(args, " ", 2)
 	if server.send_message(chat_id, text) then
-		vim.notify("Message sent", vim.log.levels.INFO, { title = "tg" })
 	end
 end, { nargs = "+" })
 

@@ -279,7 +279,6 @@ local function input_send()
 		local ok = server.edit_message(state.chat_id, target.id, text)
 		if ok then
 			target.text = text
-			vim.notify("Message edited", vim.log.levels.INFO, { title = "tg" })
 		end
 		state.editor:clear()
 		state.input_mode = "send"
@@ -309,14 +308,12 @@ local function input_send()
 		insert_msg(msg)
 		render()
 		if msg then
-			vim.notify("Reply sent", vim.log.levels.INFO, { title = "tg" })
 		end
 	else
 		local msg = server.send_message(state.chat_id, text)
 		insert_msg(msg)
 		render()
 		if msg then
-			vim.notify("Message sent", vim.log.levels.INFO, { title = "tg" })
 		end
 	end
 	state.editor:clear()
@@ -365,7 +362,6 @@ local function setup_chat_keymaps()
 			if msg then
 				table.insert(state.messages, msg)
 				render()
-				vim.notify("Sent", vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
 	end, { buffer = buf, nowait = true })
@@ -392,7 +388,6 @@ local function setup_chat_keymaps()
 			if msg then
 				table.insert(state.messages, msg)
 				render()
-				vim.notify("Reply sent", vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
 	end, { buffer = buf })
@@ -416,7 +411,6 @@ local function setup_chat_keymaps()
 			if server.edit_message(state.chat_id, target.id, input) then
 				target.text = input
 				render()
-				vim.notify("Edited", vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
 	end, { buffer = buf })

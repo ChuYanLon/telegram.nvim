@@ -92,7 +92,6 @@ M.register("send", {
 			if msg then
 				table.insert(ui.state.messages, msg)
 				ui.render()
-				vim.notify("Sent", vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
 	end,
