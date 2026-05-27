@@ -563,9 +563,7 @@ function M.open_chat(chat_id, chat_title)
 		state.buf = vim.api.nvim_create_buf(true, false)
 		vim.bo[state.buf].filetype = "markdown"
 
-		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-			state.win = vim.api.nvim_get_current_win()
-		end
+		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 
@@ -602,9 +600,7 @@ function M.open_chat(chat_id, chat_title)
 			end,
 		})
 	else
-		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-			state.win = vim.api.nvim_get_current_win()
-		end
+		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 	end
 
