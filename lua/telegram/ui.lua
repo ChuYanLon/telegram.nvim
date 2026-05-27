@@ -68,7 +68,7 @@ local function line_of(target_id)
 		if m.id == target_id then
 			local line = 1
 			for j = 1, i - 1 do
-				line = line + #fmt_msg(state.messages[j]) + 1
+				line = line + #fmt_msg(state.messages[j])
 			end
 			return line
 		end
@@ -153,7 +153,7 @@ local function apply_highlights()
 			})
 			break
 		end
-		line = line + n + 1
+		line = line + n
 	end
 end
 
@@ -671,7 +671,7 @@ function M.message_at_cursor()
 		if cursor_line >= line and cursor_line < line + n then
 			return idx
 		end
-		line = line + n + 1
+		line = line + n
 	end
 	return nil
 end
