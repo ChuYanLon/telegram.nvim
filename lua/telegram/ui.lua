@@ -538,6 +538,16 @@ end
 
 function M.open_chat(chat_id, chat_title)
 	chat_title = chat_title or "Chat"
+	vim.notify(
+		"tg: open_chat("
+			.. tostring(chat_id)
+			.. ") buf="
+			.. tostring(state.buf)
+			.. " mounted="
+			.. tostring(state.mounted),
+		vim.log.levels.INFO,
+		{ title = "tg" }
+	)
 
 	if state.chat_id == chat_id and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		M.update_title()
@@ -560,6 +570,7 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
+		vim.notify("tg: creating new buffer", vim.log.levels.INFO, { title = "tg" })
 		state.buf = vim.api.nvim_create_buf(true, false)
 		vim.bo[state.buf].filetype = "markdown"
 
