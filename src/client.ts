@@ -441,14 +441,40 @@ export class TelegramLSPClient {
       const msg = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
       if (!msg || !msg.content) return null;
       await this.client.invoke({ _: 'openMessageContent', chat_id: chatId, message_id: messageId }).catch(() => {});
+
+      const content = msg.content as Record<string, unknown>;
+      const photo = content['photo'] as Record<string, unknown> | undefined;
+      const sizes = photo?.['sizes'] as Record<string, unknown>[] | undefined;
+
+      if (sizes && sizes.length > 0) {
+        for (let i = 0; i < sizes.length; i++) {
+          const src = (sizes[i]['photo'] || sizes[i]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+          if (!src) continue;
+          const file = Array.isArray(src) ? (src as Record<string, unknown>[])[0] : src;
+          const fileId = file?.['id'] as number | undefined;
+          if (fileId && fileId > 0) {
+            await this.client.invoke({ _: 'downloadFile', file_id: fileId, priority: 1 }).catch(() => {});
+          }
+        }
+
+        for (let attempt = 0; attempt < 15; attempt++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const fresh = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
+          if (fresh?.content) {
+            const freshPhoto = (fresh.content as Record<string, unknown>)['photo'] as Record<string, unknown> | undefined;
+            const freshSizes = freshPhoto?.['sizes'] as Record<string, unknown>[] | undefined;
+            if (freshSizes && freshSizes.length > 0) {
+              const lastSrc = (freshSizes[freshSizes.length - 1]['photo'] || freshSizes[freshSizes.length - 1]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+              const lastFile = Array.isArray(lastSrc) ? (lastSrc as Record<string, unknown>[])[0] : lastSrc;
+              const lastPath = (lastFile?.['local'] as Record<string, unknown> | undefined)?.['path'] as string | undefined;
+              if (lastPath) return { path: lastPath };
+            }
+          }
+        }
+      }
+
       const formatted = await this.formatter.format(msg);
       if (formatted?.filePath) return { path: formatted.filePath };
-      await new Promise(r => setTimeout(r, 2000));
-      const msg2 = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
-      if (msg2?.content) {
-        const formatted2 = await this.formatter.format(msg2);
-        if (formatted2?.filePath) return { path: formatted2.filePath };
-      }
       return { path: '' };
     } catch { return null; }
   }

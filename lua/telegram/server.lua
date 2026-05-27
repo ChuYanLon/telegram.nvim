@@ -303,8 +303,13 @@ function M.search_messages(chat_id, query)
 end
 
 function M.get_media(chat_id, message_id)
-	local data = http_get("/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id)
-	if data then
+	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
+	local result = vim.fn.system({ "curl", "-s", "--max-time", "20", url })
+	if vim.v.shell_error ~= 0 or #result == 0 then
+		return nil
+	end
+	local ok, data = pcall(vim.json.decode, result)
+	if ok then
 		return data
 	end
 	return nil
