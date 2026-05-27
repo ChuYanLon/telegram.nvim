@@ -10,7 +10,7 @@ local function get_renderer(msg)
 	local t = msg.type or "messageText"
 	if t == "messageText" then
 		local txt = msg.text or ""
-		if txt:find("`[^`]+`") or txt:find("%$%{") then
+		if txt:find("```") then
 			return code
 		end
 		if txt:find("https?://") or txt:find("www%.[%w_-]+%.") then
@@ -77,6 +77,10 @@ function M.render(msg)
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
 		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. time_str)
+	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) then
+		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
+		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
+		table.insert(out, "~ " .. s .. " performed an action at " .. time_str)
 	else
 		table.insert(out, string.format("## %s (%s)", sender, date_str))
 
@@ -90,15 +94,21 @@ function M.render(msg)
 		end
 
 		local content = get_renderer(msg).render(msg)
-		local is_code = msg.type == "messageText"
-			and ((msg.text or ""):find("`[^`]+`") or (msg.text or ""):find("%$%{"))
+		local text = msg.text or ""
+		local is_code = msg.type == "messageText" and text:find("```")
 
 		if is_code then
-			table.insert(out, "```")
-			for _, l in ipairs(content) do
-				table.insert(out, l)
+			if text:find("^```") then
+				for _, l in ipairs(content) do
+					table.insert(out, l)
+				end
+			else
+				table.insert(out, "```")
+				for _, l in ipairs(content) do
+					table.insert(out, l)
+				end
+				table.insert(out, "```")
 			end
-			table.insert(out, "```")
 		else
 			for _, l in ipairs(content) do
 				table.insert(out, l)

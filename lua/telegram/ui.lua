@@ -212,36 +212,33 @@ function M.update_title()
 	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 		return
 	end
-	local left = state.chat_title or ""
-
-	local typing_items = {}
-	for _, info in pairs(state.typing_users) do
-		table.insert(typing_items, info)
-	end
-	local center = ""
-	if #typing_items > 0 then
-		if #typing_items == 1 then
-			center = typing_items[1].name .. " " .. typing_items[1].action_desc
-		else
-			center = typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
-		end
-	end
-
+	local title = state.chat_title or ""
 	local online = state.online_count or 0
 	local total = 0
 	if state.chat_id and state.groups[state.chat_id] then
 		total = state.groups[state.chat_id].member_count or 0
 	end
-	local right = online .. "/" .. total
+	local count = online .. "/" .. total
 	if state.unread > 0 then
-		right = right .. "  \xE2\x97\x8F+" .. state.unread
+		count = count .. "  \xE2\x97\x8F+" .. state.unread
 	end
 
-	local winbar
-	if center == "" then
-		winbar = left .. "%= " .. right
-	else
-		winbar = left .. "%= " .. center .. " %= " .. right
+	local typing_items = {}
+	for _, info in pairs(state.typing_users) do
+		table.insert(typing_items, info)
+	end
+	local typing = ""
+	if #typing_items > 0 then
+		if #typing_items == 1 then
+			typing = typing_items[1].name .. " " .. typing_items[1].action_desc
+		else
+			typing = typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
+		end
+	end
+
+	local winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
+	if typing ~= "" then
+		winbar = winbar .. "%=%#TgService#" .. typing .. "%*"
 	end
 	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
 end
@@ -597,6 +594,8 @@ function M.open_chat(chat_id, chat_title)
 		vim.wo[state.win].relativenumber = false
 		vim.wo[state.win].signcolumn = "no"
 		vim.wo[state.win].foldcolumn = "0"
+		vim.wo[state.win].winhighlight = "WinBar:TgWinbarBg"
+		M.update_title()
 		return
 	end
 
@@ -726,10 +725,12 @@ function M.open_chat(chat_id, chat_title)
 		vim.wo[state.win].relativenumber = false
 		vim.wo[state.win].signcolumn = "no"
 		vim.wo[state.win].foldcolumn = "0"
+		vim.wo[state.win].winhighlight = "WinBar:TgWinbarBg"
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	state.mounted = true
+	M.update_title()
 
 	server.open_chat(state.chat_id)
 
