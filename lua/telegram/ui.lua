@@ -480,10 +480,9 @@ local function setup_chat_keymaps()
 		end)
 	end, { buffer = buf })
 	vim.keymap.set("n", "G", function()
-		local ok = pcall(vim.api.nvim_win_set_cursor, state.win, { vim.api.nvim_buf_line_count(state.buf), 0 })
-		if ok and state.exhausted_forward == false then
-			M.load_newer()
-		end
+		M.refresh_messages(function()
+			M.jump_to_bottom()
+		end)
 	end, { buffer = buf, nowait = true })
 end
 
