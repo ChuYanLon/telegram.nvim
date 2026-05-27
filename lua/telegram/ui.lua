@@ -573,7 +573,7 @@ function M.open_chat(chat_id, chat_title)
 			return
 		end
 		vim.cmd("vsplit")
-		vim.cmd("vertical resize 30%")
+		vim.cmd("vertical resize 40%")
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
@@ -610,7 +610,7 @@ function M.open_chat(chat_id, chat_title)
 		pcall(vim.diagnostic.reset, state.buf)
 
 		vim.cmd("vsplit")
-		vim.cmd("vertical resize 30%")
+		vim.cmd("vertical resize 40%")
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
