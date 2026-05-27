@@ -149,6 +149,8 @@ local function finish_init()
 						text = msg.text,
 						own = msg.own,
 						replyTo = msg.replyTo,
+						filePath = msg.filePath,
+						mimeType = msg.mimeType,
 					})
 					ui.render()
 					if st.win and vim.api.nvim_win_is_valid(st.win) then
