@@ -19,11 +19,17 @@ function M.render(msg)
 	if file_path and #file_path > 0 then
 		local caption = (text and #text > 0) and text:gsub("\n", " "):sub(1, 40) or label
 		table.insert(parts, "![" .. caption .. "](" .. file_path .. ")")
-	end
-	table.insert(parts, label)
-	if text and #text > 0 then
-		for _, line in ipairs(vim.split(text, "\n")) do
-			table.insert(parts, line)
+		if text and #text > 0 then
+			for _, line in ipairs(vim.split(text, "\n")) do
+				table.insert(parts, line)
+			end
+		end
+	else
+		table.insert(parts, label)
+		if text and #text > 0 then
+			for _, line in ipairs(vim.split(text, "\n")) do
+				table.insert(parts, line)
+			end
 		end
 	end
 	return parts
