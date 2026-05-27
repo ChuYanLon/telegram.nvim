@@ -111,23 +111,31 @@ export class UpdateDispatcher {
 
   handleFileUpdate(update: TdUpdate) {
     const file = update.file as Record<string, unknown> | undefined;
-    if (!file) { console.log('updateFile: no file'); return; }
+    if (!file) return;
     const local = file['local'] as Record<string, unknown> | undefined;
-    if (!local) { console.log('updateFile: no local'); return; }
+    if (!local) return;
     const path = local['path'] as string;
     const fileId = file['id'] as number;
-    console.log(`updateFile: id=${fileId} path="${path}" is_downloading=${local['is_downloading']}`);
+    const broadcast = this.getBroadcast();
+    const isDownloading = local['is_downloading'] as boolean;
 
-    if (path && fileId > 0) {
-      const broadcast = this.getBroadcast();
-      if (broadcast) {
-        const messageIds = this.formatter.fileMap.get(fileId);
-        broadcast({
-          event: 'fileUpdate',
-          path,
-          messageIds: messageIds ? [...messageIds] : [],
-        });
-      }
+    if (broadcast) {
+      const name = path ? path.replace(/^.*[/\\]/, '') : '(empty)';
+      broadcast({
+        event: 'fileUpdate',
+        path: path || '',
+        messageIds: [],
+        debug: `id=${fileId} dl=${isDownloading} file=${name}`,
+      });
+    }
+
+    if (path && fileId > 0 && broadcast) {
+      const messageIds = this.formatter.fileMap.get(fileId);
+      broadcast({
+        event: 'fileUpdate',
+        path,
+        messageIds: messageIds ? [...messageIds] : [],
+      });
     }
   }
 }

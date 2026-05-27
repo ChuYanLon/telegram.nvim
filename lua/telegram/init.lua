@@ -183,11 +183,12 @@ local function finish_init()
 		elseif msg.event == "fileUpdate" then
 			vim.schedule(function()
 				local st = ui.state
-				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) or not msg.path then
+				if msg.debug then
+					vim.notify("tg: " .. msg.debug, vim.log.levels.INFO, { title = "tg" })
+				end
+				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) or not msg.path or #msg.path == 0 then
 					return
 				end
-				local fname = msg.path:match("([^/]+)$") or msg.path
-				vim.notify("tg: dl " .. fname, vim.log.levels.INFO, { title = "tg" })
 				local changed = false
 				if msg.messageIds and #msg.messageIds > 0 then
 					for _, mid in ipairs(msg.messageIds) do
