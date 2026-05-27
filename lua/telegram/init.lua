@@ -216,16 +216,9 @@ function M.list_groups()
 			return
 		end
 
-		if ui.state.mounted then
-			if not ui.state.buf or not vim.api.nvim_buf_is_valid(ui.state.buf) then
-				local groups = server.get_groups()
-				if groups and #groups > 0 then
-					ui.open_chat(groups[1].id, groups[1].title)
-				end
-			else
-				ui.refresh_messages()
-			end
-			return
+		if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
+			ui.state.buf = nil
+			ui.state.win = nil
 		end
 
 		local groups = server.get_groups()
