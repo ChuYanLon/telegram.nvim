@@ -139,14 +139,17 @@ export class MessageFormatter {
       const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
       if (sizes && sizes.length > 0) {
         const lastSize = sizes[sizes.length - 1];
-        const lastFile = lastSize[cfg.fileField] as Record<string, unknown> | undefined;
+        const lastFile = (lastSize[cfg.fileField] || lastSize['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
         if (lastFile) {
-          const rawId = lastFile['id'];
+          const file = Array.isArray(lastFile) ? (lastFile as Record<string, unknown>[])[0] : lastFile;
+          const rawId = file?.['id'];
           lastId = (typeof rawId === 'number' ? rawId : Number(rawId)) || 0;
         }
 
         for (let i = 0; i < sizes.length; i++) {
-          const photoFile = sizes[i][cfg.fileField] as Record<string, unknown> | undefined;
+          const src = (sizes[i][cfg.fileField] || sizes[i]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+          if (!src) continue;
+          const photoFile = Array.isArray(src) ? (src as Record<string, unknown>[])[0] : src;
           const info = getFileInfo(photoFile, 'image/jpeg');
           if (info) {
             if (firstId === 0) firstId = info.fileId;
