@@ -98,4 +98,40 @@ M.register("send", {
 	end,
 })
 
+M.register("search", {
+	description = "Search message history",
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.ui.input({ prompt = "Search: " }, function(query)
+			if not query or #query == 0 then
+				return
+			end
+			local data = server.search_messages(ui.state.chat_id, query)
+			if not data or not data.messages or #data.messages == 0 then
+				vim.notify('No results for "' .. query .. '"', vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, m in ipairs(data.messages) do
+				local name = m.sender and m.sender.name or "?"
+				local preview = (m.text or ""):gsub("\n", " "):sub(1, 80)
+				table.insert(items, { id = m.id, label = name .. ": " .. preview })
+			end
+			vim.ui.select(items, {
+				prompt = "Search: " .. query,
+				format_item = function(item)
+					return item.label
+				end,
+			}, function(choice)
+				if choice then
+					ui.jump_to_message(choice.id)
+				end
+			end)
+		end)
+	end,
+})
+
 return M
