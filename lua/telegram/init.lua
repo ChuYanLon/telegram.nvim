@@ -111,7 +111,7 @@ local function finish_init()
 						end
 						queue_notify(sender .. ": " .. text)
 					end
-					local ts = os.date("%m-%d %H:%M", msg.date)
+					local ts = os.date("%Y-%m-%d %H:%M", msg.date)
 					local preview = "["
 						.. ts
 						.. "] "

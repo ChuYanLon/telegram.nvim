@@ -900,7 +900,7 @@ function M.refresh_messages(on_complete)
 		render()
 		if #state.messages > 0 then
 			local latest = state.messages[#state.messages]
-			local ts = os.date("%m-%d %H:%M", latest.date)
+			local ts = os.date("%Y-%m-%d %H:%M", latest.date)
 			state.last_msg = "["
 				.. ts
 				.. "] "

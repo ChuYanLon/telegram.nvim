@@ -49,7 +49,7 @@ local service_styles = {
 }
 
 function M.render(msg)
-	local date_str = os.date("%m-%d %H:%M", msg.date)
+	local date_str = os.date("%Y-%m-%d %H:%M", msg.date)
 	local sender = msg.own and "Me" or (msg.sender and msg.sender.name or "unknown")
 	local out = {}
 
