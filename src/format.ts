@@ -105,10 +105,11 @@ export class MessageFormatter {
     const getFileInfo = (file: Record<string, unknown> | undefined, mimeType = ''): { path: string; mimeType: string; fileId: number } | null => {
       if (!file) return null;
       const local = file['local'] as Record<string, unknown> | undefined;
+      const rawId = file['id'];
       return {
         path: (local?.['path'] as string) || '',
         mimeType,
-        fileId: (file['id'] as number) || 0,
+        fileId: (typeof rawId === 'number' ? rawId : Number(rawId)) || 0,
       };
     };
 
@@ -137,7 +138,10 @@ export class MessageFormatter {
       if (sizes && sizes.length > 0) {
         const lastSize = sizes[sizes.length - 1];
         const lastFile = lastSize[cfg.fileField] as Record<string, unknown> | undefined;
-        if (lastFile) lastId = (lastFile['id'] as number) || 0;
+        if (lastFile) {
+          const rawId = lastFile['id'];
+          lastId = (typeof rawId === 'number' ? rawId : Number(rawId)) || 0;
+        }
 
         for (let i = 0; i < sizes.length; i++) {
           const photoFile = sizes[i][cfg.fileField] as Record<string, unknown> | undefined;
