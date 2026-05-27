@@ -51,6 +51,7 @@ export class MessageFormatter {
       formatted.filePath = fileInfo.path;
       formatted.mimeType = fileInfo.mimeType;
       if (fileInfo.fileId > 0) {
+        formatted.fileId = fileInfo.fileId;
         if (!this.fileMap.has(fileInfo.fileId)) {
           this.fileMap.set(fileInfo.fileId, new Set());
         }
@@ -64,6 +65,8 @@ export class MessageFormatter {
         this.fileMap.get(fileInfo.priorityFileId)!.add(msg.id);
         this.invoke({ _: 'downloadFile', file_id: fileInfo.priorityFileId, priority: 2 }).catch(() => {});
       }
+    } else if (msg.content && msg.content._ && msg.content._ !== 'messageText') {
+      this.invoke({ _: 'openMessageContent', chat_id: msg.chat_id, message_id: msg.id }).catch(() => {});
     }
 
     return formatted;

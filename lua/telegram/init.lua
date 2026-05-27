@@ -182,21 +182,26 @@ local function finish_init()
 			end)
 		elseif msg.event == "fileUpdate" then
 			vim.schedule(function()
-				if msg.debug then
-					vim.notify("tg: " .. msg.debug, vim.log.levels.INFO, { title = "tg" })
-					return
-				end
 				local st = ui.state
 				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) then
 					return
 				end
 				local changed = false
-				for _, mid in ipairs(msg.messageIds) do
-					for i, m in ipairs(st.messages) do
-						if tostring(m.id) == tostring(mid) then
+				if msg.messageIds and #msg.messageIds > 0 then
+					for _, mid in ipairs(msg.messageIds) do
+						for _, m in ipairs(st.messages) do
+							if tostring(m.id) == tostring(mid) then
+								m.filePath = msg.path
+								changed = true
+								break
+							end
+						end
+					end
+				elseif msg.fileId then
+					for _, m in ipairs(st.messages) do
+						if m.fileId == msg.fileId and not m.filePath then
 							m.filePath = msg.path
 							changed = true
-							break
 						end
 					end
 				end
