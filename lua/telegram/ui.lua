@@ -666,17 +666,12 @@ function M.open_chat(chat_id, chat_title)
 
 	if state.chat_id == chat_id and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		if state.win and vim.api.nvim_win_is_valid(state.win) then
+			vim.api.nvim_set_current_win(state.win)
 			M.update_title()
 			return
 		end
-		state.win = vim.api.nvim_open_win(state.buf, true, {
-			relative = "editor",
-			width = vim.o.columns,
-			height = vim.o.lines - 1,
-			row = 0,
-			col = 0,
-			border = "none",
-		})
+		state.win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 		vim.wo[state.win].winbar = state.chat_title
 		state.editor:set_winid(state.win)
@@ -695,17 +690,11 @@ function M.open_chat(chat_id, chat_title)
 
 	state.buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[state.buf].buftype = "nofile"
+	vim.bo[state.buf].filetype = "markdown"
 	vim.bo[state.buf].bufhidden = "hide"
 
-	state.win = vim.api.nvim_open_win(state.buf, true, {
-		relative = "editor",
-		width = vim.o.columns,
-		height = vim.o.lines - 1,
-		row = 0,
-		col = 0,
-		border = "none",
-	})
-
+	state.win = vim.api.nvim_get_current_win()
+	vim.api.nvim_win_set_buf(state.win, state.buf)
 	vim.wo[state.win].wrap = true
 	vim.wo[state.win].winbar = state.chat_title
 	vim.bo[state.buf].filetype = "markdown"
@@ -728,7 +717,7 @@ function M.open_chat(chat_id, chat_title)
 			for _, msg in ipairs(state.messages) do
 				total = total + #fmt_msg(msg) + 1
 			end
-			pcall(vim.api.nvim_win_set_cursor, state.win, { total - 2, 0 })
+			M.jump_to_bottom()
 		end
 	end)
 
@@ -754,39 +743,22 @@ function M.open_chat(chat_id, chat_title)
 			end
 		end,
 	})
+end
 
-	vim.api.nvim_create_autocmd("VimResized", {
-		group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
-		callback = function()
-			if state.win and vim.api.nvim_win_is_valid(state.win) then
-				vim.api.nvim_win_set_config(state.win, {
-					width = vim.o.columns,
-					height = vim.o.lines - 1,
-					col = 0,
-					row = 0,
-				})
-			end
-		end,
-	})
+function M.jump_to_bottom()
+	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+		return
+	end
+	local total = vim.api.nvim_buf_line_count(state.buf)
+	pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
 end
 
 function M.close_chat()
 	close_help()
 	if state.chat_id then
-		if state.win and vim.api.nvim_win_is_valid(state.win) then
-			local idx = M.message_at_cursor()
-			if idx then
-				state.saved_cursors = state.saved_cursors or {}
-				state.saved_cursors[state.chat_id] = state.messages[idx].id
-			end
-		end
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
 	end
-	if state.win and vim.api.nvim_win_is_valid(state.win) then
-		vim.api.nvim_win_close(state.win, true)
-	end
-	state.win = nil
 	if state.editor then
 		state.editor:set_winid(nil)
 	end
@@ -795,6 +767,12 @@ end
 
 function M.destroy_chat()
 	M.close_chat()
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		local curbuf = vim.api.nvim_win_get_buf(state.win)
+		if curbuf == state.buf then
+			vim.cmd("enew")
+		end
+	end
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		vim.api.nvim_buf_delete(state.buf, { force = true })
 	end
@@ -808,6 +786,7 @@ function M.destroy_chat()
 	state.typing_users = {}
 	state.chat_id = nil
 	state.chat_title = ""
+	state.win = nil
 end
 
 function M.message_at_cursor()
