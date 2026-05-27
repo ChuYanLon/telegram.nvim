@@ -219,6 +219,12 @@ function M.list_groups()
 		if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
 			ui.state.buf = nil
 			ui.state.win = nil
+			ui.state.mounted = false
+		end
+
+		if ui.state.mounted then
+			ui.refresh_messages()
+			return
 		end
 
 		local groups = server.get_groups()
