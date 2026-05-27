@@ -42,6 +42,20 @@ local SEPARATOR = "────────────────────"
 local hl_ns = vim.api.nvim_create_namespace("TgChat")
 local target_ns = vim.api.nvim_create_namespace("TgTarget")
 
+vim.api.nvim_create_autocmd("BufUnload", {
+	pattern = "/tmp/tg-*",
+	callback = function()
+		if state.chat_id and #state.messages > 0 then
+			state.saved_cursors = state.saved_cursors or {}
+			local idx = M.message_at_cursor()
+			if idx then
+				state.saved_cursors[state.chat_id] = state.messages[idx].id
+			end
+			state.last_group = { id = state.chat_id, title = state.chat_title }
+		end
+	end,
+})
+
 local action_descriptions = {
 	chatActionTyping = "typing...",
 	chatActionRecordingVideo = "recording video...",
@@ -622,7 +636,17 @@ function M.open_chat(chat_id, chat_title)
 
 	M.refresh_messages(function()
 		if #state.messages > 0 then
-			M.jump_to_bottom()
+			local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
+			if saved_id then
+				local l = line_of(saved_id)
+				if l then
+					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+				else
+					M.jump_to_bottom()
+				end
+			else
+				M.jump_to_bottom()
+			end
 		end
 	end)
 end

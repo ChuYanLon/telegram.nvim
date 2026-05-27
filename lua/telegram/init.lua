@@ -190,7 +190,12 @@ local function finish_open(groups)
 	ui.set_groups(groups or {})
 	ui.destroy_chat()
 	if groups and #groups > 0 then
-		ui.open_chat(groups[1].id, groups[1].title)
+		local last = ui.state.last_group
+		if last and ui.state.groups[last.id] then
+			ui.open_chat(last.id, last.title)
+		else
+			ui.open_chat(groups[1].id, groups[1].title)
+		end
 	end
 end
 
@@ -274,7 +279,12 @@ function M.list_groups()
 
 	local groups = server.get_groups()
 	if groups and #groups > 0 then
-		ui.open_chat(groups[1].id, groups[1].title)
+		local last = ui.state.last_group
+		if last and ui.state.groups[last.id] then
+			ui.open_chat(last.id, last.title)
+		else
+			ui.open_chat(groups[1].id, groups[1].title)
+		end
 	else
 		vim.notify("No groups available", vim.log.levels.WARN, { title = "tg" })
 	end
