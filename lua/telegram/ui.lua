@@ -491,7 +491,7 @@ function M.open_chat(chat_id, chat_title)
 		state.groups[chat_id].unread_count = 0
 	end
 
-	state.buf = vim.api.nvim_create_buf(false, true)
+	state.buf = vim.api.nvim_create_buf(true, false)
 	vim.bo[state.buf].buftype = "nofile"
 	vim.bo[state.buf].filetype = "markdown"
 	vim.bo[state.buf].bufhidden = "hide"
