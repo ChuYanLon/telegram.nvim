@@ -182,6 +182,10 @@ local function finish_init()
 			end)
 		elseif msg.event == "fileUpdate" then
 			vim.schedule(function()
+				if msg.debug then
+					vim.notify("tg: " .. msg.debug, vim.log.levels.INFO, { title = "tg" })
+					return
+				end
 				local st = ui.state
 				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) then
 					return

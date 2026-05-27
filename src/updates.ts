@@ -118,9 +118,9 @@ export class UpdateDispatcher {
     const fileId = file['id'] as number;
 
     if (path && fileId > 0) {
+      const broadcast = this.getBroadcast();
       const messageIds = this.formatter.fileMap.get(fileId);
       if (messageIds && messageIds.size > 0) {
-        const broadcast = this.getBroadcast();
         if (broadcast) {
           broadcast({
             event: 'fileUpdate',
@@ -128,8 +128,8 @@ export class UpdateDispatcher {
             messageIds: [...messageIds],
           });
         }
-      } else {
-        console.log(`updateFile: file ${fileId} path "${path}" but no messageIds in map`);
+      } else if (broadcast && file['size'] === file['expected_size']) {
+        broadcast({ event: 'fileUpdate', path: '', messageIds: [], debug: `file ${fileId} downloaded, path="${path}" but no messageIds` });
       }
     }
   }
