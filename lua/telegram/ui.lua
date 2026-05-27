@@ -479,6 +479,12 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end, { buffer = buf })
+	vim.keymap.set("n", "G", function()
+		local ok = pcall(vim.api.nvim_win_set_cursor, state.win, { vim.api.nvim_buf_line_count(state.buf), 0 })
+		if ok and state.exhausted_forward == false then
+			M.load_newer()
+		end
+	end, { buffer = buf, nowait = true })
 end
 
 local help_popup = nil
@@ -528,7 +534,7 @@ function M.show_help()
 	help_popup = NuiPopup({
 		relative = "editor",
 		position = { row = "50%", col = "50%" },
-		size = { width = 36, height = 26 },
+		size = { width = 36, height = 27 },
 		zindex = 200,
 		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
 		buf_options = { buftype = "nofile", bufhidden = "wipe" },
@@ -548,6 +554,7 @@ function M.show_help()
 		" d        delete / revoke",
 		" f        forward",
 		" r        refresh",
+		" G        jump to latest",
 		"",
 		"-- General --",
 		" ?        help",
