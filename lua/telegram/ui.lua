@@ -157,29 +157,11 @@ local function apply_highlights()
 	end
 end
 
-local function save_input()
-	if not state.editor then
-		return ""
-	end
-	return state.editor:get_text()
-end
-
-local function restore_input(text)
-	if state.editor then
-		if text and #text > 0 then
-			state.editor:set_text(text)
-		else
-			state.editor:clear()
-		end
-	end
-end
-
 local function render()
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
 	end
 	local buf = state.buf
-	local input_text = save_input()
 
 	local lines = {}
 	for _, msg in ipairs(state.messages) do
@@ -189,24 +171,9 @@ local function render()
 		end
 	end
 
-	table.insert(lines, SEPARATOR)
-
-	local input_lines = vim.split(input_text, "\n")
-	for _, l in ipairs(input_lines) do
-		table.insert(lines, l)
-	end
-	if #input_lines == 0 or (#input_lines == 1 and input_lines[1] == "") then
-		table.insert(lines, "")
-	end
-
 	vim.bo[buf].modifiable = true
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	vim.bo[buf].modifiable = false
-
-	state._input_start = #lines - #input_lines
-	if state.editor then
-		state.editor:set_input_line(state._input_start)
-	end
 
 	apply_highlights()
 end
@@ -288,7 +255,9 @@ function M.update_title()
 		end
 	end
 	title = title .. " | " .. (state.online_count or 0) .. " online"
-	pcall(vim.api.nvim_set_option_value, "winbar", title, { win = state.win })
+	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		vim.bo[state.buf].name = "tg: " .. title
+	end
 end
 
 local function show_group_selector()
@@ -476,8 +445,6 @@ function M.open_chat(chat_id, chat_title)
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
-		vim.wo[state.win].winbar = state.chat_title
-		state.editor:set_winid(state.win)
 		state.mounted = true
 		M.update_title()
 		return
@@ -494,22 +461,14 @@ function M.open_chat(chat_id, chat_title)
 	state.buf = vim.api.nvim_create_buf(true, false)
 	vim.bo[state.buf].buftype = "nofile"
 	vim.bo[state.buf].filetype = "markdown"
-	vim.bo[state.buf].bufhidden = "hide"
+	vim.bo[state.buf].name = "tg: " .. chat_title
 
 	state.win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(state.win, state.buf)
 	vim.wo[state.win].wrap = true
-	vim.wo[state.win].winbar = state.chat_title
 	vim.bo[state.buf].filetype = "markdown"
 
-	state.editor = Editor.new({ placeholder = "  Type a message..." })
-	state.editor:set_bufnr(state.buf)
-	state.editor:set_winid(state.win)
-	state.editor:setup_autocmds()
 	state.mounted = true
-
-	setup_chat_keymaps()
-	setup_input_keymaps()
 
 	server.open_chat(state.chat_id)
 	render()
