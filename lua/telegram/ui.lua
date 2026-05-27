@@ -370,10 +370,105 @@ end
 
 local function setup_chat_keymaps()
 	local buf = state.buf
-	vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf })
-end
+	local tools = require("telegram.tools")
 
-local function setup_input_keymaps() end
+	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "<CR>", function()
+		local target = M.curr_msg()
+		if not target then
+			return
+		end
+		local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+		local text = vim.api.nvim_buf_get_lines(state.buf, cursor_line - 1, cursor_line, false)[1]
+		if text and text:find("^> ") and target.replyTo then
+			M.jump_to_message(target.replyTo.id)
+			return
+		end
+		vim.ui.input({ prompt = "Reply: " }, function(input)
+			if not input or #input == 0 then
+				return
+			end
+			local msg = server.send_message(state.chat_id, input, target.id)
+			if msg then
+				table.insert(state.messages, msg)
+				render()
+				vim.notify("Reply sent", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end, { buffer = buf })
+	vim.keymap.set("n", "e", function()
+		local target = M.curr_msg()
+		if not target or not target.id then
+			return
+		end
+		if not target.own then
+			vim.notify("Can only edit your own messages", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.ui.input({ prompt = "Edit: ", default = target.text or "" }, function(input)
+			if not input or #input == 0 then
+				return
+			end
+			if server.edit_message(state.chat_id, target.id, input) then
+				target.text = input
+				render()
+				vim.notify("Edited", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end, { buffer = buf })
+	vim.keymap.set("n", "d", function()
+		local target = M.curr_msg()
+		if not target or not target.id then
+			return
+		end
+		local choices = target.own and { "Revoke (for everyone)", "Delete (for me)", "Cancel" }
+			or { "Delete (for me)", "Cancel" }
+		vim.ui.select(choices, { prompt = "Delete message?" }, function(choice)
+			if not choice or choice == "Cancel" then
+				return
+			end
+			local revoke = choice == "Revoke (for everyone)"
+			if server.delete_message(state.chat_id, target.id, revoke) then
+				for i = #state.messages, 1, -1 do
+					if state.messages[i].id == target.id then
+						table.remove(state.messages, i)
+						break
+					end
+				end
+				render()
+				vim.notify("Message " .. (revoke and "revoked" or "deleted"), vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end, { buffer = buf })
+	vim.keymap.set("n", "f", function()
+		local target = M.curr_msg()
+		if not target or not target.id then
+			return
+		end
+		local groups = server.get_groups()
+		if not groups or #groups == 0 then
+			vim.notify("No groups to forward to", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local items = {}
+		for _, g in ipairs(groups) do
+			table.insert(items, { id = g.id, label = g.title })
+		end
+		vim.ui.select(items, {
+			prompt = "Forward to:",
+			format_item = function(item)
+				return item.label
+			end,
+		}, function(choice)
+			if choice then
+				local ok = server.forward_messages(state.chat_id, target.id, choice.id)
+				if ok then
+					vim.notify("Forwarded to " .. choice.label, vim.log.levels.INFO, { title = "tg" })
+				end
+			end
+		end)
+	end, { buffer = buf })
+end
 
 local help_popup = nil
 
@@ -478,6 +573,7 @@ function M.open_chat(chat_id, chat_title)
 	})
 
 	state.mounted = true
+	setup_chat_keymaps()
 
 	server.open_chat(state.chat_id)
 	render()
