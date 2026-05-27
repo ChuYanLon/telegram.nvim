@@ -357,6 +357,7 @@ M.open_chat = ui.open_chat
 vim.api.nvim_create_autocmd("VimLeavePre", {
 	group = vim.api.nvim_create_augroup("TgCleanup", { clear = true }),
 	callback = function()
+		ui.destroy_chat()
 		ws.ws_stop()
 		server.stop_server()
 	end,
