@@ -47,8 +47,19 @@ vim.api.nvim_create_autocmd("BufUnload", {
 	callback = function()
 		if state.chat_id and #state.messages > 0 then
 			state.saved_cursors = state.saved_cursors or {}
-			local idx = M.message_at_cursor()
-			if idx then
+			local cur = vim.api.nvim_win_get_cursor(0)
+			local line = cur and cur[1]
+			if line then
+				local idx = 1
+				local l = 1
+				for i, msg in ipairs(state.messages) do
+					local n = #fmt_msg(msg)
+					if line >= l and line < l + n then
+						idx = i
+						break
+					end
+					l = l + n
+				end
 				state.saved_cursors[state.chat_id] = state.messages[idx].id
 			end
 			state.last_group = { id = state.chat_id, title = state.chat_title }
