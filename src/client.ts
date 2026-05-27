@@ -173,8 +173,8 @@ export class TelegramLSPClient {
         const sg: any = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
         if (sg.status._ === 'chatMemberStatusLeft' || sg.status._ === 'chatMemberStatusBanned') return null;
         group.memberCount = sg.member_count;
-        if (sg.status._ === 'chatMemberStatusCreator') {
-          group.owner = await this.resolver.resolveSender(sg.status.member_id!);
+        if (sg.status._ === 'chatMemberStatusCreator' && sg.status.member_id) {
+          group.owner = await this.resolver.resolveSender(sg.status.member_id);
         }
         const info: any = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id });
         group.description = info.description;
@@ -409,7 +409,7 @@ export class TelegramLSPClient {
     let target: FormattedMessage | null = null;
     try {
       target = await this.getMessage(chatId, messageId);
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('getMessage around failed:', e); }
 
     const [olderResult, newerResult] = await Promise.all([
       this.client.invoke({

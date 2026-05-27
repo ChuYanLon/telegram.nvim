@@ -55,7 +55,6 @@ function M.render(msg)
 	local out = {}
 
 	if msg.type == "messageChatAddMembers" then
-		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		local is_self_join = false
 		if msg.memberUserIds and msg.sender and msg.sender.id then
@@ -67,20 +66,18 @@ function M.render(msg)
 			end
 		end
 		if is_self_join then
-			table.insert(out, "+ " .. s .. " joined this group at " .. time_str)
+			table.insert(out, "+ " .. s .. " joined this group at " .. date_str)
 		else
 			local names = msg.addedMemberNames and table.concat(msg.addedMemberNames, ", ") or "someone"
-			table.insert(out, "+ " .. s .. " added " .. names .. " at " .. time_str)
+			table.insert(out, "+ " .. s .. " added " .. names .. " at " .. date_str)
 		end
 	elseif msg.type and service_styles[msg.type] then
 		local style = service_styles[msg.type]
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
-		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
-		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. time_str)
+		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. date_str)
 	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) then
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
-		local time_str = os.date("%H:%M:%S on %B %d, %Y", msg.date)
-		table.insert(out, "~ " .. s .. " performed an action at " .. time_str)
+		table.insert(out, "~ " .. s .. " performed an action at " .. date_str)
 	else
 		table.insert(out, string.format("## %s (%s)", sender, date_str))
 

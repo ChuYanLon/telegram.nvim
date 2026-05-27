@@ -47,7 +47,7 @@ end
 ---@param path string
 ---@return table|nil
 local function http_get(path)
-	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", base_url() .. path })
+	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", "--connect-timeout", "5", "--max-time", "15", base_url() .. path })
 	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
@@ -70,6 +70,8 @@ local function http_post(path, body)
 		"curl",
 		"-s",
 		"--fail-with-body",
+		"--connect-timeout", "5",
+		"--max-time", "15",
 		"-X",
 		"POST",
 		url,
@@ -308,14 +310,16 @@ end
 
 function M.get_media(chat_id, message_id)
 	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
-	local result = vim.fn.system({ "curl", "-s", "--max-time", "20", url })
+	local result = vim.fn.system({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url })
 	if vim.v.shell_error ~= 0 or #result == 0 then
+		vim.notify("Failed to get media for message " .. message_id, vim.log.levels.WARN, { title = "tg" })
 		return nil
 	end
 	local ok, data = pcall(vim.json.decode, result)
 	if ok then
 		return data
 	end
+	vim.notify("Invalid media response for message " .. message_id, vim.log.levels.WARN, { title = "tg" })
 	return nil
 end
 

@@ -108,8 +108,10 @@ export class UpdateDispatcher {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
     const chat = this.chats.get(update.chat_id!);
-    const memberUserId = update.member!.user_id;
-    const actorUserId = update.actor_user_id!;
+    if (!chat) return;
+    if (!update.member || update.actor_user_id == null) return;
+    const memberUserId = update.member.user_id;
+    const actorUserId = update.actor_user_id;
     const memberName = await this.resolver.getUserName(memberUserId);
     const actorName = actorUserId === memberUserId
       ? memberName

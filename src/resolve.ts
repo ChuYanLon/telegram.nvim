@@ -29,12 +29,14 @@ export class Resolver {
   async resolveSender(senderId: { _: string; user_id?: number; chat_id?: number } | null): Promise<SenderInfo | null> {
     if (!senderId) return null;
     if (senderId._ === 'messageSenderUser') {
-      const name = await this.getUserName(senderId.user_id!);
-      return { id: senderId.user_id!, name };
+      if (senderId.user_id == null) return null;
+      const name = await this.getUserName(senderId.user_id);
+      return { id: senderId.user_id, name };
     }
     if (senderId._ === 'messageSenderChat') {
-      const chat = this._chats.get(senderId.chat_id!);
-      return { id: senderId.chat_id!, name: chat ? chat.title : `chat_${senderId.chat_id}` };
+      if (senderId.chat_id == null) return null;
+      const chat = this._chats.get(senderId.chat_id);
+      return { id: senderId.chat_id, name: chat ? chat.title : `chat_${senderId.chat_id}` };
     }
     return null;
   }
