@@ -232,7 +232,7 @@ function M.update_title()
 	if state.unread > 0 then
 		table.insert(parts, "\xE2\x97\x8F +" .. state.unread)
 	end
-	pcall(vim.api.nvim_set_option_value, "winbar", table.concat(parts, " | "), { win = state.win })
+	pcall(vim.api.nvim_set_option_value, "winbar", "%= " .. table.concat(parts, " | ") .. " %=", { win = state.win })
 end
 
 local function show_group_selector()
