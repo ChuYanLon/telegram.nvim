@@ -443,33 +443,50 @@ export class TelegramLSPClient {
       await this.client.invoke({ _: 'openMessageContent', chat_id: chatId, message_id: messageId }).catch(() => {});
 
       const content = msg.content as Record<string, unknown>;
-      const photo = content['photo'] as Record<string, unknown> | undefined;
-      const sizes = photo?.['sizes'] as Record<string, unknown>[] | undefined;
+      const files: number[] = [];
 
-      if (sizes && sizes.length > 0) {
-        for (let i = 0; i < sizes.length; i++) {
-          const src = (sizes[i]['photo'] || sizes[i]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
-          if (!src) continue;
-          const file = Array.isArray(src) ? (src as Record<string, unknown>[])[0] : src;
-          const fileId = file?.['id'] as number | undefined;
-          if (fileId && fileId > 0) {
-            await this.client.invoke({ _: 'downloadFile', file_id: fileId, priority: 1 }).catch(() => {});
+      // Collect all file IDs from media content
+      const collectFiles = (obj: Record<string, unknown>, ...keys: string[]) => {
+        for (const key of keys) {
+          const val = obj[key];
+          if (!val) continue;
+          const arr = Array.isArray(val) ? val : [val];
+          for (const item of arr) {
+            const f = (item as Record<string, unknown> | undefined)?.['photo'] || (item as Record<string, unknown> | undefined)?.['sticker'] || (item as Record<string, unknown> | undefined)?.['video'] || (item as Record<string, unknown> | undefined)?.['document'] || (item as Record<string, unknown> | undefined)?.['animation'] || (item as Record<string, unknown> | undefined)?.['voice'] || (item as Record<string, unknown> | undefined)?.['audio'] || item;
+            const fileId = (f as Record<string, unknown> | undefined)?.['id'] as number | undefined;
+            if (fileId && fileId > 0) files.push(fileId);
           }
         }
+      };
 
-        for (let attempt = 0; attempt < 15; attempt++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const fresh = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
-          if (fresh?.content) {
-            const freshPhoto = (fresh.content as Record<string, unknown>)['photo'] as Record<string, unknown> | undefined;
-            const freshSizes = freshPhoto?.['sizes'] as Record<string, unknown>[] | undefined;
-            if (freshSizes && freshSizes.length > 0) {
-              const lastSrc = (freshSizes[freshSizes.length - 1]['photo'] || freshSizes[freshSizes.length - 1]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
-              const lastFile = Array.isArray(lastSrc) ? (lastSrc as Record<string, unknown>[])[0] : lastSrc;
-              const lastPath = (lastFile?.['local'] as Record<string, unknown> | undefined)?.['path'] as string | undefined;
-              if (lastPath) return { path: lastPath };
-            }
+      const t = content._ as string;
+      if (t === 'messagePhoto') {
+        const photo = content['photo'] as Record<string, unknown> | undefined;
+        const sizes = photo?.['sizes'] as Record<string, unknown>[] | undefined;
+        if (sizes) for (const s of sizes) collectFiles(s, 'photo', 'sizes');
+      } else if (t === 'messageSticker') {
+        collectFiles(content['sticker'] as Record<string, unknown>, 'sticker', 'thumbnail');
+      } else {
+        const cfg = { messageVideo: 'video', messageDocument: 'document', messageAnimation: 'animation', messageVoiceNote: 'voice_note', messageVideoNote: 'video_note', messageAudio: 'audio' } as Record<string, string>;
+        const key = cfg[t];
+        if (key) {
+          const media = content[key] as Record<string, unknown> | undefined;
+          if (media) {
+            collectFiles(media, key.replace('_note', '').replace('_', ''), 'thumbnail');
           }
+        }
+      }
+
+      const uniqueIds = [...new Set(files)];
+      await Promise.all(uniqueIds.map(id => this.client.invoke({ _: 'downloadFile', file_id: id, priority: 1 }).catch(() => {})));
+
+      for (let attempt = 0; attempt < 15; attempt++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const fresh = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
+        if (fresh?.content) {
+          const freshContent = fresh.content as Record<string, unknown>;
+          const formatted = await this.formatter.format(fresh);
+          if (formatted?.filePath) return { path: formatted.filePath };
         }
       }
 
