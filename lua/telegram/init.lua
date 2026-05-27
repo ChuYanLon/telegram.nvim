@@ -205,6 +205,29 @@ local function finish_init()
 				end
 				ui.update_group_online(msg.chat_id, msg.online_member_count)
 			end)
+		elseif msg.event == "messageSendSucceeded" then
+			local old_id = msg.old_message_id
+			if old_id then
+				vim.schedule(function()
+					for i, m in ipairs(ui.state.messages) do
+						if tonumber(m.id) == tonumber(old_id) then
+							ui.state.messages[i] = {
+								id = msg.id,
+								type = msg.type,
+								date = msg.date,
+								sender = msg.sender,
+								text = msg.text,
+								own = msg.own,
+								replyTo = msg.replyTo,
+								filePath = msg.filePath,
+								mimeType = msg.mimeType,
+							}
+							ui.render()
+							break
+						end
+					end
+				end)
+			end
 		end
 	end)
 	initialized = true

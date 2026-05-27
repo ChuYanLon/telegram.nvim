@@ -28,6 +28,9 @@ export class UpdateDispatcher {
         case 'updateChatOnlineMemberCount':
           this.handleChatOnlineMemberCount(update);
           break;
+        case 'updateMessageSendSucceeded':
+          await this.handleMessageSendSucceeded(update);
+          break;
         case 'updateChatMember':
           await this.handleChatMemberUpdate(update);
           break;
@@ -82,6 +85,22 @@ export class UpdateDispatcher {
       event: 'chatOnlineMemberCount',
       chat_id: update.chat_id,
       online_member_count: update.online_member_count,
+    });
+  }
+
+  async handleMessageSendSucceeded(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const msg = update.message as RawTdMessage;
+    if (!msg) return;
+    const formatted = await this.formatter.format(msg);
+    if (!formatted) return;
+    const chat = this.chats.get(msg.chat_id);
+    broadcast({
+      event: 'messageSendSucceeded',
+      old_message_id: update.old_message_id,
+      chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
+      ...formatted,
     });
   }
 
