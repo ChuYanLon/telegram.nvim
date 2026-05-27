@@ -589,7 +589,6 @@ function M.open_chat(chat_id, chat_title)
 		vim.wo[state.win].relativenumber = false
 		vim.wo[state.win].signcolumn = "no"
 		vim.wo[state.win].foldcolumn = "0"
-		vim.wo[state.win].winhighlight = "WinBar:TgWinbarBg"
 		M.update_title()
 		return
 	end
@@ -720,7 +719,6 @@ function M.open_chat(chat_id, chat_title)
 		vim.wo[state.win].relativenumber = false
 		vim.wo[state.win].signcolumn = "no"
 		vim.wo[state.win].foldcolumn = "0"
-		vim.wo[state.win].winhighlight = "WinBar:TgWinbarBg"
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")

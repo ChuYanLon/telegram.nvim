@@ -27,7 +27,6 @@ function M.setup(opts)
 	vim.api.nvim_set_hl(0, "TgNoBg", { fg = "NONE", bg = "NONE", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarHeader", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarTitle", { link = "Comment", default = true })
-	vim.api.nvim_set_hl(0, "TgWinbarBg", { bg = "#2a2a2a", default = true })
 	local bfg = "#6c6c6c"
 	pcall(function()
 		bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name("FloatBorder") }) or {}).fg or bfg
