@@ -346,6 +346,19 @@ local function setup_chat_keymaps()
 	local tools = require("telegram.tools")
 
 	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "i", function()
+		M.open_editor("Send", "", function(text)
+			if not text then
+				return
+			end
+			local msg = server.send_message(state.chat_id, text)
+			if msg then
+				table.insert(state.messages, msg)
+				render()
+				vim.notify("Sent", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "<CR>", function()
 		local target = M.curr_msg()
 		if not target then
