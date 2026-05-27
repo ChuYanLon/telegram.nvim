@@ -187,6 +187,11 @@ end
 
 local function finish_open(groups)
 	ui.set_groups(groups)
+	if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
+		ui.state.buf = nil
+		ui.state.win = nil
+		ui.state.mounted = false
+	end
 	if ui.state.last_chat and not ui.state.mounted then
 		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
 		return
