@@ -19,6 +19,7 @@ local server = require("telegram.server")
 local auth = require("telegram.auth")
 local ws = require("telegram.ws")
 local ui = require("telegram.ui")
+local tools = require("telegram.tools")
 
 local M = {}
 
@@ -467,6 +468,10 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 		vim.notify("Message sent", vim.log.levels.INFO, { title = "tg" })
 	end
 end, { nargs = "+" })
+
+vim.api.nvim_create_user_command("TgTool", function()
+	tools.pick()
+end, {})
 
 vim.api.nvim_create_user_command("TgIssue", function()
 	if vim.fn.executable("gh") ~= 1 then
