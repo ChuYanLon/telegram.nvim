@@ -151,7 +151,11 @@ local function finish_init()
 						replyTo = msg.replyTo,
 					})
 					ui.render()
-					vim.cmd("redraw")
+					if st.win and vim.api.nvim_win_is_valid(st.win) then
+						pcall(vim.api.nvim_win_call, st.win, function()
+							vim.cmd("redraw")
+						end)
+					end
 					if at_bottom then
 						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
 					end
