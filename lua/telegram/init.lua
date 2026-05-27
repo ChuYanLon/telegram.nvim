@@ -305,8 +305,9 @@ function M.list_groups()
 	if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
 		local curbuf = vim.api.nvim_win_get_buf(ui.state.win)
 		if curbuf == ui.state.buf then
-			if #vim.api.nvim_list_wins() > 1 then
-				vim.api.nvim_win_close(ui.state.win, true)
+			local wins = vim.api.nvim_list_wins()
+			if #wins > 1 then
+				vim.cmd("hide")
 			else
 				vim.cmd("enew")
 			end

@@ -345,6 +345,16 @@ local function setup_chat_keymaps()
 	local buf = state.buf
 	local tools = require("telegram.tools")
 
+	vim.keymap.set("n", "<C-h>", function()
+		if state.win and vim.api.nvim_win_is_valid(state.win) and vim.api.nvim_get_current_win() == state.win then
+			vim.cmd("wincmd h")
+		end
+	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "<C-l>", function()
+		if state.win and vim.api.nvim_win_is_valid(state.win) and vim.api.nvim_get_current_win() ~= state.win then
+			vim.api.nvim_set_current_win(state.win)
+		end
+	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "i", function()
 		M.open_editor("Send", "", function(text)
@@ -572,19 +582,12 @@ function M.open_chat(chat_id, chat_title)
 			M.update_title()
 			return
 		end
-		local width = vim.g.telegram_width or 50
-		state.win = vim.api.nvim_open_win(state.buf, false, {
-			relative = "editor",
-			width = width,
-			height = vim.o.lines - 2,
-			row = 0,
-			col = vim.o.columns - width,
-			style = "minimal",
-			border = "none",
-		})
+		vim.cmd("botright vsplit")
+		vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+		state.win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
-		state.mounted = true
-		M.update_title()
+		vim.wo[state.win].winfixwidth = true
 		return
 	end
 
@@ -606,16 +609,10 @@ function M.open_chat(chat_id, chat_title)
 		pcall(vim.diagnostic.disable, state.buf)
 		pcall(vim.diagnostic.reset, state.buf)
 
-		local width = vim.g.telegram_width or 50
-		state.win = vim.api.nvim_open_win(state.buf, false, {
-			relative = "editor",
-			width = width,
-			height = vim.o.lines - 2,
-			row = 0,
-			col = vim.o.columns - width,
-			style = "minimal",
-			border = "none",
-		})
+		vim.cmd("botright vsplit")
+		vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+		state.win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(state.win, state.buf)
 		vim.wo[state.win].wrap = true
 		vim.wo[state.win].winfixwidth = true
 
@@ -624,6 +621,34 @@ function M.open_chat(chat_id, chat_title)
 			buffer = state.buf,
 			callback = function()
 				vim.bo[state.buf].modified = false
+			end,
+		})
+
+		vim.api.nvim_create_autocmd("WinClosed", {
+			group = vim.api.nvim_create_augroup("TgWinFix", { clear = true }),
+			callback = function()
+				if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+					return
+				end
+				local wins = vim.api.nvim_list_wins()
+				if #wins == 1 and vim.api.nvim_win_get_buf(state.win) == state.buf then
+					vim.schedule(function()
+						if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+							return
+						end
+						local ok, curbuf = pcall(vim.api.nvim_win_get_buf, state.win)
+						if not ok or curbuf ~= state.buf then
+							return
+						end
+						local wins2 = vim.api.nvim_list_wins()
+						if #wins2 > 1 then
+							return
+						end
+						vim.cmd("botright vsplit")
+						vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+						vim.api.nvim_set_current_win(state.win)
+					end)
+				end
 			end,
 		})
 
@@ -678,16 +703,10 @@ function M.open_chat(chat_id, chat_title)
 		})
 	else
 		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-			local width = vim.g.telegram_width or 50
-			state.win = vim.api.nvim_open_win(state.buf, false, {
-				relative = "editor",
-				width = width,
-				height = vim.o.lines - 2,
-				row = 0,
-				col = vim.o.columns - width,
-				style = "minimal",
-				border = "none",
-			})
+			vim.cmd("botright vsplit")
+			vim.cmd("vertical resize " .. math.floor((vim.g.telegram_width or 50) / 100 * vim.o.columns))
+			state.win = vim.api.nvim_get_current_win()
+			vim.api.nvim_win_set_buf(state.win, state.buf)
 		end
 		vim.wo[state.win].wrap = true
 	end
