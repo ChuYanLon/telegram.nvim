@@ -647,7 +647,22 @@ function M.open_chat(chat_id, chat_title)
 				if l then
 					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 				else
-					M.jump_to_bottom()
+					local cid = state.chat_id
+					state.messages = {}
+					state.exhausted = false
+					state.exhausted_forward = false
+					server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
+						if state.chat_id == cid then
+							state.messages = data.messages or {}
+							render()
+							local l = line_of(saved_id)
+							if l then
+								pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+							else
+								M.jump_to_bottom()
+							end
+						end
+					end)
 				end
 			else
 				M.jump_to_bottom()
