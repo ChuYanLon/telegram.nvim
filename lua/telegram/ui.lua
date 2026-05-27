@@ -821,7 +821,7 @@ function M.load_older()
 			if not seen[tostring(new_msgs[i].id)] then
 				seen[tostring(new_msgs[i].id)] = true
 				table.insert(state.messages, 1, new_msgs[i])
-				new_lines = new_lines + #fmt_msg(new_msgs[i]) + 1
+				new_lines = new_lines + #fmt_msg(new_msgs[i])
 			end
 		end
 		if state.chat_id ~= chat_id then
