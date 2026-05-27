@@ -51,7 +51,6 @@ export class MessageFormatter {
       formatted.filePath = fileInfo.path;
       formatted.mimeType = fileInfo.mimeType;
       if (fileInfo.fileId > 0) {
-        formatted.fileId = fileInfo.fileId;
         if (!this.fileMap.has(fileInfo.fileId)) {
           this.fileMap.set(fileInfo.fileId, new Set());
         }

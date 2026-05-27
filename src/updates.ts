@@ -124,7 +124,6 @@ export class UpdateDispatcher {
         broadcast({
           event: 'fileUpdate',
           path,
-          fileId,
           messageIds: messageIds ? [...messageIds] : [],
         });
       }

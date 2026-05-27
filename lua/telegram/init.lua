@@ -183,7 +183,7 @@ local function finish_init()
 		elseif msg.event == "fileUpdate" then
 			vim.schedule(function()
 				local st = ui.state
-				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) then
+				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) or not msg.path then
 					return
 				end
 				local changed = false
@@ -197,9 +197,10 @@ local function finish_init()
 							end
 						end
 					end
-				elseif msg.fileId then
+				else
 					for _, m in ipairs(st.messages) do
-						if m.fileId == msg.fileId and not m.filePath then
+						local t = m.type or ""
+						if t ~= "messageText" and t:find("^message") and (not m.filePath or #m.filePath == 0) then
 							m.filePath = msg.path
 							changed = true
 						end

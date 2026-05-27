@@ -20,7 +20,6 @@ export interface FormattedMessage {
   addedMemberNames?: string[];
   filePath?: string;
   mimeType?: string;
-  fileId?: number;
 }
 
 export interface RawTdMessage {
