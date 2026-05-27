@@ -186,6 +186,8 @@ local function finish_init()
 				if not st.buf or not vim.api.nvim_buf_is_valid(st.buf) or not msg.path then
 					return
 				end
+				local fname = msg.path:match("([^/]+)$") or msg.path
+				vim.notify("tg: dl " .. fname, vim.log.levels.INFO, { title = "tg" })
 				local changed = false
 				if msg.messageIds and #msg.messageIds > 0 then
 					for _, mid in ipairs(msg.messageIds) do
