@@ -50,6 +50,15 @@ vim.api.nvim_create_autocmd("BufUnload", {
 	end,
 })
 
+local function hide_chat()
+	state.buf = nil
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		pcall(vim.api.nvim_win_close, state.win, true)
+	end
+	state.win = nil
+	state.mounted = false
+end
+
 local action_descriptions = {
 	chatActionTyping = "typing...",
 	chatActionRecordingVideo = "recording video...",
@@ -711,6 +720,13 @@ function M.open_chat(chat_id, chat_title)
 						row = 0,
 					})
 				end
+			end,
+		})
+
+		vim.api.nvim_create_autocmd("BufUnload", {
+			buffer = state.buf,
+			callback = function()
+				hide_chat()
 			end,
 		})
 	else

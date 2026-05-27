@@ -247,11 +247,6 @@ end
 
 function M.list_groups()
 	local function show_groups()
-		if ui.state.mounted then
-			ui.refresh_messages()
-			return
-		end
-
 		if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
 			ui.state.buf = nil
 			ui.state.win = nil
