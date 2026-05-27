@@ -832,6 +832,7 @@ function M.jump_to_message(target_id, callback)
 	local l = line_of(target_id)
 	if l then
 		pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+		M.update_title()
 		if callback then
 			callback(true)
 		end
@@ -846,6 +847,7 @@ function M.jump_to_message(target_id, callback)
 		end
 		state.messages = data.messages or {}
 		render()
+		M.update_title()
 		local l = line_of(target_id)
 		if l then
 			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
