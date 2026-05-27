@@ -583,6 +583,7 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	if state.chat_id then
+		state.last_group = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
 	end
 
