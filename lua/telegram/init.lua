@@ -305,7 +305,11 @@ function M.list_groups()
 	if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
 		local curbuf = vim.api.nvim_win_get_buf(ui.state.win)
 		if curbuf == ui.state.buf then
-			vim.api.nvim_win_close(ui.state.win, true)
+			if #vim.api.nvim_list_wins() > 1 then
+				vim.api.nvim_win_close(ui.state.win, true)
+			else
+				vim.cmd("enew")
+			end
 			ui.state.win = nil
 			ui.state.mounted = false
 			return
