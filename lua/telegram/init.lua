@@ -186,21 +186,9 @@ local function finish_init()
 end
 
 local function finish_open(groups)
-	ui.set_groups(groups)
-	if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
-		ui.state.buf = nil
-		ui.state.win = nil
-		ui.state.mounted = false
-	end
-	if ui.state.last_chat and not ui.state.mounted then
-		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-		return
-	end
-	if ui.state.mounted then
-		ui.refresh_messages()
-		return
-	end
-	if #groups > 0 then
+	ui.set_groups(groups or {})
+	ui.destroy_chat()
+	if groups and #groups > 0 then
 		ui.open_chat(groups[1].id, groups[1].title)
 	end
 end
@@ -267,29 +255,13 @@ function M.list_groups()
 		return
 	end
 
-	if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
-		ui.state.buf = nil
-		ui.state.win = nil
-		ui.state.mounted = false
+	ui.destroy_chat()
+	local groups = server.get_groups()
+	if groups and #groups > 0 then
+		ui.open_chat(groups[1].id, groups[1].title)
+	else
+		vim.notify("No groups available", vim.log.levels.WARN, { title = "tg" })
 	end
-
-	if ui.state.mounted then
-		ui.refresh_messages()
-		return
-	end
-
-	if ui.state.last_chat then
-		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-		return
-	end
-
-	if ui.state.chat_id then
-		ui.open_chat(ui.state.chat_id, ui.state.chat_title or "Chat")
-		ui.state.last_chat = nil
-		return
-	end
-
-	show_groups()
 end
 
 function M.logout()

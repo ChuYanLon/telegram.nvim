@@ -42,15 +42,6 @@ local SEPARATOR = "────────────────────"
 local hl_ns = vim.api.nvim_create_namespace("TgChat")
 local target_ns = vim.api.nvim_create_namespace("TgTarget")
 
-vim.api.nvim_create_autocmd("BufWipeout", {
-	pattern = "/tmp/tg-*",
-	callback = function()
-		state.buf = nil
-		state.win = nil
-		state.mounted = false
-	end,
-})
-
 local action_descriptions = {
 	chatActionTyping = "typing...",
 	chatActionRecordingVideo = "recording video...",
