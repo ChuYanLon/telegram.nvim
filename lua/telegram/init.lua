@@ -257,16 +257,6 @@ function M.list_groups()
 			return
 		end
 
-		if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
-			local curbuf = vim.api.nvim_win_get_buf(ui.state.win)
-			if curbuf == ui.state.buf then
-				vim.api.nvim_win_close(ui.state.win, true)
-				ui.state.win = nil
-				ui.state.mounted = false
-				return
-			end
-		end
-
 		local groups = server.get_groups()
 		if not groups then
 			vim.notify("No groups found", vim.log.levels.WARN, { title = "tg" })
@@ -310,6 +300,16 @@ function M.list_groups()
 			end
 		end, 100)
 		return
+	end
+
+	if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
+		local curbuf = vim.api.nvim_win_get_buf(ui.state.win)
+		if curbuf == ui.state.buf then
+			vim.api.nvim_win_close(ui.state.win, true)
+			ui.state.win = nil
+			ui.state.mounted = false
+			return
+		end
 	end
 
 	local groups = server.get_groups()
