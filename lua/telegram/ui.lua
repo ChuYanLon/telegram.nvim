@@ -256,7 +256,7 @@ function M.update_title()
 	end
 	title = title .. " | " .. (state.online_count or 0) .. " online"
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		vim.bo[state.buf].name = "tg: " .. title
+		pcall(vim.api.nvim_buf_set_name, state.buf, "tg: " .. title)
 	end
 end
 
@@ -459,9 +459,8 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	state.buf = vim.api.nvim_create_buf(true, false)
-	vim.bo[state.buf].buftype = "nofile"
 	vim.bo[state.buf].filetype = "markdown"
-	vim.bo[state.buf].name = "tg: " .. chat_title
+	vim.api.nvim_buf_set_name(state.buf, "tg: " .. chat_title)
 
 	state.win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(state.win, state.buf)
