@@ -77,4 +77,25 @@ M.register("refresh", {
 	end,
 })
 
+M.register("send", {
+	description = "Send a message to current chat",
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.ui.input({ prompt = "Message: " }, function(text)
+			if not text or #text == 0 then
+				return
+			end
+			local msg = server.send_message(ui.state.chat_id, text)
+			if msg then
+				table.insert(ui.state.messages, msg)
+				ui.render()
+				vim.notify("Sent", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end,
+})
+
 return M
