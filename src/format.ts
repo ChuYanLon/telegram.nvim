@@ -3,7 +3,7 @@ import type { Resolver } from './resolve';
 
 export function extractText(content: { _: string; text?: { text: string }; caption?: { text: string }; [key: string]: unknown } | null | undefined): string {
   if (!content) return '';
-  if (content._ === 'messageText') return content.text!.text;
+  if (content._ === 'messageText') return content.text?.text ?? '';
   if (content.caption?.text) return content.caption.text;
   return '';
 }
@@ -43,7 +43,103 @@ export class MessageFormatter {
 
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
+
+    const fileInfo = this._extractFileInfo(msg.content);
+    if (fileInfo) {
+      formatted.filePath = fileInfo.path;
+      formatted.mimeType = fileInfo.mimeType;
+    }
+    if (msg.content && msg.content._ && msg.content._ !== 'messageText') {
+      this.invoke({ _: 'openMessageContent', chat_id: msg.chat_id, message_id: msg.id }).catch(() => {});
+      if (fileInfo && fileInfo.fileId > 0) {
+        this.invoke({ _: 'downloadFile', file_id: fileInfo.fileId, priority: 1 }).catch(() => {});
+        if (fileInfo.priorityFileId && fileInfo.priorityFileId !== fileInfo.fileId) {
+          this.invoke({ _: 'downloadFile', file_id: fileInfo.priorityFileId, priority: 2 }).catch(() => {});
+        }
+      }
+    }
+
     return formatted;
+  }
+
+  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number; priorityFileId?: number } | null {
+    if (!content) return null;
+    const t = content._ as string;
+    if (t === 'messageText') return null;
+
+    const getFileInfo = (file: Record<string, unknown> | undefined, mimeType = ''): { path: string; mimeType: string; fileId: number } | null => {
+      if (!file) return null;
+      const local = file['local'] as Record<string, unknown> | undefined;
+      const rawId = file['id'];
+      return {
+        path: (local?.['path'] as string) || '',
+        mimeType,
+        fileId: (typeof rawId === 'number' ? rawId : Number(rawId)) || 0,
+      };
+    };
+
+    const mediaMap: Record<string, { key: string; fileField: string; mimeField: string }> = {
+      messagePhoto:      { key: 'photo',      fileField: 'photo',    mimeField: '' },
+      messageVideo:      { key: 'video',      fileField: 'video',    mimeField: 'mime_type' },
+      messageDocument:   { key: 'document',   fileField: 'document', mimeField: 'mime_type' },
+      messageAnimation:  { key: 'animation',  fileField: 'animation', mimeField: 'mime_type' },
+      messageVoiceNote:  { key: 'voice_note', fileField: 'voice',    mimeField: 'mime_type' },
+      messageVideoNote:  { key: 'video_note', fileField: 'video',    mimeField: 'mime_type' },
+      messageAudio:      { key: 'audio',      fileField: 'audio',    mimeField: 'mime_type' },
+      messageSticker:    { key: 'sticker',    fileField: 'sticker',  mimeField: '' },
+    };
+
+    const cfg = mediaMap[t];
+    if (!cfg) return null;
+
+    const media = content[cfg.key] as Record<string, unknown> | undefined;
+    if (!media) return null;
+
+    const mimeType = cfg.mimeField ? (media[cfg.mimeField] as string) || '' : '';
+
+    if (t === 'messagePhoto') {
+      let firstId = 0;
+      let lastId = 0;
+      const sizes = media['sizes'] as Record<string, unknown>[] | undefined;
+      if (sizes && sizes.length > 0) {
+        const lastSize = sizes[sizes.length - 1];
+        const lastFile = (lastSize[cfg.fileField] || lastSize['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+        if (lastFile) {
+          const file = Array.isArray(lastFile) ? (lastFile as Record<string, unknown>[])[0] : lastFile;
+          const rawId = file?.['id'];
+          lastId = (typeof rawId === 'number' ? rawId : Number(rawId)) || 0;
+        }
+
+        for (let i = 0; i < sizes.length; i++) {
+          const src = (sizes[i][cfg.fileField] || sizes[i]['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+          if (!src) continue;
+          const photoFile = Array.isArray(src) ? (src as Record<string, unknown>[])[0] : src;
+          const info = getFileInfo(photoFile, 'image/jpeg');
+          if (info) {
+            if (firstId === 0) firstId = info.fileId;
+            if (info.path) return { path: info.path, mimeType: info.mimeType, fileId: info.fileId, priorityFileId: lastId };
+          }
+        }
+      }
+      if (firstId > 0) return { path: '', mimeType: 'image/jpeg', fileId: firstId, priorityFileId: lastId };
+      return null;
+    }
+
+    const file = media[cfg.fileField] as Record<string, unknown> | undefined;
+    if (file) {
+      const info = getFileInfo(file, mimeType);
+      if (info && info.path) return info;
+      if (info && info.fileId > 0) return info;
+    }
+
+    const thumb = media['thumbnail'] as Record<string, unknown> | undefined;
+    if (thumb) {
+      const thumbFile = thumb['file'] as Record<string, unknown> | undefined;
+      const info = getFileInfo(thumbFile, 'image/jpeg');
+      if (info) return info;
+    }
+
+    return null;
   }
 
   private async _formatReplyTo(msg: RawTdMessage): Promise<FormattedMessage['replyTo'] | null> {

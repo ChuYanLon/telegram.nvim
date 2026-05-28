@@ -47,7 +47,7 @@ end
 ---@param path string
 ---@return table|nil
 local function http_get(path)
-	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", base_url() .. path })
+	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", "--connect-timeout", "5", "--max-time", "15", base_url() .. path })
 	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
@@ -70,6 +70,8 @@ local function http_post(path, body)
 		"curl",
 		"-s",
 		"--fail-with-body",
+		"--connect-timeout", "5",
+		"--max-time", "15",
 		"-X",
 		"POST",
 		url,
@@ -278,6 +280,10 @@ function M.get_groups()
 	return cached_groups
 end
 
+function M.invalidate_groups()
+	cached_groups = nil
+end
+
 ---@return table|nil
 function M.refresh_groups()
 	cached_groups = nil
@@ -300,6 +306,44 @@ end
 ---@return table|nil
 function M.search_messages(chat_id, query)
 	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+"))
+end
+
+function M.get_media(chat_id, message_id)
+	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
+	local result = vim.fn.system({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url })
+	if vim.v.shell_error ~= 0 or #result == 0 then
+		vim.notify("Failed to get media for message " .. message_id, vim.log.levels.WARN, { title = "tg" })
+		return nil
+	end
+	local ok, data = pcall(vim.json.decode, result)
+	if ok then
+		return data
+	end
+	vim.notify("Invalid media response for message " .. message_id, vim.log.levels.WARN, { title = "tg" })
+	return nil
+end
+
+function M.get_media_async(chat_id, message_id, on_ok)
+	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
+	local stdout = {}
+	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url }, {
+		stdout_buffered = true,
+		on_stdout = function(_, data)
+			stdout = data
+		end,
+		on_exit = function(_, code)
+			if code ~= 0 or #stdout == 0 then
+				if on_ok then vim.schedule(function() on_ok(nil) end) end
+				return
+			end
+			local ok, data = pcall(vim.json.decode, table.concat(stdout))
+			if not ok or not data then
+				if on_ok then vim.schedule(function() on_ok(nil) end) end
+				return
+			end
+			if on_ok then vim.schedule(function() on_ok(data) end) end
+		end,
+	})
 end
 
 ---@param chat_id any

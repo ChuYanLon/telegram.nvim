@@ -19,38 +19,11 @@ local server = require("telegram.server")
 local auth = require("telegram.auth")
 local ws = require("telegram.ws")
 local ui = require("telegram.ui")
+local tools = require("telegram.tools")
 
 local M = {}
 
 local initialized = false
-local seen_ids = {}
-local seen_ids_order = {}
-local SEEN_IDS_MAX = 3000
-
-local function trim_seen_ids(chat_key)
-	local keys = seen_ids[chat_key]
-	if not keys then
-		return
-	end
-	local n = 0
-	for _ in pairs(keys) do
-		n = n + 1
-	end
-	if n <= SEEN_IDS_MAX then
-		return
-	end
-	local order = seen_ids_order[chat_key] or {}
-	local excess = n - SEEN_IDS_MAX
-	for i = 1, excess do
-		local id = order[i]
-		if id then
-			keys[id] = nil
-		end
-	end
-	for i = 1, excess do
-		table.remove(order, 1)
-	end
-end
 
 local notify_queue = {}
 local notify_timer_id = nil
@@ -82,89 +55,161 @@ end
 
 M.setup = config.setup
 
+local msg_queue = {}
+local msg_timer = nil
+
+local function flush_msg_queue()
+	msg_timer = nil
+	local batch = msg_queue
+	msg_queue = {}
+
+	if #batch == 0 then
+		return
+	end
+
+	local st = ui.state
+	local current_msgs = {}
+	local seen = {}
+
+	for _, msg in ipairs(batch) do
+		local mid = msg.id
+		local skip = false
+		if mid then
+			local key = tostring(mid)
+			if seen[key] then
+				skip = true
+			else
+				seen[key] = true
+			end
+		end
+
+		if not skip then
+			local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
+			if not is_current then
+				local sender = msg.sender and msg.sender.name or "?"
+				ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
+				queue_notify("[" .. (msg.chat and msg.chat.title or "?") .. "] " .. sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			else
+				local exists = false
+				if mid then
+					for _, m in ipairs(st.messages) do
+						if tostring(m.id) == tostring(mid) then
+							exists = true
+							break
+						end
+					end
+				end
+				if not exists then
+					table.insert(current_msgs, msg)
+				end
+			end
+		end
+	end
+
+	if #current_msgs == 0 then
+		return
+	end
+
+	if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
+		return
+	end
+
+	local cur = vim.api.nvim_win_get_cursor(st.win)
+	local total_before = vim.api.nvim_buf_line_count(st.buf)
+	local at_bottom = cur[1] >= total_before - 1
+
+	for _, msg in ipairs(current_msgs) do
+		local mid = msg.id or (os.time() + math.random())
+		local skip_insert = false
+
+		if msg.own then
+			for _, m in ipairs(st.messages) do
+				if m.own and m.sender and msg.sender and m.sender.id == msg.sender.id and m.text == msg.text then
+					m.id = mid
+					m.date = msg.date
+					m.sender = msg.sender
+					m.text = msg.text
+					m.replyTo = msg.replyTo
+					m.filePath = msg.filePath
+					m.mimeType = msg.mimeType
+					skip_insert = true
+					break
+				end
+			end
+		end
+
+		if not skip_insert then
+			st.unread = st.unread + 1
+			if st.groups[st.chat_id] then
+				st.groups[st.chat_id].unread_count = st.unread
+			end
+			if not at_bottom then
+				local sender = msg.sender and msg.sender.name or "?"
+				queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			end
+
+			table.insert(st.messages, {
+				id = mid,
+				type = msg.type,
+				date = msg.date,
+				sender = msg.sender,
+				text = msg.text,
+				own = msg.own,
+				replyTo = msg.replyTo,
+				filePath = msg.filePath,
+				mimeType = msg.mimeType,
+			})
+		end
+	end
+
+	ui.render()
+
+	local last = current_msgs[#current_msgs]
+	if last then
+		local ts = os.date("%Y-%m-%d %H:%M", last.date)
+		st.last_msg = ("[%s] %s: %s"):format(ts, last.sender and last.sender.name or "?", (last.text or ""):sub(1, 40))
+		ui.update_title()
+	end
+
+	if at_bottom then
+		pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
+	end
+	st.exhausted = false
+	st.exhausted_forward = false
+
+	local t = last and last.type or ""
+	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
+		vim.defer_fn(function()
+			local cid = last.chat and last.chat.id
+			if st.chat_id == cid then
+				server.get_media_async(st.chat_id, last.id, function(res)
+					if res and res.path and #res.path > 0 then
+						for _, m in ipairs(st.messages) do
+							if tostring(m.id) == tostring(last.id) then
+								m.filePath = res.path
+								ui.render()
+								break
+							end
+						end
+					end
+				end)
+			end
+		end, 2000)
+	end
+end
+
+local function queue_msg(msg)
+	table.insert(msg_queue, msg)
+	if msg_timer then
+		vim.fn.timer_stop(msg_timer)
+	end
+	msg_timer = vim.fn.timer_start(100, flush_msg_queue, { ["repeat"] = 1 })
+end
+
 local function finish_init()
 	ws.ws_start(function(msg)
 		if msg.event == "newMessage" then
-			vim.schedule(function()
-				local st = ui.state
-				local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
-				local sender = msg.sender and msg.sender.name or "?"
-				local text = (msg.text or ""):gsub("\n", " "):sub(1, 50)
-
-				if is_current then
-					if
-						not st.buf
-						or not st.win
-						or not vim.api.nvim_buf_is_valid(st.buf)
-						or not vim.api.nvim_win_is_valid(st.win)
-					then
-						return
-					end
-					local total_before = vim.api.nvim_buf_line_count(st.buf)
-					local cur = vim.api.nvim_win_get_cursor(st.win)
-					local at_bottom = cur[1] >= total_before - 1
-					if not at_bottom then
-						st.unread = st.unread + 1
-						if st.groups[st.chat_id] then
-							st.groups[st.chat_id].unread_count = st.unread
-							ui.render_groups()
-						end
-						queue_notify(sender .. ": " .. text)
-					end
-					local ts = os.date("%m-%d %H:%M", msg.date)
-					local preview = "["
-						.. ts
-						.. "] "
-						.. (msg.sender and msg.sender.name or "?")
-						.. ": "
-						.. (msg.text or "")
-					st.last_msg = preview:sub(1, 60)
-					ui.update_title()
-					local mid = msg.id
-					if mid ~= nil then
-						local chat_key = msg.chat and tostring(msg.chat.id) or "_"
-						if not seen_ids[chat_key] then
-							seen_ids[chat_key] = {}
-							seen_ids_order[chat_key] = {}
-						end
-						if seen_ids[chat_key][mid] then
-							return
-						end
-						seen_ids[chat_key][mid] = true
-						table.insert(seen_ids_order[chat_key], mid)
-						trim_seen_ids(chat_key)
-						for _, m in ipairs(st.messages) do
-							if tostring(m.id) == tostring(mid) then
-								return
-							end
-						end
-					else
-						mid = os.time() .. math.random()
-					end
-					table.insert(
-						st.messages,
-						{
-							id = mid,
-							type = msg.type,
-							date = msg.date,
-							sender = msg.sender,
-							text = msg.text,
-							own = msg.own,
-							replyTo = msg.replyTo,
-						}
-					)
-					ui.render()
-					if at_bottom then
-						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
-					end
-					st.exhausted = false
-					st.exhausted_forward = false
-				else
-					local group_title = msg.chat and msg.chat.title or "?"
-					ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
-					queue_notify("[" .. group_title .. "] " .. sender .. ": " .. text)
-				end
-			end)
+			queue_msg(msg)
 		elseif msg.event == "userAction" then
 			local state = ui.state
 			if state.chat_id and msg.chat_id == state.chat_id then
@@ -183,6 +228,29 @@ local function finish_init()
 				end
 				ui.update_group_online(msg.chat_id, msg.online_member_count)
 			end)
+		elseif msg.event == "messageSendSucceeded" then
+			local old_id = msg.old_message_id
+			if old_id then
+				vim.schedule(function()
+					for i, m in ipairs(ui.state.messages) do
+						if tonumber(m.id) == tonumber(old_id) then
+							ui.state.messages[i] = {
+								id = msg.id,
+								type = msg.type,
+								date = msg.date,
+								sender = msg.sender,
+								text = msg.text,
+								own = msg.own,
+								replyTo = msg.replyTo,
+								filePath = msg.filePath,
+								mimeType = msg.mimeType,
+							}
+							ui.render()
+							break
+						end
+					end
+				end)
+			end
 		end
 	end)
 	initialized = true
@@ -190,17 +258,15 @@ local function finish_init()
 end
 
 local function finish_open(groups)
-	ui.set_groups(groups)
-	if ui.state.last_chat and not (ui.state.layout and ui.state.layout._.mounted) then
-		ui.open_chat(ui.state.last_chat.id, ui.state.last_chat.title)
-		return
-	end
-	if ui.state.layout and ui.state.layout._.mounted then
-		ui.refresh_messages()
-		return
-	end
-	if #groups > 0 then
-		ui.open_chat(groups[1].id, groups[1].title)
+	ui.set_groups(groups or {})
+	ui.destroy_chat()
+	if groups and #groups > 0 then
+		local last = ui.state.last_group
+		if last and ui.state.groups[last.id] then
+			ui.open_chat(last.id, last.title)
+		else
+			ui.open_chat(groups[1].id, groups[1].title)
+		end
 	end
 end
 
@@ -221,6 +287,17 @@ end
 
 function M.list_groups()
 	local function show_groups()
+		if ui.state.buf and not vim.api.nvim_buf_is_valid(ui.state.buf) then
+			ui.state.buf = nil
+			ui.state.win = nil
+			ui.state.mounted = false
+		end
+
+		if ui.state.mounted then
+			ui.refresh_messages()
+			return
+		end
+
 		local groups = server.get_groups()
 		if not groups then
 			vim.notify("No groups found", vim.log.levels.WARN, { title = "tg" })
@@ -265,12 +342,36 @@ function M.list_groups()
 		end, 100)
 		return
 	end
-	show_groups()
+
+	if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
+		local wins = vim.api.nvim_list_wins()
+		if #wins > 1 then
+			vim.api.nvim_set_current_win(ui.state.win)
+			vim.cmd("hide")
+		else
+			vim.cmd("enew")
+		end
+		ui.state.win = nil
+		ui.state.mounted = false
+		return
+	end
+
+	local groups = server.get_groups()
+	if groups and #groups > 0 then
+		local last = ui.state.last_group
+		if last and ui.state.groups[last.id] then
+			ui.open_chat(last.id, last.title)
+		else
+			ui.open_chat(groups[1].id, groups[1].title)
+		end
+	else
+		vim.notify("No groups available", vim.log.levels.WARN, { title = "tg" })
+	end
 end
 
 function M.logout()
 	vim.notify("Logging out and clearing auth data...", vim.log.levels.INFO, { title = "tg" })
-	ui.close_chat()
+	ui.destroy_chat()
 	ui.state.last_chat = nil
 	server.stop_server()
 	local db_dir = config.config.data_dir .. "/tdlib_db"
@@ -296,6 +397,7 @@ M.open_chat = ui.open_chat
 vim.api.nvim_create_autocmd("VimLeavePre", {
 	group = vim.api.nvim_create_augroup("TgCleanup", { clear = true }),
 	callback = function()
+		ui.destroy_chat()
 		ws.ws_stop()
 		server.stop_server()
 	end,
@@ -382,39 +484,44 @@ vim.api.nvim_create_user_command("TgPr", function()
 										return
 									end
 									local flag = choice:match("squash") and "--squash" or "--merge"
-									vim.notify("Merging (" .. flag:gsub("^%-%-", "") .. ")...", vim.log.levels.INFO, { title = "tg" })
-									vim.fn.jobstart(
-										{
-											"gh",
-											"pr",
-											"merge",
-											pr_num,
-											"--repo",
-											"ChuYanLon/telegram.nvim",
-											flag,
-											"--admin",
-											"--delete-branch",
-										},
-										{
-											on_exit = function(_, mc)
-												vim.schedule(function()
-													if mc == 0 then
-														vim.notify("Merged!", vim.log.levels.INFO, { title = "tg" })
-														if src ~= "main" then
-															local root = vim.fn.shellescape(config.plugin_root)
-															vim.fn.jobstart({ "sh", "-c", "cd " .. root .. " && git branch -D " .. vim.fn.shellescape(src) .. " 2>/dev/null; true" })
-														end
-													else
-														vim.notify(
-															"Merge failed",
-															vim.log.levels.ERROR,
-															{ title = "tg" }
-														)
-													end
-												end)
-											end,
-										}
+									vim.notify(
+										"Merging (" .. flag:gsub("^%-%-", "") .. ")...",
+										vim.log.levels.INFO,
+										{ title = "tg" }
 									)
+									vim.fn.jobstart({
+										"gh",
+										"pr",
+										"merge",
+										pr_num,
+										"--repo",
+										"ChuYanLon/telegram.nvim",
+										flag,
+										"--admin",
+										"--delete-branch",
+									}, {
+										on_exit = function(_, mc)
+											vim.schedule(function()
+												if mc == 0 then
+													vim.notify("Merged!", vim.log.levels.INFO, { title = "tg" })
+													if src ~= "main" then
+														local root = vim.fn.shellescape(config.plugin_root)
+														vim.fn.jobstart({
+															"sh",
+															"-c",
+															"cd "
+																.. root
+																.. " && git branch -D "
+																.. vim.fn.shellescape(src)
+																.. " 2>/dev/null; true",
+														})
+													end
+												else
+													vim.notify("Merge failed", vim.log.levels.ERROR, { title = "tg" })
+												end
+											end)
+										end,
+									})
 								end)
 							end
 						end
@@ -424,10 +531,9 @@ vim.api.nvim_create_user_command("TgPr", function()
 		end)
 	end
 
-	local sources = vim.tbl_filter(
-		function(b) return b ~= "main" end,
-		git("branch --format=%(refname:short)")
-	)
+	local sources = vim.tbl_filter(function(b)
+		return b ~= "main"
+	end, git("branch --format=%(refname:short)"))
 	if #sources == 0 then
 		vim.notify("No feature branch to create PR from", vim.log.levels.WARN, { title = "tg" })
 		return
@@ -463,10 +569,15 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 		return
 	end
 	local text = table.concat(args, " ", 2)
-	if server.send_message(chat_id, text) then
-		vim.notify("Message sent", vim.log.levels.INFO, { title = "tg" })
+	if not server.send_message(chat_id, text) then
+		vim.notify("Failed to send message", vim.log.levels.ERROR, { title = "tg" })
 	end
 end, { nargs = "+" })
+
+vim.api.nvim_create_user_command("TgTool", function()
+	tools.pick()
+end, {})
+
 
 vim.api.nvim_create_user_command("TgIssue", function()
 	if vim.fn.executable("gh") ~= 1 then
@@ -495,187 +606,174 @@ vim.api.nvim_create_user_command("TgIssue", function()
 				on_exit = function()
 					vim.schedule(function()
 						local stdout = {}
-						vim.fn.jobstart(
-							{
-								"gh",
-								"issue",
-								"list",
-								"--repo",
-								"ChuYanLon/telegram.nvim",
-								"--assignee",
-								"@me",
-								"--limit",
-								"20",
-								"--json",
-								"number,title,labels,assignees",
-							},
-							{
-								stdout_buffered = true,
-								on_stdout = function(_, data)
-									stdout = data
-								end,
-								on_exit = function()
-									vim.schedule(function()
-										local ok, issues = pcall(vim.json.decode, table.concat(stdout, "\n"))
-										if not ok or not issues then
-											vim.notify("Failed to parse issues", vim.log.levels.ERROR, { title = "tg" })
+						vim.fn.jobstart({
+							"gh",
+							"issue",
+							"list",
+							"--repo",
+							"ChuYanLon/telegram.nvim",
+							"--assignee",
+							"@me",
+							"--limit",
+							"20",
+							"--json",
+							"number,title,labels,assignees",
+						}, {
+							stdout_buffered = true,
+							on_stdout = function(_, data)
+								stdout = data
+							end,
+							on_exit = function()
+								vim.schedule(function()
+									local ok, issues = pcall(vim.json.decode, table.concat(stdout, "\n"))
+									if not ok or not issues then
+										vim.notify("Failed to parse issues", vim.log.levels.ERROR, { title = "tg" })
+										return
+									end
+									local items = {}
+									for _, issue in ipairs(issues) do
+										local tags = ""
+										for _, l in ipairs(issue.labels or {}) do
+											tags = tags .. "[" .. l.name .. "] "
+										end
+										if issue.assignees and #issue.assignees > 0 then
+											tags = tags .. "(" .. issue.assignees[1].login .. ") "
+										end
+										table.insert(items, {
+											num = issue.number,
+											label = "#" .. issue.number .. " " .. tags .. issue.title,
+										})
+									end
+									vim.ui.select(items, {
+										prompt = "Select issue",
+										format_item = function(item)
+											return item.label
+										end,
+									}, function(issue)
+										if not issue then
 											return
 										end
-										local items = {}
-										for _, issue in ipairs(issues) do
-											local tags = ""
-											for _, l in ipairs(issue.labels or {}) do
-												tags = tags .. "[" .. l.name .. "] "
-											end
-											if issue.assignees and #issue.assignees > 0 then
-												tags = tags .. "(" .. issue.assignees[1].login .. ") "
-											end
-											table.insert(
-												items,
-												{
-													num = issue.number,
-													label = "#" .. issue.number .. " " .. tags .. issue.title,
-												}
-											)
-										end
-										vim.ui.select(items, {
-											prompt = "Select issue",
-											format_item = function(item)
-												return item.label
-											end,
-										}, function(issue)
-											if not issue then
+										vim.ui.select({
+											"Create branch",
+											"Open in browser",
+											"Close issue",
+										}, {
+											prompt = "#" .. issue.num .. " — what next?",
+										}, function(action)
+											if not action then
 												return
 											end
-											vim.ui.select({
-												"Create branch",
-												"Open in browser",
-												"Close issue",
-											}, {
-												prompt = "#" .. issue.num .. " — what next?",
-											}, function(action)
-												if not action then
-													return
-												end
 
-												if action:match("branch") then
-													local prefixes =
-														{ "fix", "feat", "chore", "docs", "refactor", "style" }
-													vim.ui.select(prefixes, { prompt = "Branch type" }, function(prefix)
-														if not prefix then
-															return
-														end
-														vim.ui.input(
-															{ prompt = "Branch description (required): " },
-															function(desc)
-																if not desc or #desc == 0 then
-																	return
-																end
-																local branch = prefix .. "/" .. issue.num .. "-" .. desc
-																local cmd = "cd "
-																	.. git_root
-																	.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
+											if action:match("branch") then
+												local prefixes = { "fix", "feat", "chore", "docs", "refactor", "style" }
+												vim.ui.select(prefixes, { prompt = "Branch type" }, function(prefix)
+													if not prefix then
+														return
+													end
+													vim.ui.input(
+														{ prompt = "Branch description (required): " },
+														function(desc)
+															if not desc or #desc == 0 then
+																return
+															end
+															local branch = prefix .. "/" .. issue.num .. "-" .. desc
+															local cmd = "cd "
+																.. git_root
+																.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
+																.. vim.fn.shellescape(branch)
+															if is_admin then
+																cmd = cmd
+																	.. " && git push -u origin "
 																	.. vim.fn.shellescape(branch)
-																if is_admin then
-																	cmd = cmd
-																		.. " && git push -u origin "
-																		.. vim.fn.shellescape(branch)
-																else
-																	cmd = cmd .. " || true"
-																	vim.notify(
-																		"Branch created locally. Push to your fork:\n  git push -u <your-fork> "
-																			.. branch,
-																		vim.log.levels.INFO,
-																		{ title = "tg" }
-																	)
-																end
+															else
+																cmd = cmd .. " || true"
 																vim.notify(
-																	"Creating branch " .. branch .. "...",
+																	"Branch created locally. Push to your fork:\n  git push -u <your-fork> "
+																		.. branch,
 																	vim.log.levels.INFO,
 																	{ title = "tg" }
 																)
-																local out = {}
-																vim.fn.jobstart(
-																	{
-																		"sh",
-																		"-c",
-																		"(cd "
-																			.. git_root
-																			.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
-																			.. vim.fn.shellescape(branch)
-																			.. " && git push -u origin "
-																			.. vim.fn.shellescape(branch)
-																			.. ") 2>&1",
-																	},
-																	{
-																		stdout_buffered = true,
-																		on_stdout = function(_, data)
-																			out = data
-																		end,
-																		on_exit = function(_, sc)
-																			vim.schedule(function()
-																				if sc == 0 or not is_admin then
-																					vim.notify(
-																						"Branch: " .. branch,
-																						vim.log.levels.INFO,
-																						{ title = "tg" }
-																					)
-																				else
-																					vim.notify(
-																						"Branch creation failed:\n"
-																							.. table
-																								.concat(out, "\n")
-																								:sub(1, 200),
-																						vim.log.levels.ERROR,
-																						{ title = "tg" }
-																					)
-																				end
-																			end)
-																		end,
-																	}
-																)
 															end
-														)
-													end)
-												elseif action:match("Open") then
-													vim.fn.jobstart({
-														"sh",
-														"-c",
-														'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/'
-															.. issue.num
-															.. '" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/'
-															.. issue.num
-															.. '" 2>/dev/null || true',
-													})
-												elseif action:match("Close") then
-													vim.fn.jobstart(
-														{
-															"gh",
-															"issue",
-															"close",
-															tostring(issue.num),
-															"--repo",
-															"ChuYanLon/telegram.nvim",
-														},
-														{
-															on_exit = function()
-																vim.schedule(function()
-																	vim.notify(
-																		"#" .. issue.num .. " closed",
-																		vim.log.levels.INFO,
-																		{ title = "tg" }
-																	)
-																end)
-															end,
-														}
+															vim.notify(
+																"Creating branch " .. branch .. "...",
+																vim.log.levels.INFO,
+																{ title = "tg" }
+															)
+															local out = {}
+															vim.fn.jobstart({
+																"sh",
+																"-c",
+																"(cd "
+																	.. git_root
+																	.. " && git checkout main && git pull --rebase --autostash origin main && git checkout -b "
+																	.. vim.fn.shellescape(branch)
+																	.. " && git push -u origin "
+																	.. vim.fn.shellescape(branch)
+																	.. ") 2>&1",
+															}, {
+																stdout_buffered = true,
+																on_stdout = function(_, data)
+																	out = data
+																end,
+																on_exit = function(_, sc)
+																	vim.schedule(function()
+																		if sc == 0 or not is_admin then
+																			vim.notify(
+																				"Branch: " .. branch,
+																				vim.log.levels.INFO,
+																				{ title = "tg" }
+																			)
+																		else
+																			vim.notify(
+																				"Branch creation failed:\n"
+																					.. table
+																						.concat(out, "\n")
+																						:sub(1, 200),
+																				vim.log.levels.ERROR,
+																				{ title = "tg" }
+																			)
+																		end
+																	end)
+																end,
+															})
+														end
 													)
-												end
-											end)
+												end)
+											elseif action:match("Open") then
+												vim.fn.jobstart({
+													"sh",
+													"-c",
+													'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/'
+														.. issue.num
+														.. '" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/'
+														.. issue.num
+														.. '" 2>/dev/null || true',
+												})
+											elseif action:match("Close") then
+												vim.fn.jobstart({
+													"gh",
+													"issue",
+													"close",
+													tostring(issue.num),
+													"--repo",
+													"ChuYanLon/telegram.nvim",
+												}, {
+													on_exit = function()
+														vim.schedule(function()
+															vim.notify(
+																"#" .. issue.num .. " closed",
+																vim.log.levels.INFO,
+																{ title = "tg" }
+															)
+														end)
+													end,
+												})
+											end
 										end)
 									end)
-								end,
-							}
-						)
+								end)
+							end,
+						})
 					end)
 				end,
 			})

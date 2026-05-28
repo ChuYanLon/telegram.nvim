@@ -31,7 +31,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Login with phone number, verification code, and 2FA password
 - [x] Session persists across restarts (no re-login)
 - [x] `:TgLogout` to clear auth and start fresh
-- [x] Group list with unread badges, virtual scrolling
+- [x] Group list with unread badges, virtual scrolling, and inline search (NuiPopup: `j/k` navigate, `i` search, `<Esc>` close)
 - [x] Open/close chats, switch between groups
 - [x] Scroll infinitely in both directions (older and newer messages)
 - [x] Receive new messages in real-time via WebSocket
@@ -39,6 +39,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Cursor position is remembered per chat
 - [x] Messages are marked as read when opening a chat
 - [x] Send plain text messages (with reply context)
+- [x] Send messages with formatting — type markdown syntax (`**bold**`, `### heading`) in input; Telegram clients (Android, iOS, Desktop) parse markdown natively, Neovim buffer renders via markdown treesitter
 - [x] Edit your own messages
 - [x] Delete your own messages (Delete for me / Revoke for everyone)
 - [x] Forward messages to another group
@@ -46,27 +47,27 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Search messages and jump to the result position
 - [x] URLs are highlighted and clickable
 - [x] Code blocks (backtick) are detected and formatted
-- [x] Three-panel layout: group list / messages / input
-- [x] `<C-h/j/k/l>` to navigate between panels
+- [x] Single-panel chat layout with floating input popup
 - [x] `?` opens a help popup with all keybindings
 - [x] Different highlight colors for reply / edit / delete / forward targets
-- [x] Visual `y`/`Y` yanks to system clipboard
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
 - [x] `:TgIssue` — list, create branch, close, assign, open in browser
 - [x] Proxy support (SOCKS5 / HTTP) for restricted regions
 - [x] Service messages shown as readable text with prefix symbols
+- [x] Download HD media — `@refreshmedia` downloads highest-quality version of photos/videos under cursor (async, non-blocking)
+- [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
+- [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
+- [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
 
 ### What doesn't work yet
 
-- [ ] **Send messages with formatting** (bold, italic, underline, etc.) — plain text only
 - [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
 - [ ] **Send stickers / GIFs**
 - [ ] **Create polls**
 - [ ] **Scheduled messages**
 - [ ] **Emoji picker**
-- [ ] **Inline preview** of photos, videos, files in Neovim — only shows a label, no real preview
-- [ ] **Sticker, poll, contact, location, dice, game, call display** — fallback exists but doesn't render properly
 - [ ] **React to messages** (like, heart, etc.)
+- [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
 - [ ] **Pin messages**
 - [ ] **Multi-select messages** for batch operations
 - [ ] **Channel support** — currently filtered out, supergroups only
@@ -94,12 +95,15 @@ System messages (members added, group renamed, etc.) are rendered as readable te
 
 | Prefix | Display | Example |
 |--------|---------|---------|
-| `+` | Member joined | `+ Kitty joined this group at 19:49:58 on May 09, 2026` |
-| `+` | Member added | `+ Kitty added Bob at 19:49:58 on May 09, 2026` |
-| `-` | Member left | `- Kitty left the group at ...` |
-| `~` | Group changed | `~ Kitty changed the group name to 'New Name' at ...` |
-| `*` | Message pinned | `* Kitty pinned a message at ...` |
-| `>` | Group/topic created | `> Kitty created this group at ...` |
+| `+` | Member joined | `+ Kitty joined this group via invite link at 2026-05-28 19:49` |
+| `+` | Member added | `+ Kitty added Bob at 2026-05-28 19:49` |
+| `-` | Member left | `- Kitty left the group at 2026-05-28 19:49` |
+| `~` | Group changed | `~ Kitty changed the group name at 2026-05-28 19:49` |
+| `~` | Group photo changed | `~ Kitty changed the group photo at 2026-05-28 19:49` |
+| `~` | Group upgraded | `~ Kitty upgraded from a basic group at 2026-05-28 19:49` |
+| `*` | Message pinned | `* Kitty pinned a message at 2026-05-28 19:49` |
+| `>` | Group/topic created | `> Kitty created this group at 2026-05-28 19:49` |
+| `!` | Auto-delete timer set | `! Kitty set auto-delete timer at 2026-05-28 19:49` |
 
 ### Media labels
 
@@ -107,14 +111,14 @@ Media messages that cannot be rendered natively are shown as tags:
 
 | Tag | Meaning |
 |-----|---------|
-| `[Photo]` | Photo sent |
-| `[Video]` | Video sent |
-| `[Animation]` | GIF sent |
-| `[Document]` | File sent |
-| `[Audio]` | Music sent |
-| `[Voice]` | Voice message |
-| `[Video Note]` | Video message |
-| `[Sticker]` | Sticker sent |
+| `![Photo](/path)` | Photo sent (clickable, HD via `@refreshmedia`) |
+| `![Video](/path)` | Video sent (clickable) |
+| `![Animation](/path)` | GIF sent (clickable) |
+| `![Document](/path)` | File sent (clickable) |
+| `![Audio](/path)` | Music sent (clickable) |
+| `![Voice](/path)` | Voice message (clickable) |
+| `![Video Note](/path)` | Video message (clickable) |
+| `![Sticker](/path)` | Sticker sent (clickable) |
 | `[Poll]` | Poll created |
 | `[Contact]` | Contact shared |
 | `[Location]` | Location shared |
@@ -192,15 +196,16 @@ ldconfig 2>/dev/null || true
 
 ## Commands
 
-| Command       | Description                                                                                                                       |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
-| `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
-| `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
-| `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion |
-| `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue |
+| Command       | Description                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `:Tg`         | Global toggle: opens tg window if closed, hides it if open (from any buffer). First run: server + auth, then opens last chat |
+| `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                             |
+| `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                    |
+| `:TgTool`     | Open tool picker (`@` equivalent)                                                                                             |
+| `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion                |
+| `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
 
-> The server runs on a fixed port (8080). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
+> The server runs on ports 8080/8081 (hardcoded in `server.lua:5-7`, or overridable via `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
 ## Neovim Keymaps
 
@@ -214,40 +219,24 @@ vim.keymap.set("n", "<leader>ti", "<cmd>TgIssue<Cr>", { desc = "Manage Issues" }
 
 ### Keymaps
 
-Inside a chat window:
+Inside the chat window:
 
 | Key | Action |
 |-----|--------|
-| `?` | Show help popup |
-| `<C-h>` | Focus groups panel |
-| `<C-l>` | Focus message panel |
-| `<C-j>` | Focus input editor |
-| `<C-k>` | Focus message panel |
-| `i` | Focus input editor |
-| `/` | Search messages |
-| `<CR>` | Reply to message / jump to original with context |
+| `?` | Toggle help popup |
+| `i` | Open input editor to send a message |
+| `<CR>` | Reply to message / jump to original (if cursor is on a quote line) |
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another group |
-| `r` | Refresh and scroll to latest messages |
-| `Esc Esc` | Close chat (preserves cursor position) |
-| `q` | Quit (stop server, full exit) |
+| `G` | Refresh messages and jump to bottom |
+| `@` | Open context-aware tool picker |
 
-In the input editor:
-
-| Key | Action |
-|-----|--------|
-| `<CR>` | Send message / confirm edit |
-| `Esc` | Cancel reply/edit mode |
-| `<C-h/j/k/l>` | Navigate panels |
-
-In the groups panel:
-
-| Key | Action |
-|-----|--------|
-| `j/k` | Move cursor |
-| `<CR>` | Open selected chat |
-| `<C-h/j/k/l>` | Navigate panels |
+In the groups picker (`@` → groups):
+- `j/k` — scroll list (virtual scrolling)
+- `i` — focus search bar (type to filter inline)
+- `<CR>` — select group
+- `<Esc>` — close
 
 ## Auth Flow
 
@@ -278,6 +267,9 @@ Environment variable overrides:
 |---------|-----------|
 | `TG_TDLIB_PATH` | `tdlib_path` |
 | `TG_PROXY` | `proxy` |
+| `TG_PORT` | HTTP server port (default: `8080`) |
+| `TG_WS_PORT` | WebSocket server port (default: `8081`) |
+| `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` |
 
 
 The server auto-detects `libtdjson` on startup via:
@@ -318,7 +310,7 @@ A: The backend was migrated from JavaScript to TypeScript (v0.3.0) for better ty
 A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` directories.
 
 **Q: Port conflict?**
-A: Default ports are 8080/8081. The plugin kills any leftover tg server process on the port before starting. If still occupied, it auto-increments until a free port is found. Server process is terminated on Neovim exit.
+A: Default ports are 8080/8081 (hardcoded in `server.lua`). The plugin checks if a server is already running on the port and reconnects if it's ours. If occupied by another process, startup fails — change `http_port` in `server.lua:5-6` to use different ports. Server process is terminated on Neovim exit.
 
 ## Development Workflow
 

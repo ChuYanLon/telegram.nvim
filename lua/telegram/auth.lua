@@ -54,7 +54,6 @@ function M.auth_poll(on_done)
 					server.post_auth_input(val)
 				else
 					vim.notify("Auth cancelled", vim.log.levels.INFO, { title = "tg" })
-					on_done(false)
 					return
 				end
 				vim.defer_fn(poll, 500)

@@ -28,6 +28,9 @@ export class UpdateDispatcher {
         case 'updateChatOnlineMemberCount':
           this.handleChatOnlineMemberCount(update);
           break;
+        case 'updateMessageSendSucceeded':
+          await this.handleMessageSendSucceeded(update);
+          break;
         case 'updateChatMember':
           await this.handleChatMemberUpdate(update);
           break;
@@ -85,12 +88,30 @@ export class UpdateDispatcher {
     });
   }
 
+  async handleMessageSendSucceeded(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const msg = update.message as RawTdMessage;
+    if (!msg) return;
+    const formatted = await this.formatter.format(msg);
+    if (!formatted) return;
+    const chat = this.chats.get(msg.chat_id);
+    broadcast({
+      event: 'messageSendSucceeded',
+      old_message_id: update.old_message_id,
+      chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
+      ...formatted,
+    });
+  }
+
   async handleChatMemberUpdate(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
     const chat = this.chats.get(update.chat_id!);
-    const memberUserId = update.member!.user_id;
-    const actorUserId = update.actor_user_id!;
+    if (!chat) return;
+    if (!update.member || update.actor_user_id == null) return;
+    const memberUserId = update.member.user_id;
+    const actorUserId = update.actor_user_id;
     const memberName = await this.resolver.getUserName(memberUserId);
     const actorName = actorUserId === memberUserId
       ? memberName

@@ -18,6 +18,8 @@ export interface FormattedMessage {
   };
   memberUserIds?: number[];
   addedMemberNames?: string[];
+  filePath?: string;
+  mimeType?: string;
 }
 
 export interface RawTdMessage {
