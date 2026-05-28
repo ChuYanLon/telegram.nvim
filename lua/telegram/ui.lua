@@ -265,9 +265,11 @@ function M.update_title()
 		end
 	end
 
-	local winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
+	local winbar
 	if typing ~= "" then
-		winbar = winbar .. "%=%#TgService#" .. typing .. "%*"
+		winbar = "%#TgService#" .. typing .. "%*"
+	else
+		winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
 	end
 	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
 end
