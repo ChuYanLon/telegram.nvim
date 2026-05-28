@@ -39,6 +39,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Cursor position is remembered per chat
 - [x] Messages are marked as read when opening a chat
 - [x] Send plain text messages (with reply context)
+- [x] Send messages with formatting — type markdown syntax (`**bold**`, `### heading`) in input; Telegram clients (Android, iOS, Desktop) parse markdown natively, Neovim buffer renders via markdown treesitter
 - [x] Edit your own messages
 - [x] Delete your own messages (Delete for me / Revoke for everyone)
 - [x] Forward messages to another group
@@ -56,17 +57,17 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Download HD media — `@refreshmedia` downloads highest-quality version of photos/videos under cursor (async, non-blocking)
 - [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
 - [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
+- [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
 
 ### What doesn't work yet
 
-- [ ] **Send messages with formatting** (bold, italic, underline, etc.) — plain text only
 - [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
 - [ ] **Send stickers / GIFs**
 - [ ] **Create polls**
 - [ ] **Scheduled messages**
 - [ ] **Emoji picker**
-- [ ] **Inline preview** of photos, videos, files in Neovim — only shows a label, no real preview
 - [ ] **React to messages** (like, heart, etc.)
+- [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
 - [ ] **Pin messages**
 - [ ] **Multi-select messages** for batch operations
 - [ ] **Channel support** — currently filtered out, supergroups only
