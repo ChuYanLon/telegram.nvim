@@ -5,10 +5,15 @@
 ### Added
 
 - **`:TgPr` squash merge** — now offers "squash" and "commit" merge strategies when merging PRs
+- **Private chat support** — press `c` on a message to open DM with sender; `@newchat` tool to start DM by @username
+- **Snacks picker** — groups/chat picker now uses `snacks.nvim` with fuzzy search, falls back to `vim.ui.select`
 
 ### Changed
 
 - **Updated all documentation** — CONTRIBUTING, WORKFLOW, wiki pages, PR template, and CHANGELOG synced with current TypeScript architecture and feature set
+- **Terminology** — user-facing text unified to use "chat" instead of "group" (picker, help popup, notifications)
+- **Online count** — now fetched synchronously from TDLib on chat open with cache fallback; stale 0 values from WebSocket ignored
+- **Typing indicator** — shown in a floating popup below the winbar instead of replacing the title bar
 
 ### Changed
 

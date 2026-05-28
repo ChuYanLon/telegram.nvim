@@ -13,7 +13,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ## Features
 
-- Group list with unread badges, virtual scrolling, and inline search
+- Group list with unread badges and inline fuzzy search (Snacks picker with `vim.ui.select` fallback)
+- **Private chats** — press `c` on a message to open DM with sender, or use `@newchat` tool
 - Real-time message push via WebSocket
 - Infinite scroll in both directions (older and newer messages)
 - Send, edit, delete/recall, forward messages

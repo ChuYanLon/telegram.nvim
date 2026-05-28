@@ -44,7 +44,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Send messages with formatting — type markdown syntax (`**bold**`, `### heading`) in input; Telegram clients (Android, iOS, Desktop) parse markdown natively, Neovim buffer renders via markdown treesitter
 - [x] Edit your own messages
 - [x] Delete your own messages (Delete for me / Revoke for everyone)
-- [x] Forward messages to another group
+- [x] Forward messages to another chat
 - [x] Reply to a message with quote context
 - [x] Search messages and jump to the result position
 - [x] URLs are highlighted and clickable
@@ -177,7 +177,7 @@ ldconfig 2>/dev/null || true
   event = "VeryLazy",
   dependencies = {
     "MunifTanjim/nui.nvim",
-    -- "folke/snacks.nvim",   -- optional: enables fuzzy-find groups picker
+    -- "folke/snacks.nvim",   -- optional: enables fuzzy-find chat picker
   },
   keys = {
     { "<leader>tt", "<cmd>Tg<Cr>", desc = "Toggle Telegram" },
