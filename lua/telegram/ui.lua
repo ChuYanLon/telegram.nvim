@@ -377,16 +377,6 @@ local function setup_chat_keymaps()
 	local buf = state.buf
 	local tools = require("telegram.tools")
 
-	vim.keymap.set("n", "<C-h>", function()
-		if state.win and vim.api.nvim_win_is_valid(state.win) and vim.api.nvim_get_current_win() == state.win then
-			vim.cmd("wincmd h")
-		end
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<C-l>", function()
-		if state.win and vim.api.nvim_win_is_valid(state.win) and vim.api.nvim_get_current_win() ~= state.win then
-			vim.api.nvim_set_current_win(state.win)
-		end
-	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "i", function()
 		M.open_editor("Send", "", function(text)
@@ -543,19 +533,13 @@ function M.show_help()
 		focusable = true,
 	})
 	local lines = {
-		"-- Navigation --",
-		" <C-h>      focus groups panel",
-		" <C-l>      focus message panel",
-		" <C-j>      focus input editor",
-		" /          search history",
-		" G          jump to latest",
-		"",
 		"-- Messages --",
+		" i          open input editor",
 		" <CR>       reply / jump to original",
 		" e          edit own message",
 		" d          delete / revoke",
 		" f          forward message",
-		" r          refresh messages",
+		" G          refresh + jump to bottom",
 		"",
 		"-- Tools (@) --",
 		" groups     switch group",
@@ -565,14 +549,10 @@ function M.show_help()
 		" refreshmedia  re-download HD media",
 		"",
 		"-- General --",
-		" ?          close this help",
+		" ?          toggle this help",
+		" @          open tool picker",
 		" <Esc>      close this help",
-		" Esc Esc    close chat",
-		" q          quit plugin",
-		"",
-		"-- Input --",
-		" <CR>       send message",
-		" <Esc>      cancel reply / edit",
+		" q / :Tg    close chat / quit",
 	}
 	help_popup:mount()
 	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
