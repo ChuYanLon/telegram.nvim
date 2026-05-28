@@ -9,7 +9,7 @@ A Telegram chat tool for neovim, similar to telegra.el
 
 Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP + WebSocket communication.
 
-> 💬 Join the discussion on Telegram: search **telegram.nvim** in Telegram.
+> 💬 Join the discussion on Telegram: [t.me/+h4aEOaABJJ1mMzhl](https://t.me/+h4aEOaABJJ1mMzhl)
 
 ## Screenshots
 
