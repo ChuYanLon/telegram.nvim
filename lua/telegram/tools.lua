@@ -40,8 +40,8 @@ function M.pick()
 	end)
 end
 
-M.register("groups", {
-	description = "Switch to another group",
+M.register("chats", {
+	description = "Switch to another chat",
 	callback = function()
 		ui.show_groups_picker(function(item)
 			if item then require("telegram").open_chat(item.id, item.title) end

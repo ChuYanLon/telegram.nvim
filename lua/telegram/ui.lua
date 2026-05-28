@@ -194,7 +194,7 @@ local function show_groups_picker(on_select)
 		end
 	end
 	if #all_items == 0 then
-		vim.notify("No groups available", vim.log.levels.INFO, { title = "tg" })
+		vim.notify("No chats available", vim.log.levels.INFO, { title = "tg" })
 		return
 	end
 
@@ -212,7 +212,7 @@ local function show_groups_picker(on_select)
 		position = { row = "50%", col = "50%" },
 		size = { width = 50, height = win_size + 2 },
 		zindex = 150,
-		border = { style = "rounded", text = { top = " Groups ", top_align = "center" } },
+		border = { style = "rounded", text = { top = " Chats ", top_align = "center" } },
 		buf_options = { buftype = "nofile" },
 		win_options = { cursorline = true, cursorlineopt = "line" },
 		enter = true,
@@ -630,7 +630,7 @@ local function setup_chat_keymaps()
 		if #state.group_ids == 0 then
 			state.forward_target = nil
 			apply_highlights()
-			vim.notify("No groups to forward to", vim.log.levels.WARN, { title = "tg" })
+			vim.notify("No chats to forward to", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
 		show_groups_picker(function(item)
@@ -708,16 +708,16 @@ function M.show_help()
 		" c          open DM with message sender",
 		"",
 		"-- Tools (@) --",
-		" groups     switch group (j/k scroll)",
+		" chats      switch chat (j/k scroll)",
 		" refresh    reload messages",
 		" send       send a message",
 		" search     search history",
 		" refreshmedia  re-download HD media",
 		"",
-		"-- Groups Picker --",
+		"-- Chat Picker --",
 		" j/k        navigate list (virtual scroll)",
 		" i          search (inline filter)",
-		" <CR>       select group",
+		" <CR>       select chat",
 		" <Esc>      cancel / close",
 		"",
 		"-- General --",
