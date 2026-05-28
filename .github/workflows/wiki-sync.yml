@@ -19,7 +19,7 @@ jobs:
             echo "Visit https://github.com/${{ github.repository }}/wiki to create the first page."
             exit 0
           }
-          rsync -av --delete wiki/ "$TMP_DIR/"
+          rsync -av --delete --exclude=.git wiki/ "$TMP_DIR/"
           cd "$TMP_DIR"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
