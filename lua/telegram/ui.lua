@@ -34,6 +34,8 @@ local state = {
 
 	separator_line = "────────────────────",
 	_input_start = 0,
+
+	group_cursor = 1,
 }
 
 M.state = state
@@ -183,6 +185,174 @@ function M.append_message(msg)
 	vim.bo[buf].modified = false
 end
 
+local function show_groups_picker(on_select)
+	local all_items = {}
+	for _, id in ipairs(state.group_ids) do
+		local g = state.groups[id]
+		if g then
+			table.insert(all_items, { id = g.id, title = g.title, unread = g.unread_count or 0 })
+		end
+	end
+	if #all_items == 0 then
+		vim.notify("No groups available", vim.log.levels.INFO, { title = "tg" })
+		return
+	end
+
+	local items = all_items
+	local query = ""
+	local search_focused = false
+	local filtering = false
+	local win_size = math.min(#items, 15)
+	local sel = math.min(state.group_cursor or 1, #items)
+	local offset = math.max(1, math.min(sel - math.floor(win_size / 2), #items - win_size + 1))
+
+	local NuiPopup = require("nui.popup")
+	local popup = NuiPopup({
+		relative = "editor",
+		position = { row = "50%", col = "50%" },
+		size = { width = 50, height = win_size + 2 },
+		zindex = 150,
+		border = { style = "rounded", text = { top = " Groups ", top_align = "center" } },
+		buf_options = { buftype = "nofile" },
+		win_options = { cursorline = true, cursorlineopt = "line" },
+		enter = true,
+		focusable = true,
+	})
+	popup:mount()
+
+	local function set_content()
+		local n = #items
+		if #query > 0 then
+			sel = math.min(sel, n)
+			offset = math.min(offset, math.max(1, n - win_size + 1))
+		end
+		local lines = {}
+		local search_text = (search_focused or #query > 0) and "  " .. query or " Search..."
+		table.insert(lines, search_text)
+		if n == 0 then
+			table.insert(lines, "  (no matches)")
+		else
+			local end_idx = math.min(offset + win_size - 1, n)
+			for i = offset, end_idx do
+				local item = items[i]
+				local label = item.title
+				if item.unread > 0 then
+					label = label .. "  \xE2\x97\x8F +" .. item.unread
+				end
+				if #label > 47 then label = label:sub(1, 44) .. "..." end
+				table.insert(lines, "  " .. label)
+			end
+			if n > end_idx then
+				table.insert(lines, "  \xE2\x96\xBC " .. (n - end_idx) .. " more")
+			end
+		end
+		while #lines < win_size + 2 do table.insert(lines, "") end
+		vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
+		vim.api.nvim_buf_clear_namespace(popup.bufnr, hl_ns, 0, 1)
+		if #query == 0 and not search_focused then
+			vim.api.nvim_buf_add_highlight(popup.bufnr, hl_ns, "TgPlaceholder", 0, 2, -1)
+		end
+	end
+
+	local function filter(q)
+		if filtering then return end
+		filtering = true
+		query = q
+		if #query == 0 then
+			items = all_items
+		else
+			local ql = query:lower()
+			items = {}
+			for _, item in ipairs(all_items) do
+				if item.title:lower():find(ql, 1, true) then
+					table.insert(items, item)
+				end
+			end
+		end
+		sel = 1
+		offset = 1
+		set_content()
+		filtering = false
+	end
+
+	local function search_enter()
+		search_focused = true
+		vim.bo[popup.bufnr].modifiable = true
+		set_content()
+		pcall(vim.api.nvim_win_set_cursor, popup.winid, { 1, 0 })
+		vim.cmd("startinsert!")
+	end
+
+	local function search_exit()
+		search_focused = false
+		vim.cmd("stopinsert")
+		vim.bo[popup.bufnr].modifiable = false
+		local rel = sel - offset + 2
+		pcall(vim.api.nvim_win_set_cursor, popup.winid, { rel, 0 })
+	end
+
+	local function list_down()
+		if sel >= #items then return end
+		sel = sel + 1
+		if sel - offset + 2 > win_size + 1 then offset = offset + 1 end
+		state.group_cursor = sel
+		vim.bo[popup.bufnr].modifiable = true
+		set_content()
+		vim.bo[popup.bufnr].modifiable = false
+		pcall(vim.api.nvim_win_set_cursor, popup.winid, { sel - offset + 2, 0 })
+	end
+
+	local function list_up()
+		if sel <= 1 then return end
+		sel = sel - 1
+		if sel - offset + 2 < 2 then offset = math.max(1, offset - 1) end
+		state.group_cursor = sel
+		vim.bo[popup.bufnr].modifiable = true
+		set_content()
+		vim.bo[popup.bufnr].modifiable = false
+		pcall(vim.api.nvim_win_set_cursor, popup.winid, { sel - offset + 2, 0 })
+	end
+
+	vim.bo[popup.bufnr].modifiable = true
+	set_content()
+	vim.bo[popup.bufnr].modifiable = false
+	if #items > 0 then pcall(vim.api.nvim_win_set_cursor, popup.winid, { 2, 0 }) end
+
+	vim.keymap.set("n", "i", search_enter, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("n", "j", list_down, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("n", "k", list_up, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("n", "<CR>", function()
+		if #items == 0 then return end
+		popup:unmount()
+		on_select(items[sel])
+	end, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("n", "<Esc>", function()
+		popup:unmount()
+		on_select(nil)
+	end, { buffer = popup.bufnr, nowait = true })
+
+	vim.keymap.set("i", "<Esc>", search_exit, { buffer = popup.bufnr, nowait = true })
+	vim.keymap.set("i", "<CR>", function()
+		if #items == 0 then return end
+		search_focused = false
+		vim.cmd("stopinsert")
+		vim.bo[popup.bufnr].modifiable = false
+		popup:unmount()
+		on_select(items[sel])
+	end, { buffer = popup.bufnr, nowait = true })
+
+	vim.api.nvim_create_autocmd("TextChangedI", {
+		buffer = popup.bufnr,
+		callback = function()
+			if filtering then return end
+			local line = vim.api.nvim_buf_get_lines(popup.bufnr, 0, 1, false)[1] or ""
+			local _, _, new_q = line:find("^  (.*)")
+			local q = new_q or ""
+			if q ~= query then filter(q) end
+		end,
+	})
+end
+
 function M.set_groups(groups)
 	local new_groups = {}
 	local new_ids = {}
@@ -275,31 +445,8 @@ function M.update_title()
 end
 
 local function show_group_selector()
-	local items = {}
-	for _, id in ipairs(state.group_ids) do
-		local g = state.groups[id]
-		if g then
-			table.insert(items, { id = g.id, label = g.title })
-		end
-	end
-	if #items == 0 then
-		vim.notify("No groups available", vim.log.levels.INFO, { title = "tg" })
-		return
-	end
-	vim.ui.select(items, {
-		prompt = "@ Groups",
-		format_item = function(item)
-			local g = state.groups[item.id]
-			local suffix = ""
-			if g and g.unread_count and g.unread_count > 0 then
-				suffix = "  \xE2\x97\x8F +" .. g.unread_count
-			end
-			return item.label .. suffix
-		end,
-	}, function(choice)
-		if choice then
-			M.open_chat(choice.id, choice.label)
-		end
+	show_groups_picker(function(item)
+		if item then M.open_chat(item.id, item.title) end
 	end)
 end
 
@@ -474,30 +621,19 @@ local function setup_chat_keymaps()
 		end
 		state.forward_target = target
 		apply_highlights()
-		local groups = server.get_groups()
-		if not groups or #groups == 0 then
+		if #state.group_ids == 0 then
 			state.forward_target = nil
 			apply_highlights()
 			vim.notify("No groups to forward to", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		local items = {}
-		for _, g in ipairs(groups) do
-			table.insert(items, { id = g.id, label = g.title })
-		end
-		vim.ui.select(items, {
-			prompt = "Forward to:",
-			format_item = function(item)
-				return item.label
-			end,
-		}, function(choice)
+		show_groups_picker(function(item)
 			state.forward_target = nil
 			apply_highlights()
-			if choice then
-				local ok = server.forward_messages(state.chat_id, target.id, choice.id)
-				if ok then
-					vim.notify("Forwarded to " .. choice.label, vim.log.levels.INFO, { title = "tg" })
-				end
+			if not item then return end
+			local ok = server.forward_messages(state.chat_id, target.id, item.id)
+			if ok then
+				vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
 	end, { buffer = buf })
@@ -542,11 +678,17 @@ function M.show_help()
 		" G          refresh + jump to bottom",
 		"",
 		"-- Tools (@) --",
-		" groups     switch group",
+		" groups     switch group (j/k scroll)",
 		" refresh    reload messages",
 		" send       send a message",
 		" search     search history",
 		" refreshmedia  re-download HD media",
+		"",
+		"-- Groups Picker --",
+		" j/k        navigate list (virtual scroll)",
+		" i          search (inline filter)",
+		" <CR>       select group",
+		" <Esc>      cancel / close",
 		"",
 		"-- General --",
 		" ?          toggle this help",
@@ -1034,5 +1176,7 @@ function M.refresh_messages(on_complete)
 		end
 	end)
 end
+
+M.show_groups_picker = show_groups_picker
 
 return M

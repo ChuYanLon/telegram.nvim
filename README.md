@@ -31,7 +31,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Login with phone number, verification code, and 2FA password
 - [x] Session persists across restarts (no re-login)
 - [x] `:TgLogout` to clear auth and start fresh
-- [x] Group list with unread badges, virtual scrolling
+- [x] Group list with unread badges, virtual scrolling, and inline search (NuiPopup: `j/k` navigate, `i` search, `<Esc>` close)
 - [x] Open/close chats, switch between groups
 - [x] Scroll infinitely in both directions (older and newer messages)
 - [x] Receive new messages in real-time via WebSocket
@@ -61,6 +61,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### What doesn't work yet
 
+- [ ] **Dedicated groups sidebar** — groups are switched via popup, no persistent sidebar
 - [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
 - [ ] **Send stickers / GIFs**
 - [ ] **Create polls**
@@ -232,7 +233,11 @@ Inside the chat window:
 | `G` | Refresh messages and jump to bottom |
 | `@` | Open context-aware tool picker |
 
-All other actions (group switching, search, etc.) are available through the `@` tool picker.
+In the groups picker (`@` → groups):
+- `j/k` — scroll list (virtual scrolling)
+- `i` — focus search bar (type to filter inline)
+- `<CR>` — select group
+- `<Esc>` — close
 
 ## Auth Flow
 

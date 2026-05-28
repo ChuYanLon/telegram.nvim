@@ -578,6 +578,7 @@ vim.api.nvim_create_user_command("TgTool", function()
 	tools.pick()
 end, {})
 
+
 vim.api.nvim_create_user_command("TgIssue", function()
 	if vim.fn.executable("gh") ~= 1 then
 		vim.notify("gh (GitHub CLI) not found", vim.log.levels.ERROR, { title = "tg" })
