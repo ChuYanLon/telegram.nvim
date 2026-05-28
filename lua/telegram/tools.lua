@@ -20,7 +20,13 @@ function M.pick()
 	local items = {}
 	for _, name in ipairs(tool_list) do
 		local tool = M[name]
-		table.insert(items, { name = name, label = "@" .. name .. "  " .. tool.description })
+		if not tool.condition or tool.condition() then
+			table.insert(items, { name = name, label = "@" .. name .. "  " .. tool.description })
+		end
+	end
+	if #items == 0 then
+		vim.notify("No tools available for this context", vim.log.levels.INFO, { title = "tg" })
+		return
 	end
 	vim.ui.select(items, {
 		prompt = "@ Tools",
@@ -63,6 +69,7 @@ M.register("groups", {
 
 M.register("refresh", {
 	description = "Refresh messages",
+	condition = function() return ui.state.chat_id ~= nil end,
 	callback = function()
 		ui.refresh_messages()
 		vim.notify("Refreshed", vim.log.levels.INFO, { title = "tg" })
@@ -71,6 +78,7 @@ M.register("refresh", {
 
 M.register("send", {
 	description = "Send a message to current chat",
+	condition = function() return ui.state.chat_id ~= nil end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -91,6 +99,7 @@ M.register("send", {
 
 M.register("search", {
 	description = "Search message history",
+	condition = function() return ui.state.chat_id ~= nil end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -127,6 +136,10 @@ M.register("search", {
 
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.type and t.type ~= "messageText" and t.type:find("^message")
+	end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
