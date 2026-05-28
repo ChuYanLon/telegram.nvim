@@ -134,7 +134,7 @@ Media messages that cannot be rendered natively are shown as tags:
 - **curl**
 - **libtdjson** — TDLib shared library (minimum version **1.8.64**) — `libtdjson.so` (Linux), `libtdjson.dylib` (macOS), `tdjson.dll` (Windows)
 - **nui.nvim** — used for popups, layout, and input editor (automatically installed by lazy.nvim)
-- **snacks.nvim** — optional, used for the groups picker with fuzzy search (falls back to `vim.ui.select` if not installed)
+- **snacks.nvim** — optional, used for the chat picker with fuzzy search (falls back to `vim.ui.select` if not installed)
 - **gh** (GitHub CLI) — optional, required for `:TgPr` and `:TgIssue` commands
 
 ### Installing libtdjson

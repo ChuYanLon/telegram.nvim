@@ -331,9 +331,14 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
+  async getRawChat(chatId: number) {
+    if (!this._ready) throw new Error('Client not ready yet');
+    return await this.client.invoke({ _: 'getChat', chat_id: chatId }) as RawTdChat;
+  }
+
   async getChat(chatId: number) {
     if (!this._ready) throw new Error('Client not ready yet');
-    const chat = await this.client.invoke({ _: 'getChat', chat_id: chatId }) as RawTdChat;
+    const chat = await this.getRawChat(chatId);
     let memberCount = 0;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {

@@ -4,6 +4,8 @@ local render_msg = require("telegram.render").render
 
 local M = {}
 
+local typing_popup = nil
+
 local state = {
 	buf = nil,
 	win = nil,
@@ -296,6 +298,9 @@ function M.set_typing(chat_id, user_id, user_name, action_type, active)
 end
 
 function M.set_online_count(count)
+	if not count or count == 0 then
+		return
+	end
 	state.online_count = count
 	M.update_title()
 end
@@ -310,7 +315,7 @@ function M.update_group_last_msg(chat_id, sender_name, text)
 end
 
 function M.update_group_online(chat_id, count)
-	if state.groups[chat_id] then
+	if state.groups[chat_id] and count and count > 0 then
 		state.groups[chat_id].online_count = count
 	end
 end
@@ -348,13 +353,28 @@ function M.update_title()
 		end
 	end
 
-	local winbar
-	if typing ~= "" then
-		winbar = "%#TgService#" .. typing .. "%*"
-	else
-		winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
-	end
+	local winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
 	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
+	if typing_popup and vim.api.nvim_win_is_valid(typing_popup) then
+		vim.api.nvim_win_close(typing_popup, true)
+		typing_popup = nil
+	end
+	if typing ~= "" and state.win and vim.api.nvim_win_is_valid(state.win) then
+		local buf = vim.api.nvim_create_buf(false, true)
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, { " " .. typing })
+		local width = vim.api.nvim_win_get_width(state.win)
+		typing_popup = vim.api.nvim_open_win(buf, false, {
+			relative = "win",
+			win = state.win,
+			row = 0,
+			col = 0,
+			width = width,
+			height = 1,
+			style = "minimal",
+			noautocmd = true,
+		})
+		vim.api.nvim_set_option_value("winhighlight", "Normal:TgService", { win = typing_popup })
+	end
 end
 
 local function show_group_selector()
@@ -602,7 +622,7 @@ function M.show_help()
 	help_popup = NuiPopup({
 		relative = "editor",
 		position = { row = "50%", col = "50%" },
-		size = { width = 40, height = 25 },
+		size = { width = 42, height = 26 },
 		zindex = 200,
 		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
 		buf_options = { buftype = "nofile", bufhidden = "wipe" },
@@ -626,6 +646,7 @@ function M.show_help()
 		" send       send a message",
 		" search     search history",
 		" refreshmedia  re-download HD media",
+		" newchat     start DM by @username",
 		"",
 		"-- Chat Picker --",
 		" built-in fuzzy search via Snacks picker",
@@ -847,10 +868,11 @@ function M.open_chat(chat_id, chat_title)
 
 	server.open_chat(state.chat_id)
 
-	-- Fetch initial online count (WS events may never fire if count doesn't change)
+	local cached = state.groups[state.chat_id]
+	state.online_count = (cached and cached.online_count) or 0
 	local chat_info = server.get_chat(state.chat_id)
 	if chat_info then
-		state.online_count = chat_info.onlineMemberCount or 0
+		state.online_count = chat_info.onlineMemberCount or state.online_count
 		M.update_title()
 	end
 
@@ -891,8 +913,16 @@ function M.jump_to_bottom()
 	pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
 end
 
+local function close_typing_popup()
+	if typing_popup and vim.api.nvim_win_is_valid(typing_popup) then
+		vim.api.nvim_win_close(typing_popup, true)
+		typing_popup = nil
+	end
+end
+
 function M.close_chat()
 	close_help()
+	close_typing_popup()
 	if state.chat_id then
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
