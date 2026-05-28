@@ -12,7 +12,7 @@ local labels = {
 }
 
 function M.render(msg)
-	local label = "[" .. (labels[msg.type] or msg.type or "Unknown") .. "]"
+	local label = labels[msg.type] or msg.type or "Unknown"
 	local text = msg.text or ""
 	local file_path = msg.filePath
 
@@ -20,7 +20,7 @@ function M.render(msg)
 	if file_path and #file_path > 0 then
 		table.insert(parts, "![" .. label .. "](" .. file_path .. ")")
 	else
-		table.insert(parts, label)
+		table.insert(parts, "[" .. label .. "]")
 	end
 	if text and #text > 0 then
 		for _, line in ipairs(vim.split(text, "\n")) do
