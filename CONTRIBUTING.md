@@ -14,34 +14,53 @@ pnpm install
 
 ```
 ├── lua/telegram/          # Neovim Lua frontend
-│   ├── init.lua           # Entry point, message handling
-│   ├── ui.lua             # UI rendering (popups, keymaps)
-│   ├── server.lua         # HTTP client to backend
-│   ├── ws.lua             # WebSocket client
+│   ├── init.lua           # Entry point, message handling, WS routing
+│   ├── ui.lua             # UI rendering (popups, keymaps, virtual scroll)
+│   ├── server.lua         # HTTP client to backend (curl-based, retry)
+│   ├── ws.lua             # WebSocket client (subprocess, reconnect)
 │   ├── auth.lua           # Authentication flow
-│   └── config.lua         # Configuration
-├── src/                   # Node.js backend
-│   ├── server.js          # Express + WebSocket server
-│   └── tdlib-client.js    # TDLib wrapper
-├── bin/                   # Helper scripts
-└── plugin/tg.lua          # Plugin loader
+│   ├── config.lua         # Configuration, highlight groups
+│   ├── editor.lua         # Input editor component
+│   ├── tools.lua          # Extensible tool system (@ key)
+│   └── render/            # Message rendering pipeline
+│       ├── init.lua
+│       ├── text.lua
+│       ├── code.lua
+│       ├── link.lua
+│       ├── media.lua
+│       └── other.lua
+├── src/                   # TypeScript backend (tsx runtime)
+│   ├── server.ts          # Express + WebSocket server
+│   ├── client.ts          # TelegramLSPClient orchestrator
+│   ├── types.ts           # Shared TS interfaces
+│   ├── tdlib.ts           # libtdjson path auto-detection
+│   ├── auth.ts            # AuthManager (phone → code → 2FA)
+│   ├── format.ts          # Message formatting
+│   ├── resolve.ts         # Sender resolution caching
+│   └── updates.ts         # WebSocket update dispatcher
+├── bin/                   # Helper scripts (tg-ws-helper.ts)
+├── plugin/tg.lua          # Plugin loader
+└── tests/                 # Vitest tests (FakeTdClient)
 ```
 
 ## Code Style
 
 - **Lua**: Follow existing patterns. Use tabs for indentation. No semicolons.
-- **JavaScript**: CommonJS modules. Use `_` instead of `@type` for TDLib objects.
+- **TypeScript**: Full type annotations. Use `_` instead of `@type` for TDLib objects.
 - Keep functions focused and well-named. Avoid unnecessary comments.
-- No build step — plain CJS JS and Lua.
+- No build step — `tsx` runs TypeScript directly from source.
 
 ## Making Changes
 
 1. Fork the repo and create a branch from `main` (e.g. `fix/login-crash`)
 2. Make your changes
-3. Test locally — `pnpm run test` to verify tests pass, `pnpm start` to check the backend starts
+3. Test locally:
+   - `pnpm test` to verify tests pass
+   - `pnpm typecheck` to verify TypeScript types
+   - `pnpm start` to check the backend starts
 4. Commit and push
 5. Open a Pull Request targeting the `main` branch
-6. CI will run automatically on your PR
+6. CI will run automatically on your PR (test + typecheck)
 
 ## Commit Messages
 

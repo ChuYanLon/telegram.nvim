@@ -2,17 +2,20 @@
 
 ```lua
 require("telegram").setup({
-  -- tdlib_path = "/path/to/libtdjson.so",
-  -- proxy = "socks5://127.0.0.1:7890",
+  -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
+  -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
 })
 ```
 
 ## Environment Variables
 
-| Env var | Overrides |
-|---------|-----------|
-| `TG_TDLIB_PATH` | `tdlib_path` |
-| `TG_PROXY` | `proxy` |
+| Env var | Overrides | Default |
+|---------|-----------|---------|
+| `TG_TDLIB_PATH` | `tdlib_path` | auto-detected |
+| `TG_PROXY` | `proxy` | — |
+| `TG_PORT` | HTTP server port | `8080` |
+| `TG_WS_PORT` | WebSocket server port | `8081` |
+| `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` | `./` |
 
 ## Proxy
 

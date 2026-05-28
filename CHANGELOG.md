@@ -8,6 +8,10 @@
 
 ### Changed
 
+- **Updated all documentation** — CONTRIBUTING, WORKFLOW, wiki pages, PR template, and CHANGELOG synced with current TypeScript architecture and feature set
+
+### Changed
+
 - **Removed dev branch** — workflow is now main-only; CI only triggers on main; branch creation bases on main instead of dev
 
 ## [0.3.1] - 2026-05-26

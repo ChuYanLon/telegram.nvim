@@ -21,15 +21,26 @@ Use a prefix + short description when creating branches:
 4. Open a Pull Request targeting the `main` branch
 5. Maintainer reviews and merges
 
-## 3. Your Development
+## 3. Development Workflow
 
-1. Work directly on `main` or create a feature branch:
-   ```
+1. Create a feature/fix branch from `main`:
+   ```bash
    git checkout -b feat/your-feature
-   # write code...
+   ```
+2. Make changes and test:
+   ```bash
+   pnpm test
+   pnpm typecheck
+   pnpm start
+   ```
+3. Commit and push:
+   ```bash
    git add .
    git commit -m 'feat: short description'
-   git push
+   git push -u origin feat/your-feature
    ```
+4. Open a Pull Request targeting `main`
+5. Use `:TgPr` from Neovim to create and optionally merge the PR
+6. After merge, the source branch auto-deletes
 
-2. Open a Pull Request targeting `main`.
+> **Note:** `main` is a protected branch — do not push directly. Always work on a feature branch.

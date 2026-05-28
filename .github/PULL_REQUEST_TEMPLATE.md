@@ -14,5 +14,6 @@
 
 - [ ] I have read the [Contributing Guide](../CONTRIBUTING.md)
 - [ ] My code follows the existing code style and conventions
-- [ ] I have tested the changes locally
+- [ ] I have tested the changes locally (`pnpm test`)
+- [ ] TypeScript types are valid (`pnpm typecheck`)
 - [ ] `pnpm start` works without errors
