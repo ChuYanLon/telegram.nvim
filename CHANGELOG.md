@@ -2,11 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-28
+
 ### Added
 
 - **`:TgPr` squash merge** — now offers "squash" and "commit" merge strategies when merging PRs
 - **Private chat support** — press `c` on a message to open DM with sender; `@newchat` tool to start DM by @username
-- **Snacks picker** — groups/chat picker now uses `snacks.nvim` with fuzzy search, falls back to `vim.ui.select`
+- **Snacks picker** — chat picker now uses `snacks.nvim` with fuzzy search, falls back to `vim.ui.select`
+- **Confirmation prompt before opening DM** — `vim.ui.select` asks Yes/No before opening a private chat
+- **ImageMagick requirement** — documented in README for image display in Kitty terminal
 
 ### Changed
 
@@ -14,10 +18,14 @@
 - **Terminology** — user-facing text unified to use "chat" instead of "group" (picker, help popup, notifications)
 - **Online count** — now fetched synchronously from TDLib on chat open with cache fallback; stale 0 values from WebSocket ignored
 - **Typing indicator** — shown in a floating popup below the winbar instead of replacing the title bar
+- **Service message prefixes** — changed from markdown-significant characters (`+`, `-`, `*`, `>`) to bracket format (`[+]`, `[-]`, `[*]`, `[>]`)
+- **README screenshots** — reorganized with new screenshot categories and Image Preview section
 
-### Changed
+### Fixed
 
-- **Removed dev branch** — workflow is now main-only; CI only triggers on main; branch creation bases on main instead of dev
+- **Service message highlighting** — added `TgService` highlight group for service messages
+- **Wiki sync workflow** — pull rebase before push to avoid push conflicts
+- **Online count** - stale 0 values from WebSocket no longer overwrite cached counts
 
 ## [0.3.1] - 2026-05-26
 
