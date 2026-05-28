@@ -570,13 +570,19 @@ local function setup_chat_keymaps()
 			vim.notify("Cannot open chat with this sender", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		vim.notify("Opening DM with " .. target.sender.name .. "...", vim.log.levels.INFO, { title = "tg" })
-		local chat = server.open_private_chat(user_id)
-		if chat then
-			M.open_chat(chat.id, chat.title)
-		else
-			vim.notify("Failed to open private chat", vim.log.levels.ERROR, { title = "tg" })
-		end
+		vim.ui.select({ "Yes", "No" }, {
+			prompt = "Open DM with " .. target.sender.name .. "?",
+		}, function(choice)
+			if choice ~= "Yes" then
+				return
+			end
+			local chat = server.open_private_chat(user_id)
+			if chat then
+				M.open_chat(chat.id, chat.title)
+			else
+				vim.notify("Failed to open private chat", vim.log.levels.ERROR, { title = "tg" })
+			end
+		end)
 	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "?", M.show_help, { buffer = buf })
 end
