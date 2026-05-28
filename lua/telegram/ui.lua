@@ -749,6 +749,9 @@ function M.open_chat(chat_id, chat_title)
 		vim.api.nvim_create_autocmd("BufUnload", {
 			buffer = state.buf,
 			callback = function()
+				if state.chat_id then
+					state.last_group = { id = state.chat_id, title = state.chat_title }
+				end
 				hide_chat()
 			end,
 		})
@@ -772,36 +775,33 @@ function M.open_chat(chat_id, chat_title)
 
 	server.open_chat(state.chat_id)
 
-	M.refresh_messages(function()
-		if #state.messages > 0 then
-			local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
-			if saved_id then
+	local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
+	if saved_id then
+		state.messages = {}
+		state.exhausted = false
+		state.exhausted_forward = false
+		local cid = state.chat_id
+		server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
+			if state.chat_id == cid then
+				state.messages = data.messages or {}
+				render()
+				M.update_title()
+				if #state.messages > 0 then
+					server.view_messages(state.chat_id, state.messages[#state.messages].id)
+				end
 				local l = line_of(saved_id)
 				if l then
 					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 				else
-					local cid = state.chat_id
-					state.messages = {}
-					state.exhausted = false
-					state.exhausted_forward = false
-					server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
-						if state.chat_id == cid then
-							state.messages = data.messages or {}
-							render()
-							local l = line_of(saved_id)
-							if l then
-								pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-							else
-								M.jump_to_bottom()
-							end
-						end
-					end)
+					M.jump_to_bottom()
 				end
-			else
-				M.jump_to_bottom()
 			end
-		end
-	end)
+		end)
+	else
+		M.refresh_messages(function()
+			M.jump_to_bottom()
+		end)
+	end
 end
 
 function M.jump_to_bottom()
