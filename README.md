@@ -61,7 +61,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### What doesn't work yet
 
-- [ ] **Dedicated groups sidebar** — groups are switched via popup, no persistent sidebar
 - [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
 - [ ] **Send stickers / GIFs**
 - [ ] **Create polls**
