@@ -273,6 +273,23 @@ end
 M.DEFAULT_LIMIT = 50
 
 ---@return table|nil
+function M.get_chats()
+	return http_get("/chats")
+end
+
+---@param username string
+---@return table|nil
+function M.search_user(username)
+	return http_post("/chats/searchUser", { username = username })
+end
+
+---@param user_id number
+---@return table|nil
+function M.open_private_chat(user_id)
+	return http_post("/chats/openByUserId", { userId = user_id })
+end
+
+---@return table|nil
 function M.get_groups()
 	if not cached_groups then
 		cached_groups = http_get("/groups")

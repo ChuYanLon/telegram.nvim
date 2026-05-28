@@ -257,31 +257,31 @@ local function finish_init()
 	vim.notify("Ready", vim.log.levels.INFO, { title = "tg" })
 end
 
-local function finish_open(groups)
-	ui.set_groups(groups or {})
+local function finish_open(chats)
+	ui.set_groups(chats or {})
 	ui.destroy_chat()
-	if groups and #groups > 0 then
+	if chats and #chats > 0 then
 		local last = ui.state.last_group
 		if last and ui.state.groups[last.id] then
 			ui.open_chat(last.id, last.title)
 		else
-			ui.open_chat(groups[1].id, groups[1].title)
+			ui.open_chat(chats[1].id, chats[1].title)
 		end
 	end
 end
 
-local function poll_groups(remaining, groups)
+local function poll_chats(remaining, chats)
 	if remaining <= 0 then
-		finish_open(groups or {})
+		finish_open(chats or {})
 		return
 	end
-	groups = server.get_groups()
-	if groups and #groups > 1 then
-		finish_open(groups)
+	chats = server.get_chats()
+	if chats and #chats > 1 then
+		finish_open(chats)
 		return
 	end
 	vim.defer_fn(function()
-		poll_groups(remaining - 1, groups)
+		poll_chats(remaining - 1, chats)
 	end, 1000)
 end
 
@@ -298,17 +298,17 @@ function M.list_groups()
 			return
 		end
 
-		local groups = server.get_groups()
-		if not groups then
-			vim.notify("No groups found", vim.log.levels.WARN, { title = "tg" })
+		local chats = server.get_chats()
+		if not chats then
+			vim.notify("No chats found", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		if #groups <= 1 then
+		if #chats <= 1 then
 			vim.notify("Syncing chats, please wait...", vim.log.levels.INFO, { title = "tg" })
-			poll_groups(15, groups)
+			poll_chats(15, chats)
 			return
 		end
-		finish_open(groups)
+		finish_open(chats)
 	end
 
 	if not initialized then
@@ -356,16 +356,16 @@ function M.list_groups()
 		return
 	end
 
-	local groups = server.get_groups()
-	if groups and #groups > 0 then
+	local chats = server.get_chats()
+	if chats and #chats > 0 then
 		local last = ui.state.last_group
 		if last and ui.state.groups[last.id] then
 			ui.open_chat(last.id, last.title)
 		else
-			ui.open_chat(groups[1].id, groups[1].title)
+			ui.open_chat(chats[1].id, chats[1].title)
 		end
 	else
-		vim.notify("No groups available", vim.log.levels.WARN, { title = "tg" })
+		vim.notify("No chats available", vim.log.levels.WARN, { title = "tg" })
 	end
 end
 
@@ -383,6 +383,7 @@ function M.logout()
 end
 
 -- API re-exports
+M.get_chats = server.get_chats
 M.get_groups = server.get_groups
 M.get_messages = server.get_messages
 M.send_message = server.send_message

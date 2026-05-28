@@ -60,6 +60,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
 - [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
 - [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
+- [x] **Private chats** (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
 
 ### What doesn't work yet
 
@@ -73,7 +74,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Pin messages**
 - [ ] **Multi-select messages** for batch operations
 - [ ] **Channel support** — currently filtered out, supergroups only
-- [ ] **Private chats** (direct 1-on-1 messages)
 - [ ] **Chat folders**
 - [ ] **Pinned chats** section
 - [ ] **Leave group**
@@ -234,13 +234,14 @@ Inside the chat window:
 | `<CR>` | Reply to message / jump to original (if cursor is on a quote line) |
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
-| `f` | Forward message to another group |
+| `f` | Forward message to another chat |
+| `c` | Open DM with the sender of the message at cursor |
 | `G` | Refresh messages and jump to bottom |
 | `@` | Open context-aware tool picker |
 
-In the groups picker (`@` → groups):
+In the chat picker (`@` → chats):
 - Built-in fuzzy search (Snacks picker when available, `vim.ui.select` fallback)
-- `<CR>` — select group
+- `<CR>` — select chat
 - `<Esc>` — close
 
 ## Auth Flow

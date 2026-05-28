@@ -40,11 +40,29 @@ function M.pick()
 	end)
 end
 
-M.register("groups", {
-	description = "Switch to another group",
+M.register("chats", {
+	description = "Switch to another chat",
 	callback = function()
 		ui.show_groups_picker(function(item)
 			if item then require("telegram").open_chat(item.id, item.title) end
+		end)
+	end,
+})
+
+M.register("newchat", {
+	description = "Start a new private chat by @username",
+	callback = function()
+		vim.ui.input({ prompt = "Enter @username: " }, function(username)
+			if not username or #username == 0 then
+				return
+			end
+			vim.notify("Searching for @" .. username .. "...", vim.log.levels.INFO, { title = "tg" })
+			local chat = require("telegram.server").search_user(username)
+			if chat then
+				require("telegram").open_chat(chat.id, chat.title)
+			else
+				vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
+			end
 		end)
 	end,
 })

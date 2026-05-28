@@ -1,7 +1,7 @@
 import * as tdl from 'tdl';
 import * as dotenv from 'dotenv';
 import path from 'path';
-import type { RawTdChat, RawTdMessage, GroupInfo, FormattedMessage } from './types';
+import type { RawTdChat, RawTdMessage, GroupInfo, ChatInfo, FormattedMessage } from './types';
 import { initTdlibModule, getResolvedTdlibPath } from './tdlib';
 import { AuthManager } from './auth';
 import { MessageFormatter } from './format';
@@ -191,6 +191,81 @@ export class TelegramLSPClient {
     } catch { /* ignore */ }
 
     return group;
+  }
+
+  async _enrichPrivate(chat: RawTdChat): Promise<ChatInfo | null> {
+    const info: ChatInfo = {
+      id: chat.id,
+      title: chat.title,
+      type: 'private',
+      unreadCount: chat.unread_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
+    };
+    if (chat.last_message) {
+      info.lastMessage = await this.formatter.format(chat.last_message);
+    }
+    if (chat.type.user_id) {
+      info.userId = chat.type.user_id;
+    }
+    return info;
+  }
+
+  async getAllChats(): Promise<ChatInfo[]> {
+    const chats = await this.getChats();
+    const results = chats.map(async (chat) => {
+      const t = chat.type._;
+      if (t === 'chatTypeBasicGroup' || (t === 'chatTypeSupergroup' && !chat.type.is_channel)) {
+        const g = await this._enrichGroup(chat);
+        return g ? { ...g, type: 'group' as const } : null;
+      }
+      if (t === 'chatTypePrivate' || t === 'chatTypeSecret') {
+        return this._enrichPrivate(chat);
+      }
+      return null;
+    });
+    const enriched = await Promise.all(results);
+    return enriched.filter(Boolean) as ChatInfo[];
+  }
+
+  async searchUserByUsername(username: string): Promise<ChatInfo> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const clean = username.replace(/^@/, '');
+    const chat = await this.client.invoke({
+      _: 'searchPublicChat',
+      username: clean,
+    }) as RawTdChat;
+    if (!chat || !chat.id) throw new Error('User not found');
+    this._chats.set(chat.id, chat);
+    if (chat.type._ === 'chatTypePrivate' || chat.type._ === 'chatTypeSecret') {
+      const enriched = await this._enrichPrivate(chat);
+      if (enriched) return enriched;
+    }
+    return {
+      id: chat.id,
+      title: chat.title,
+      type: chat.type._ === 'chatTypePrivate' || chat.type._ === 'chatTypeSecret' ? 'private' : 'group',
+      unreadCount: chat.unread_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
+    };
+  }
+
+  async getPrivateChatByUserId(userId: number): Promise<ChatInfo> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const chat = await this.client.invoke({
+      _: 'createPrivateChat',
+      user_id: userId,
+      force: true,
+    }) as RawTdChat;
+    this._chats.set(chat.id, chat);
+    const enriched = await this._enrichPrivate(chat);
+    if (enriched) return enriched;
+    return {
+      id: chat.id,
+      title: chat.title,
+      type: 'private',
+      unreadCount: chat.unread_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
+    };
   }
 
   async getGroups(): Promise<GroupInfo[]> {

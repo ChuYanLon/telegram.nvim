@@ -52,6 +52,7 @@ export interface RawTdChat {
     supergroup_id?: number;
     basic_group_id?: number;
     is_channel?: boolean;
+    user_id?: number;
   };
   unread_count?: number;
   online_member_count?: number;
@@ -68,6 +69,19 @@ export interface GroupInfo {
   memberCount?: number;
   owner?: SenderInfo | null;
   description?: string;
+}
+
+export interface ChatInfo {
+  id: number;
+  title: string;
+  type: 'group' | 'private';
+  unreadCount: number;
+  onlineMemberCount: number;
+  lastMessage?: FormattedMessage | null;
+  memberCount?: number;
+  owner?: SenderInfo | null;
+  description?: string;
+  userId?: number;
 }
 
 export interface AuthState {

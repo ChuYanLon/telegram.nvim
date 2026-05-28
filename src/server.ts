@@ -53,6 +53,43 @@ app.post('/auth/input', async (req, res) => {
   }
 });
 
+app.get('/chats', async (_req, res) => {
+  try {
+    const chats = await tgClient.getAllChats();
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+app.post('/chats/openByUserId', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      res.status(400).json({ error: 'userId is required' });
+      return;
+    }
+    const chat = await tgClient.getPrivateChatByUserId(Number(userId));
+    res.json(chat);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+app.post('/chats/searchUser', async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) {
+      res.status(400).json({ error: 'username is required' });
+      return;
+    }
+    const chat = await tgClient.searchUserByUsername(username);
+    res.json(chat);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.get('/groups', async (_req, res) => {
   try {
     const groups = await tgClient.getGroups();
