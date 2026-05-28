@@ -64,6 +64,10 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Create polls**
 - [ ] **Scheduled messages**
 - [ ] **Emoji picker**
+- [x] **Download HD media** — `@refreshmedia` downloads the highest-quality version of photos/videos under cursor (async, non-blocking)
+- [x] **Context-aware tool picker** — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
+- [x] **Wake-up safe** — messages received after sleep are batched and rendered at once, no Neovim freeze
+- [x] **`<C-j>`/`<C-k>`** — navigate between message and input panels
 - [ ] **Inline preview** of photos, videos, files in Neovim — only shows a label, no real preview
 - [ ] **Sticker, poll, contact, location, dice, game, call display** — fallback exists but doesn't render properly
 - [ ] **React to messages** (like, heart, etc.)
@@ -107,14 +111,14 @@ Media messages that cannot be rendered natively are shown as tags:
 
 | Tag | Meaning |
 |-----|---------|
-| `[Photo]` | Photo sent |
-| `[Video]` | Video sent |
-| `[Animation]` | GIF sent |
-| `[Document]` | File sent |
-| `[Audio]` | Music sent |
-| `[Voice]` | Voice message |
-| `[Video Note]` | Video message |
-| `[Sticker]` | Sticker sent |
+| `![Photo](/path)` | Photo sent (clickable, HD via `@refreshmedia`) |
+| `![Video](/path)` | Video sent (clickable) |
+| `![Animation](/path)` | GIF sent (clickable) |
+| `![Document](/path)` | File sent (clickable) |
+| `![Audio](/path)` | Music sent (clickable) |
+| `![Voice](/path)` | Voice message (clickable) |
+| `![Video Note](/path)` | Video message (clickable) |
+| `![Sticker](/path)` | Sticker sent (clickable) |
 | `[Poll]` | Poll created |
 | `[Contact]` | Contact shared |
 | `[Location]` | Location shared |
@@ -194,7 +198,7 @@ ldconfig 2>/dev/null || true
 
 | Command       | Description                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `:Tg`         | Toggle groups. First run: server + auth. Then: if chat open → refresh; if previously opened → reopen; otherwise opens the first chat |
+| `:Tg`         | Global toggle: opens tg window if closed, hides it if open (from any buffer). First run: server + auth, then opens last chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                                 |
 | `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                        |
 | `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion |
@@ -224,12 +228,14 @@ Inside a chat window:
 | `<C-j>` | Focus input editor |
 | `<C-k>` | Focus message panel |
 | `i` | Focus input editor |
+| `@` | Open context-aware tool picker |
 | `/` | Search messages |
 | `<CR>` | Reply to message / jump to original with context |
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another group |
 | `r` | Refresh and scroll to latest messages |
+| `G` | Jump to latest messages |
 | `Esc Esc` | Close chat (preserves cursor position) |
 | `q` | Quit (stop server, full exit) |
 
