@@ -186,171 +186,77 @@ function M.append_message(msg)
 end
 
 local function show_groups_picker(on_select)
-	local all_items = {}
+	local items = {}
 	for _, id in ipairs(state.group_ids) do
 		local g = state.groups[id]
 		if g then
-			table.insert(all_items, { id = g.id, title = g.title, unread = g.unread_count or 0 })
+			table.insert(items, {
+				id = g.id,
+				title = g.title,
+				unread = g.unread_count or 0,
+			})
 		end
 	end
-	if #all_items == 0 then
+	if #items == 0 then
 		vim.notify("No groups available", vim.log.levels.INFO, { title = "tg" })
 		return
 	end
 
-	local items = all_items
-	local query = ""
-	local search_focused = false
-	local filtering = false
-	local win_size = math.min(#items, 15)
-	local sel = math.min(state.group_cursor or 1, #items)
-	local offset = math.max(1, math.min(sel - math.floor(win_size / 2), #items - win_size + 1))
-
-	local NuiPopup = require("nui.popup")
-	local popup = NuiPopup({
-		relative = "editor",
-		position = { row = "50%", col = "50%" },
-		size = { width = 50, height = win_size + 2 },
-		zindex = 150,
-		border = { style = "rounded", text = { top = " Groups ", top_align = "center" } },
-		buf_options = { buftype = "nofile" },
-		win_options = { cursorline = true, cursorlineopt = "line" },
-		enter = true,
-		focusable = true,
-	})
-	popup:mount()
-
-	local function set_content()
-		local n = #items
-		if #query > 0 then
-			sel = math.min(sel, n)
-			offset = math.min(offset, math.max(1, n - win_size + 1))
+	local ok, snacks = pcall(require, "snacks")
+	if ok and snacks.picker then
+		local picker_items = {}
+		for _, item in ipairs(items) do
+			table.insert(picker_items, {
+				id = item.id,
+				text = item.title,
+				unread = item.unread,
+			})
 		end
-		local lines = {}
-		local search_text = (search_focused or #query > 0) and "  " .. query or " Search..."
-		table.insert(lines, search_text)
-		if n == 0 then
-			table.insert(lines, "  (no matches)")
-		else
-			local end_idx = math.min(offset + win_size - 1, n)
-			for i = offset, end_idx do
-				local item = items[i]
+		local picked = false
+		snacks.picker.pick({
+			title = "Groups",
+			items = picker_items,
+			layout = "select",
+			format = function(item)
+				local label = item.text
+				if item.unread > 0 then
+					label = label .. "  \xE2\x97\x8F +" .. item.unread
+				end
+				return { { label } }
+			end,
+			confirm = function(picker, item)
+				picked = true
+				picker:close()
+				if item then
+					on_select({ id = item.id, title = item.text, unread = item.unread })
+				else
+					on_select(nil)
+				end
+			end,
+			on_close = function()
+				if not picked then
+					on_select(nil)
+				end
+			end,
+		})
+	else
+		vim.ui.select(items, {
+			prompt = "Select group:",
+			format_item = function(item)
 				local label = item.title
 				if item.unread > 0 then
 					label = label .. "  \xE2\x97\x8F +" .. item.unread
 				end
-				if #label > 47 then label = label:sub(1, 44) .. "..." end
-				table.insert(lines, "  " .. label)
+				return label
+			end,
+		}, function(item)
+			if item then
+				on_select({ id = item.id, title = item.title, unread = item.unread })
+			else
+				on_select(nil)
 			end
-			if n > end_idx then
-				table.insert(lines, "  \xE2\x96\xBC " .. (n - end_idx) .. " more")
-			end
-		end
-		while #lines < win_size + 2 do table.insert(lines, "") end
-		vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
-		vim.api.nvim_buf_clear_namespace(popup.bufnr, hl_ns, 0, 1)
-		if #query == 0 and not search_focused then
-			vim.api.nvim_buf_add_highlight(popup.bufnr, hl_ns, "TgPlaceholder", 0, 2, -1)
-		end
+		end)
 	end
-
-	local function filter(q)
-		if filtering then return end
-		filtering = true
-		query = q
-		if #query == 0 then
-			items = all_items
-		else
-			local ql = query:lower()
-			items = {}
-			for _, item in ipairs(all_items) do
-				if item.title:lower():find(ql, 1, true) then
-					table.insert(items, item)
-				end
-			end
-		end
-		sel = 1
-		offset = 1
-		set_content()
-		filtering = false
-	end
-
-	local function search_enter()
-		search_focused = true
-		vim.bo[popup.bufnr].modifiable = true
-		set_content()
-		pcall(vim.api.nvim_win_set_cursor, popup.winid, { 1, 0 })
-		vim.cmd("startinsert!")
-	end
-
-	local function search_exit()
-		search_focused = false
-		vim.cmd("stopinsert")
-		vim.bo[popup.bufnr].modifiable = false
-		local rel = sel - offset + 2
-		pcall(vim.api.nvim_win_set_cursor, popup.winid, { rel, 0 })
-	end
-
-	local function list_down()
-		if sel >= #items then return end
-		sel = sel + 1
-		if sel - offset + 2 > win_size + 1 then offset = offset + 1 end
-		state.group_cursor = sel
-		vim.bo[popup.bufnr].modifiable = true
-		set_content()
-		vim.bo[popup.bufnr].modifiable = false
-		pcall(vim.api.nvim_win_set_cursor, popup.winid, { sel - offset + 2, 0 })
-	end
-
-	local function list_up()
-		if sel <= 1 then return end
-		sel = sel - 1
-		if sel - offset + 2 < 2 then offset = math.max(1, offset - 1) end
-		state.group_cursor = sel
-		vim.bo[popup.bufnr].modifiable = true
-		set_content()
-		vim.bo[popup.bufnr].modifiable = false
-		pcall(vim.api.nvim_win_set_cursor, popup.winid, { sel - offset + 2, 0 })
-	end
-
-	vim.bo[popup.bufnr].modifiable = true
-	set_content()
-	vim.bo[popup.bufnr].modifiable = false
-	if #items > 0 then pcall(vim.api.nvim_win_set_cursor, popup.winid, { 2, 0 }) end
-
-	vim.keymap.set("n", "i", search_enter, { buffer = popup.bufnr, nowait = true })
-	vim.keymap.set("n", "j", list_down, { buffer = popup.bufnr, nowait = true })
-	vim.keymap.set("n", "k", list_up, { buffer = popup.bufnr, nowait = true })
-	vim.keymap.set("n", "<CR>", function()
-		if #items == 0 then return end
-		popup:unmount()
-		on_select(items[sel])
-	end, { buffer = popup.bufnr, nowait = true })
-	vim.keymap.set("n", "<Esc>", function()
-		popup:unmount()
-		on_select(nil)
-	end, { buffer = popup.bufnr, nowait = true })
-
-	vim.keymap.set("i", "<Esc>", search_exit, { buffer = popup.bufnr, nowait = true })
-	vim.keymap.set("i", "<CR>", function()
-		if #items == 0 then return end
-		search_focused = false
-		vim.cmd("stopinsert")
-		vim.bo[popup.bufnr].modifiable = false
-		popup:unmount()
-		on_select(items[sel])
-	end, { buffer = popup.bufnr, nowait = true })
-
-	vim.api.nvim_create_autocmd("TextChangedI", {
-		buffer = popup.bufnr,
-		callback = function()
-			if filtering then return end
-			local line = vim.api.nvim_buf_get_lines(popup.bufnr, 0, 1, false)[1] or ""
-			local _, _, new_q = line:find("^  (.*)")
-			local q = new_q or ""
-			if q ~= query then filter(q) end
-		end,
-	})
 end
 
 function M.set_groups(groups)
@@ -678,17 +584,15 @@ function M.show_help()
 		" G          refresh + jump to bottom",
 		"",
 		"-- Tools (@) --",
-		" groups     switch group (j/k scroll)",
+		" groups     switch group (Snacks picker)",
 		" refresh    reload messages",
 		" send       send a message",
 		" search     search history",
 		" refreshmedia  re-download HD media",
 		"",
 		"-- Groups Picker --",
-		" j/k        navigate list (virtual scroll)",
-		" i          search (inline filter)",
-		" <CR>       select group",
-		" <Esc>      cancel / close",
+		" built-in fuzzy search via Snacks picker",
+		" <CR> / <Esc>  select / cancel",
 		"",
 		"-- General --",
 		" ?          toggle this help",

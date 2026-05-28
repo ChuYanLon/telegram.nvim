@@ -33,7 +33,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Login with phone number, verification code, and 2FA password
 - [x] Session persists across restarts (no re-login)
 - [x] `:TgLogout` to clear auth and start fresh
-- [x] Group list with unread badges, virtual scrolling, and inline search (NuiPopup: `j/k` navigate, `i` search, `<Esc>` close)
+- [x] Group list with unread badges, inline fuzzy search (Snacks picker with `vim.ui.select` fallback)
 - [x] Open/close chats, switch between groups
 - [x] Scroll infinitely in both directions (older and newer messages)
 - [x] Receive new messages in real-time via WebSocket
@@ -134,6 +134,7 @@ Media messages that cannot be rendered natively are shown as tags:
 - **curl**
 - **libtdjson** — TDLib shared library (minimum version **1.8.64**) — `libtdjson.so` (Linux), `libtdjson.dylib` (macOS), `tdjson.dll` (Windows)
 - **nui.nvim** — used for popups, layout, and input editor (automatically installed by lazy.nvim)
+- **snacks.nvim** — optional, used for the groups picker with fuzzy search (falls back to `vim.ui.select` if not installed)
 - **gh** (GitHub CLI) — optional, required for `:TgPr` and `:TgIssue` commands
 
 ### Installing libtdjson
@@ -174,7 +175,10 @@ ldconfig 2>/dev/null || true
   "ChuYanLon/telegram.nvim",
   build = "npm i",
   event = "VeryLazy",
-  dependencies = { "MunifTanjim/nui.nvim" },
+  dependencies = {
+    "MunifTanjim/nui.nvim",
+    -- "folke/snacks.nvim",   -- optional: enables fuzzy-find groups picker
+  },
   keys = {
     { "<leader>tt", "<cmd>Tg<Cr>", desc = "Toggle Telegram" },
     { "<leader>tL", "<cmd>TgLogout<Cr>", desc = "Logout Telegram" },
@@ -235,8 +239,7 @@ Inside the chat window:
 | `@` | Open context-aware tool picker |
 
 In the groups picker (`@` → groups):
-- `j/k` — scroll list (virtual scrolling)
-- `i` — focus search bar (type to filter inline)
+- Built-in fuzzy search (Snacks picker when available, `vim.ui.select` fallback)
 - `<CR>` — select group
 - `<Esc>` — close
 
