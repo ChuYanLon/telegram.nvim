@@ -162,6 +162,27 @@ end
 
 M.render = render
 
+function M.append_message(msg)
+	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
+		return
+	end
+	local buf = state.buf
+	local msg_lines = fmt_msg(msg)
+	if #msg_lines == 0 then
+		return
+	end
+	vim.bo[buf].modifiable = true
+	local total = vim.api.nvim_buf_line_count(buf)
+	if total == 0 then
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, msg_lines)
+	else
+		table.insert(msg_lines, 1, "")
+		vim.api.nvim_buf_set_lines(buf, total - 1, -1, false, msg_lines)
+	end
+	vim.bo[buf].modifiable = false
+	vim.bo[buf].modified = false
+end
+
 function M.set_groups(groups)
 	local new_groups = {}
 	local new_ids = {}

@@ -143,14 +143,15 @@ M.register("refreshmedia", {
 			return
 		end
 		vim.notify("Downloading media...", vim.log.levels.INFO, { title = "tg" })
-		local res = server.get_media(ui.state.chat_id, target.id)
-		if res and res.path and #res.path > 0 then
-			target.filePath = res.path
-			ui.render()
-			vim.notify("Media updated", vim.log.levels.INFO, { title = "tg" })
-		else
-			vim.notify("No media path found", vim.log.levels.INFO, { title = "tg" })
-		end
+		server.get_media_async(ui.state.chat_id, target.id, function(res)
+			if res and res.path and #res.path > 0 then
+				target.filePath = res.path
+				ui.render()
+				vim.notify("Media updated", vim.log.levels.INFO, { title = "tg" })
+			else
+				vim.notify("No media path found", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
 	end,
 })
 

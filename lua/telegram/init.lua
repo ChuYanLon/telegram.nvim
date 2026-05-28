@@ -135,27 +135,32 @@ local function finish_init()
 							mimeType = msg.mimeType,
 						})
 					end
-					ui.render()
-					if st.win and vim.api.nvim_win_is_valid(st.win) then
-						pcall(vim.api.nvim_win_call, st.win, function()
-							vim.cmd("redraw")
-						end)
-					end
 					local t = msg.type or ""
+					if at_bottom and not added then
+						ui.append_message(st.messages[#st.messages])
+						if st.win and vim.api.nvim_win_is_valid(st.win) then
+							pcall(vim.api.nvim_win_call, st.win, function()
+								vim.cmd("redraw")
+							end)
+						end
+					else
+						ui.render()
+					end
 					if t ~= "messageText" and t:find("^message") and (not msg.filePath or #msg.filePath == 0) then
 						vim.defer_fn(function()
 							local cid = msg.chat and msg.chat.id
 							if st.chat_id == cid then
-								local res = server.get_media(st.chat_id, mid)
-								if res and res.path and #res.path > 0 then
-									for _, m in ipairs(st.messages) do
-										if tostring(m.id) == tostring(mid) then
-											m.filePath = res.path
-											ui.render()
-											break
+								server.get_media_async(st.chat_id, mid, function(res)
+									if res and res.path and #res.path > 0 then
+										for _, m in ipairs(st.messages) do
+											if tostring(m.id) == tostring(mid) then
+												m.filePath = res.path
+												ui.render()
+												break
+											end
 										end
 									end
-								end
+								end)
 							end
 						end, 2000)
 					end
