@@ -443,18 +443,25 @@ export class TelegramLSPClient {
       await this.client.invoke({ _: 'openMessageContent', chat_id: chatId, message_id: messageId }).catch(() => {});
 
       const content = msg.content as Record<string, unknown>;
-      const files: number[] = [];
+      const allIds: number[] = [];
+      let targetId = 0;
 
-      // Collect all file IDs from media content
-      const collectFiles = (obj: Record<string, unknown>, ...keys: string[]) => {
+      const collect = (obj: Record<string, unknown>, ...keys: string[]) => {
         for (const key of keys) {
           const val = obj[key];
           if (!val) continue;
           const arr = Array.isArray(val) ? val : [val];
           for (const item of arr) {
-            const f = (item as Record<string, unknown> | undefined)?.['photo'] || (item as Record<string, unknown> | undefined)?.['sticker'] || (item as Record<string, unknown> | undefined)?.['video'] || (item as Record<string, unknown> | undefined)?.['document'] || (item as Record<string, unknown> | undefined)?.['animation'] || (item as Record<string, unknown> | undefined)?.['voice'] || (item as Record<string, unknown> | undefined)?.['audio'] || item;
+            const f = (item as Record<string, unknown>)?.['photo']
+              || (item as Record<string, unknown>)?.['sticker']
+              || (item as Record<string, unknown>)?.['video']
+              || (item as Record<string, unknown>)?.['document']
+              || (item as Record<string, unknown>)?.['animation']
+              || (item as Record<string, unknown>)?.['voice']
+              || (item as Record<string, unknown>)?.['audio']
+              || item;
             const fileId = (f as Record<string, unknown> | undefined)?.['id'] as number | undefined;
-            if (fileId && fileId > 0) files.push(fileId);
+            if (fileId && fileId > 0) allIds.push(fileId);
           }
         }
       };
@@ -463,30 +470,43 @@ export class TelegramLSPClient {
       if (t === 'messagePhoto') {
         const photo = content['photo'] as Record<string, unknown> | undefined;
         const sizes = photo?.['sizes'] as Record<string, unknown>[] | undefined;
-        if (sizes) for (const s of sizes) collectFiles(s, 'photo', 'sizes');
+        if (sizes) {
+          for (const s of sizes) collect(s, 'photo', 'sizes');
+          const lastSize = sizes[sizes.length - 1];
+          const lastFile = (lastSize['photo'] || lastSize['sizes']) as Record<string, unknown> | Record<string, unknown>[] | undefined;
+          if (lastFile) {
+            const f = Array.isArray(lastFile) ? lastFile[0] : lastFile;
+            targetId = (f?.['id'] as number) || 0;
+          }
+        }
       } else if (t === 'messageSticker') {
-        collectFiles(content['sticker'] as Record<string, unknown>, 'sticker', 'thumbnail');
+        collect(content['sticker'] as Record<string, unknown>, 'sticker', 'thumbnail');
+        const sf = (content['sticker'] as Record<string, unknown> | undefined)?.['sticker'] as Record<string, unknown> | undefined;
+        targetId = (sf?.['id'] as number) || 0;
       } else {
-        const cfg = { messageVideo: 'video', messageDocument: 'document', messageAnimation: 'animation', messageVoiceNote: 'voice_note', messageVideoNote: 'video_note', messageAudio: 'audio' } as Record<string, string>;
+        const cfg: Record<string, string> = { messageVideo: 'video', messageDocument: 'document', messageAnimation: 'animation', messageVoiceNote: 'voice_note', messageVideoNote: 'video_note', messageAudio: 'audio' };
         const key = cfg[t];
         if (key) {
           const media = content[key] as Record<string, unknown> | undefined;
           if (media) {
-            collectFiles(media, key.replace('_note', '').replace('_', ''), 'thumbnail');
+            collect(media, key.replace('_note', '').replace('_', ''), 'thumbnail');
+            const main = media[key.replace('_note', '').replace('_', '')] as Record<string, unknown> | undefined;
+            targetId = (main?.['id'] as number) || 0;
           }
         }
       }
 
-      const uniqueIds = [...new Set(files)];
+      const uniqueIds = [...new Set(allIds)];
       await Promise.all(uniqueIds.map(id => this.client.invoke({ _: 'downloadFile', file_id: id, priority: 1 }).catch(() => {})));
 
-      for (let attempt = 0; attempt < 15; attempt++) {
-        await new Promise(r => setTimeout(r, 1000));
-        const fresh = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
-        if (fresh?.content) {
-          const freshContent = fresh.content as Record<string, unknown>;
-          const formatted = await this.formatter.format(fresh);
-          if (formatted?.filePath) return { path: formatted.filePath };
+      // Poll specifically for the highest-quality file
+      if (targetId > 0) {
+        for (let attempt = 0; attempt < 15; attempt++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const fi = await this.client.invoke({ _: 'getFile', file_id: targetId }).catch(() => null) as Record<string, unknown> | null;
+          const local = fi?.['local'] as Record<string, unknown> | undefined;
+          const path = local?.['path'] as string | undefined;
+          if (path) return { path };
         }
       }
 
