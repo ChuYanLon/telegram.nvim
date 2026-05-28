@@ -764,6 +764,13 @@ function M.open_chat(chat_id, chat_title)
 
 	server.open_chat(state.chat_id)
 
+	-- Fetch initial online count (WS events may never fire if count doesn't change)
+	local chat_info = server.get_chat(state.chat_id)
+	if chat_info then
+		state.online_count = chat_info.onlineMemberCount or 0
+		M.update_title()
+	end
+
 	local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
 	if saved_id then
 		state.messages = {}
