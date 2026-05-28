@@ -516,6 +516,7 @@ local function setup_chat_keymaps()
 			M.jump_to_bottom()
 		end)
 	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "?", M.show_help, { buffer = buf })
 end
 
 local help_popup = nil
@@ -527,7 +528,58 @@ local function close_help()
 	end
 end
 
-M.close_help = close_help
+function M.show_help()
+	close_help()
+	local NuiPopup = require("nui.popup")
+	help_popup = NuiPopup({
+		relative = "editor",
+		position = { row = "50%", col = "50%" },
+		size = { width = 40, height = 25 },
+		zindex = 200,
+		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
+		buf_options = { buftype = "nofile", bufhidden = "wipe" },
+		win_options = { winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder" },
+		enter = true,
+		focusable = true,
+	})
+	local lines = {
+		"-- Navigation --",
+		" <C-h>      focus groups panel",
+		" <C-l>      focus message panel",
+		" <C-j>      focus input editor",
+		" /          search history",
+		" G          jump to latest",
+		"",
+		"-- Messages --",
+		" <CR>       reply / jump to original",
+		" e          edit own message",
+		" d          delete / revoke",
+		" f          forward message",
+		" r          refresh messages",
+		"",
+		"-- Tools (@) --",
+		" groups     switch group",
+		" refresh    reload messages",
+		" send       send a message",
+		" search     search history",
+		" refreshmedia  re-download HD media",
+		"",
+		"-- General --",
+		" ?          close this help",
+		" <Esc>      close this help",
+		" Esc Esc    close chat",
+		" q          quit plugin",
+		"",
+		"-- Input --",
+		" <CR>       send message",
+		" <Esc>      cancel reply / edit",
+	}
+	help_popup:mount()
+	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
+	vim.keymap.set("n", "<Esc>", close_help, { buffer = help_popup.bufnr, nowait = true })
+	vim.keymap.set("n", "q", close_help, { buffer = help_popup.bufnr, nowait = true })
+	vim.keymap.set("n", "?", close_help, { buffer = help_popup.bufnr, nowait = true })
+end
 
 function M.open_editor(title, default_text, callback)
 	local NuiPopup = require("nui.popup")
@@ -557,50 +609,6 @@ function M.open_editor(title, default_text, callback)
 		popup:unmount()
 		callback(nil)
 	end, { buffer = popup.bufnr, nowait = true })
-end
-
-function M.show_help()
-	close_help()
-	local NuiPopup = require("nui.popup")
-	help_popup = NuiPopup({
-		relative = "editor",
-		position = { row = "50%", col = "50%" },
-		size = { width = 36, height = 27 },
-		zindex = 200,
-		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
-		buf_options = { buftype = "nofile", bufhidden = "wipe" },
-		win_options = { winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder" },
-		enter = true,
-		focusable = true,
-	})
-	local lines = {
-		"-- Navigation --",
-		" i        focus input",
-		" @        switch group",
-		" /        search history",
-		"",
-		"-- Messages --",
-		" <CR>     reply / jump to original",
-		" e        edit own message",
-		" d        delete / revoke",
-		" f        forward",
-		" r        refresh",
-		" G        jump to latest",
-		"",
-		"-- General --",
-		" ?        help",
-		" Esc Esc  close chat",
-		" q        quit plugin",
-		"",
-		"-- Input --",
-		" <CR>     send message",
-		" Esc      cancel reply/edit",
-	}
-	help_popup:mount()
-	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
-	vim.keymap.set("n", "<Esc>", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "q", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "?", close_help, { buffer = help_popup.bufnr, nowait = true })
 end
 
 function M.open_chat(chat_id, chat_title)
@@ -770,6 +778,7 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
+	vim.keymap.set("n", "?", M.show_help, { buffer = state.buf })
 	state.mounted = true
 	M.update_title()
 
