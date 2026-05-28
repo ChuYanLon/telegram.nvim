@@ -11,20 +11,46 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 > 💬 Join the discussion on Telegram: search **telegram.nvim** in Telegram.
 
-<!--
 ## Screenshots
+
+### Image Preview
 
 | Feature | |
 |---------|-|
-| **Group details** | <img width="400" src="https://github.com/user-attachments/assets/a93336ce-f847-4331-973c-02e4a096eeb5" /> |
-| **Edit message** | <img width="400" src="https://github.com/user-attachments/assets/f0fdf32e-6e8b-4d77-9082-c5b07f9e365d" /> |
-| **Reply / restore message** | <img width="400" src="https://github.com/user-attachments/assets/06bed954-5865-4642-97ae-744bb485089d" /> |
-| **Recall / delete message** | <img width="400" src="https://github.com/user-attachments/assets/5c4f623e-295b-451c-a186-d51622a6feae" /> |
-| **Forward message** | <img width="400" src="https://github.com/user-attachments/assets/eb902e79-344a-42a0-a55e-3deee305068a" /> |
-| **New message indicator** | <img width="400" src="https://github.com/user-attachments/assets/eb363ec8-d908-4c24-9d79-8358656f3bc4" /> |
-| **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
-| **Service messages** | <img width="400" src="https://github.com/user-attachments/assets/eb87e415-e3d7-417e-9d96-84f9ca9568a2" /> |
--->
+| **Photo inline preview** | <img width="400" src="https://github.com/user-attachments/assets/3a1dc317-4a5d-40ab-b518-41d2014f87e3" /> |
+| **Photo inline preview 2** | <img width="400" src="https://github.com/user-attachments/assets/2f24ddb3-ad50-4410-84be-0999dc5aad44" /> |
+
+### Chat & Messages
+
+| Feature | |
+|---------|-|
+| **Group chat** | <img width="400" src="https://github.com/user-attachments/assets/a36cc7c0-58ff-4ea8-9a57-36176ca0a9c8" /> |
+| **Send message** | <img width="400" src="https://github.com/user-attachments/assets/cb891a1f-3b89-41eb-9c3e-c50662822722" /> |
+| **Reply to message** | <img width="400" src="https://github.com/user-attachments/assets/6db5af48-2de1-45a2-b11f-45b933fd045f" /> |
+| **Edit own message** | <img width="400" src="https://github.com/user-attachments/assets/677fca2b-ebb0-480f-8731-36c942f180c4" /> |
+| **Delete / revoke message** | <img width="400" src="https://github.com/user-attachments/assets/b0d6ef43-f704-48e1-b238-858cf447ce71" /> |
+
+### Private Chat
+
+| Feature | |
+|---------|-|
+| **Private chat (DM)** | <img width="400" src="https://github.com/user-attachments/assets/7f162d15-d9bd-454c-9c16-24a69c6e7e84" /> |
+| **Confirm before opening DM** | <img width="400" src="https://github.com/user-attachments/assets/d97585cb-4dd1-4619-ab6b-5cbdb476d2a2" /> |
+
+### Navigation & Search
+
+| Feature | |
+|---------|-|
+| **Chat list (picker)** | <img width="400" src="https://github.com/user-attachments/assets/3c95df1b-272c-41ce-ab2c-2578727300d3" /> |
+| **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/79d0aad8-25fa-4ac8-956b-f4c13190e763" /> |
+| **Jump to search result** | <img width="400" src="https://github.com/user-attachments/assets/47866c45-84cd-48b3-920d-0d2f19ccf104" /> |
+
+### UI Elements
+
+| Feature | |
+|---------|-|
+| **Help popup** | <img width="400" src="https://github.com/user-attachments/assets/4a5b7376-e30e-4bd9-bb09-77808a823ef6" /> |
+| **Tool picker (@)** | <img width="400" src="https://github.com/user-attachments/assets/fd62c5b5-1029-4afc-b918-2b8738cac24f" /> |
 
 ## Feature Status
 
