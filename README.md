@@ -11,6 +11,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 > 💬 Join the discussion on Telegram: search **telegram.nvim** in Telegram.
 
+<!--
 ## Screenshots
 
 | Feature | |
@@ -23,6 +24,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 | **New message indicator** | <img width="400" src="https://github.com/user-attachments/assets/eb363ec8-d908-4c24-9d79-8358656f3bc4" /> |
 | **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/8e01b8a6-f056-410b-b13f-523c529b8f3c" /> <img width="400" src="https://github.com/user-attachments/assets/d1117f1e-a4e8-44d4-94d9-9a0eb4202d0b" /> |
 | **Service messages** | <img width="400" src="https://github.com/user-attachments/assets/eb87e415-e3d7-417e-9d96-84f9ca9568a2" /> |
+-->
 
 ## Feature Status
 
