@@ -34,19 +34,19 @@ local function get_renderer(msg)
 end
 
 local service_styles = {
-	messageBasicGroupChatCreate = { prefix = ">", text = "created this group" },
-	messageChatJoinByLink = { prefix = "+", text = "joined this group via invite link" },
-	messageChatJoinByRequest = { prefix = "+", text = "joined this group" },
-	messageChatDeleteMember = { prefix = "-", text = "left the group" },
-	messageChatChangeTitle = { prefix = "~", text = "changed the group name" },
-	messageChatChangePhoto = { prefix = "~", text = "changed the group photo" },
-	messageChatDeletePhoto = { prefix = "~", text = "removed the group photo" },
-	messagePinMessage = { prefix = "*", text = "pinned a message" },
-	messageMessagePinned = { prefix = "*", text = "pinned a message" },
-	messageForumTopicCreated = { prefix = ">", text = "created a topic" },
-	messageChatSetMessageAutoDeleteTime = { prefix = "!", text = "set auto-delete timer" },
-	messageChatUpgradeFrom = { prefix = "~", text = "upgraded from a basic group" },
-	messageChatUpgradeTo = { prefix = "~", text = "upgraded to a supergroup" },
+	messageBasicGroupChatCreate = { prefix = "[>]", text = "created this group" },
+	messageChatJoinByLink = { prefix = "[+]", text = "joined this group via invite link" },
+	messageChatJoinByRequest = { prefix = "[+]", text = "joined this group" },
+	messageChatDeleteMember = { prefix = "[-]", text = "left the group" },
+	messageChatChangeTitle = { prefix = "[~]", text = "changed the group name" },
+	messageChatChangePhoto = { prefix = "[~]", text = "changed the group photo" },
+	messageChatDeletePhoto = { prefix = "[~]", text = "removed the group photo" },
+	messagePinMessage = { prefix = "[*]", text = "pinned a message" },
+	messageMessagePinned = { prefix = "[*]", text = "pinned a message" },
+	messageForumTopicCreated = { prefix = "[>]", text = "created a topic" },
+	messageChatSetMessageAutoDeleteTime = { prefix = "[!]", text = "set auto-delete timer" },
+	messageChatUpgradeFrom = { prefix = "[~]", text = "upgraded from a basic group" },
+	messageChatUpgradeTo = { prefix = "[~]", text = "upgraded to a supergroup" },
 }
 
 function M.render(msg)
@@ -66,10 +66,10 @@ function M.render(msg)
 			end
 		end
 		if is_self_join then
-			table.insert(out, "+ " .. s .. " joined this group at " .. date_str)
+			table.insert(out, "[+] " .. s .. " joined this group at " .. date_str)
 		else
 			local names = msg.addedMemberNames and table.concat(msg.addedMemberNames, ", ") or "someone"
-			table.insert(out, "+ " .. s .. " added " .. names .. " at " .. date_str)
+			table.insert(out, "[+] " .. s .. " added " .. names .. " at " .. date_str)
 		end
 	elseif msg.type and service_styles[msg.type] then
 		local style = service_styles[msg.type]
@@ -77,7 +77,7 @@ function M.render(msg)
 		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. date_str)
 	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) then
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
-		table.insert(out, "~ " .. s .. " performed an action at " .. date_str)
+		table.insert(out, "[~] " .. s .. " performed an action at " .. date_str)
 	else
 		table.insert(out, string.format("## %s (%s)", sender, date_str))
 

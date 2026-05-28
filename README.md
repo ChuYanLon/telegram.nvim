@@ -123,15 +123,15 @@ System messages (members added, group renamed, etc.) are rendered as readable te
 
 | Prefix | Display | Example |
 |--------|---------|---------|
-| `+` | Member joined | `+ Kitty joined this group via invite link at 2026-05-28 19:49` |
-| `+` | Member added | `+ Kitty added Bob at 2026-05-28 19:49` |
-| `-` | Member left | `- Kitty left the group at 2026-05-28 19:49` |
-| `~` | Group changed | `~ Kitty changed the group name at 2026-05-28 19:49` |
-| `~` | Group photo changed | `~ Kitty changed the group photo at 2026-05-28 19:49` |
-| `~` | Group upgraded | `~ Kitty upgraded from a basic group at 2026-05-28 19:49` |
-| `*` | Message pinned | `* Kitty pinned a message at 2026-05-28 19:49` |
-| `>` | Group/topic created | `> Kitty created this group at 2026-05-28 19:49` |
-| `!` | Auto-delete timer set | `! Kitty set auto-delete timer at 2026-05-28 19:49` |
+| `[+]` | Member joined | `[+] Kitty joined this group via invite link at 2026-05-28 19:49` |
+| `[+]` | Member added | `[+] Kitty added Bob at 2026-05-28 19:49` |
+| `[-]` | Member left | `[-] Kitty left the group at 2026-05-28 19:49` |
+| `[~]` | Group changed | `[~] Kitty changed the group name at 2026-05-28 19:49` |
+| `[~]` | Group photo changed | `[~] Kitty changed the group photo at 2026-05-28 19:49` |
+| `[~]` | Group upgraded | `[~] Kitty upgraded from a basic group at 2026-05-28 19:49` |
+| `[*]` | Message pinned | `[*] Kitty pinned a message at 2026-05-28 19:49` |
+| `[>]` | Group/topic created | `[>] Kitty created this group at 2026-05-28 19:49` |
+| `[!]` | Auto-delete timer set | `[!] Kitty set auto-delete timer at 2026-05-28 19:49` |
 
 ### Media labels
 

@@ -104,6 +104,13 @@ local function apply_highlights()
 	vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
 	vim.api.nvim_buf_clear_namespace(buf, target_ns, 0, -1)
 
+	for l = 0, vim.api.nvim_buf_line_count(buf) - 1 do
+		local line = vim.api.nvim_buf_get_lines(buf, l, l + 1, false)[1]
+		if line and line:find("^%[[%+%-%~%*%>!]%]") then
+			pcall(vim.api.nvim_buf_add_highlight, buf, hl_ns, "TgService", l, 0, -1)
+		end
+	end
+
 	local target_id = state.reply_to
 		or (state.edit_target and state.edit_target.id)
 		or (state.delete_target and state.delete_target.id)

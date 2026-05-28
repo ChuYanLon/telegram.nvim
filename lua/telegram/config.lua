@@ -25,6 +25,7 @@ function M.setup(opts)
 	vim.api.nvim_set_hl(0, "TgDeleteTarget", { bg = "#4e2d2d", default = true })
 	vim.api.nvim_set_hl(0, "TgForwardTarget", { bg = "#3d2d4e", default = true })
 	vim.api.nvim_set_hl(0, "TgNoBg", { fg = "NONE", bg = "NONE", default = true })
+	vim.api.nvim_set_hl(0, "TgService", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarHeader", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarTitle", { link = "Comment", default = true })
 	local bfg = "#6c6c6c"
