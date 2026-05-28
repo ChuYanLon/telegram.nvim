@@ -190,7 +190,7 @@ local function show_groups_picker(on_select)
 	for _, id in ipairs(state.group_ids) do
 		local g = state.groups[id]
 		if g then
-			table.insert(all_items, { id = g.id, title = g.title, unread = g.unread_count or 0 })
+			table.insert(all_items, { id = g.id, title = g.title, unread = g.unread_count or 0, type = g.type or "group" })
 		end
 	end
 	if #all_items == 0 then
@@ -236,6 +236,9 @@ local function show_groups_picker(on_select)
 			for i = offset, end_idx do
 				local item = items[i]
 				local label = item.title
+				if item.type == "private" then
+					label = "\xE2\x9C\x89 " .. label
+				end
 				if item.unread > 0 then
 					label = label .. "  \xE2\x97\x8F +" .. item.unread
 				end
@@ -361,6 +364,7 @@ function M.set_groups(groups)
 		new_groups[g.id] = {
 			id = g.id,
 			title = g.title,
+			type = g.type or "group",
 			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
 			online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
@@ -413,11 +417,13 @@ function M.update_title()
 	end
 	local title = state.chat_title or ""
 	local online = state.online_count or 0
-	local total = 0
+	local count = tostring(online)
 	if state.chat_id and state.groups[state.chat_id] then
-		total = state.groups[state.chat_id].member_count or 0
+		local total = state.groups[state.chat_id].member_count or 0
+		if total > 0 then
+			count = online .. "/" .. total
+		end
 	end
-	local count = online .. "/" .. total
 	if state.unread > 0 then
 		count = count .. "  \xE2\x97\x8F+" .. state.unread
 	end
@@ -642,6 +648,29 @@ local function setup_chat_keymaps()
 			M.jump_to_bottom()
 		end)
 	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "c", function()
+		local target = M.curr_msg()
+		if not target or not target.sender or not target.sender.id then
+			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		if target.own then
+			vim.notify("That's you", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		local user_id = tonumber(target.sender.id)
+		if not user_id then
+			vim.notify("Cannot open chat with this sender", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.notify("Opening DM with " .. target.sender.name .. "...", vim.log.levels.INFO, { title = "tg" })
+		local chat = server.open_private_chat(user_id)
+		if chat then
+			M.open_chat(chat.id, chat.title)
+		else
+			vim.notify("Failed to open private chat", vim.log.levels.ERROR, { title = "tg" })
+		end
+	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "?", M.show_help, { buffer = buf })
 end
 
@@ -676,6 +705,7 @@ function M.show_help()
 		" d          delete / revoke",
 		" f          forward message",
 		" G          refresh + jump to bottom",
+		" c          open DM with message sender",
 		"",
 		"-- Tools (@) --",
 		" groups     switch group (j/k scroll)",

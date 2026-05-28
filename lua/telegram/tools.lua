@@ -49,6 +49,24 @@ M.register("groups", {
 	end,
 })
 
+M.register("newchat", {
+	description = "Start a new private chat by @username",
+	callback = function()
+		vim.ui.input({ prompt = "Enter @username: " }, function(username)
+			if not username or #username == 0 then
+				return
+			end
+			vim.notify("Searching for @" .. username .. "...", vim.log.levels.INFO, { title = "tg" })
+			local chat = require("telegram.server").search_user(username)
+			if chat then
+				require("telegram").open_chat(chat.id, chat.title)
+			else
+				vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
+			end
+		end)
+	end,
+})
+
 M.register("refresh", {
 	description = "Refresh messages",
 	condition = function() return ui.state.chat_id ~= nil end,
