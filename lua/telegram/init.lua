@@ -55,126 +55,161 @@ end
 
 M.setup = config.setup
 
-local function finish_init()
-	ws.ws_start(function(msg)
-		if msg.event == "newMessage" then
-			vim.schedule(function()
-				local st = ui.state
-				local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
-				local sender = msg.sender and msg.sender.name or "?"
-				local text = (msg.text or ""):gsub("\n", " "):sub(1, 50)
+local msg_queue = {}
+local msg_timer = nil
 
-				if is_current then
-					if
-						not st.buf
-						or not st.win
-						or not vim.api.nvim_buf_is_valid(st.buf)
-						or not vim.api.nvim_win_is_valid(st.win)
-					then
-						return
-					end
-					local total_before = vim.api.nvim_buf_line_count(st.buf)
-					local cur = vim.api.nvim_win_get_cursor(st.win)
-					local at_bottom = cur[1] >= total_before - 1
-					local ts = os.date("%Y-%m-%d %H:%M", msg.date)
-					local preview = "["
-						.. ts
-						.. "] "
-						.. (msg.sender and msg.sender.name or "?")
-						.. ": "
-						.. (msg.text or "")
-					st.last_msg = preview:sub(1, 60)
-					ui.update_title()
-					local mid = msg.id
-					if mid ~= nil then
-						for _, m in ipairs(st.messages) do
-							if tostring(m.id) == tostring(mid) then
-								return
-							end
+local function flush_msg_queue()
+	msg_timer = nil
+	local batch = msg_queue
+	msg_queue = {}
+
+	if #batch == 0 then
+		return
+	end
+
+	local st = ui.state
+	local current_msgs = {}
+	local seen = {}
+
+	for _, msg in ipairs(batch) do
+		local mid = msg.id
+		local skip = false
+		if mid then
+			local key = tostring(mid)
+			if seen[key] then
+				skip = true
+			else
+				seen[key] = true
+			end
+		end
+
+		if not skip then
+			local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
+			if not is_current then
+				local sender = msg.sender and msg.sender.name or "?"
+				ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
+				queue_notify("[" .. (msg.chat and msg.chat.title or "?") .. "] " .. sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			else
+				local exists = false
+				if mid then
+					for _, m in ipairs(st.messages) do
+						if tostring(m.id) == tostring(mid) then
+							exists = true
+							break
 						end
-					else
-						mid = os.time() .. math.random()
 					end
-					local added = false
-					if msg.own then
-						for i, m in ipairs(st.messages) do
-							if m.own and m.sender and msg.sender
-								and m.sender.id == msg.sender.id
-								and m.text == msg.text then
-								m.id = mid
-								m.date = msg.date
-								m.sender = msg.sender
-								m.text = msg.text
-								m.replyTo = msg.replyTo
-								m.filePath = msg.filePath
-								m.mimeType = msg.mimeType
-								added = true
+				end
+				if not exists then
+					table.insert(current_msgs, msg)
+				end
+			end
+		end
+	end
+
+	if #current_msgs == 0 then
+		return
+	end
+
+	if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
+		return
+	end
+
+	local cur = vim.api.nvim_win_get_cursor(st.win)
+	local total_before = vim.api.nvim_buf_line_count(st.buf)
+	local at_bottom = cur[1] >= total_before - 1
+
+	for _, msg in ipairs(current_msgs) do
+		local mid = msg.id or (os.time() + math.random())
+		local skip_insert = false
+
+		if msg.own then
+			for _, m in ipairs(st.messages) do
+				if m.own and m.sender and msg.sender and m.sender.id == msg.sender.id and m.text == msg.text then
+					m.id = mid
+					m.date = msg.date
+					m.sender = msg.sender
+					m.text = msg.text
+					m.replyTo = msg.replyTo
+					m.filePath = msg.filePath
+					m.mimeType = msg.mimeType
+					skip_insert = true
+					break
+				end
+			end
+		end
+
+		if not skip_insert then
+			st.unread = st.unread + 1
+			if st.groups[st.chat_id] then
+				st.groups[st.chat_id].unread_count = st.unread
+			end
+			if not at_bottom then
+				local sender = msg.sender and msg.sender.name or "?"
+				queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			end
+
+			table.insert(st.messages, {
+				id = mid,
+				type = msg.type,
+				date = msg.date,
+				sender = msg.sender,
+				text = msg.text,
+				own = msg.own,
+				replyTo = msg.replyTo,
+				filePath = msg.filePath,
+				mimeType = msg.mimeType,
+			})
+		end
+	end
+
+	ui.render()
+
+	local last = current_msgs[#current_msgs]
+	if last then
+		local ts = os.date("%Y-%m-%d %H:%M", last.date)
+		st.last_msg = ("[%s] %s: %s"):format(ts, last.sender and last.sender.name or "?", (last.text or ""):sub(1, 40))
+		ui.update_title()
+	end
+
+	if at_bottom then
+		pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
+	end
+	st.exhausted = false
+	st.exhausted_forward = false
+
+	local t = last and last.type or ""
+	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
+		vim.defer_fn(function()
+			local cid = last.chat and last.chat.id
+			if st.chat_id == cid then
+				server.get_media_async(st.chat_id, last.id, function(res)
+					if res and res.path and #res.path > 0 then
+						for _, m in ipairs(st.messages) do
+							if tostring(m.id) == tostring(last.id) then
+								m.filePath = res.path
+								ui.render()
 								break
 							end
 						end
 					end
-					if not added then
-						st.unread = st.unread + 1
-						if st.groups[st.chat_id] then
-							st.groups[st.chat_id].unread_count = st.unread
-						end
-						if not at_bottom then
-							queue_notify(sender .. ": " .. text)
-						end
-					end
-					if not added then
-						table.insert(st.messages, {
-							id = mid,
-							type = msg.type,
-							date = msg.date,
-							sender = msg.sender,
-							text = msg.text,
-							own = msg.own,
-							replyTo = msg.replyTo,
-							filePath = msg.filePath,
-							mimeType = msg.mimeType,
-						})
-					end
-					local t = msg.type or ""
-					if at_bottom and not added then
-						ui.append_message(st.messages[#st.messages])
-						if st.win and vim.api.nvim_win_is_valid(st.win) then
-							pcall(vim.api.nvim_win_call, st.win, function()
-								vim.cmd("redraw")
-							end)
-						end
-					else
-						ui.render()
-					end
-					if t ~= "messageText" and t:find("^message") and (not msg.filePath or #msg.filePath == 0) then
-						vim.defer_fn(function()
-							local cid = msg.chat and msg.chat.id
-							if st.chat_id == cid then
-								server.get_media_async(st.chat_id, mid, function(res)
-									if res and res.path and #res.path > 0 then
-										for _, m in ipairs(st.messages) do
-											if tostring(m.id) == tostring(mid) then
-												m.filePath = res.path
-												ui.render()
-												break
-											end
-										end
-									end
-								end)
-							end
-						end, 2000)
-					end
-					if at_bottom then
-						pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
-					end
-					st.exhausted = false
-					st.exhausted_forward = false
-				else
-					local group_title = msg.chat and msg.chat.title or "?"
-					ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
-					queue_notify("[" .. group_title .. "] " .. sender .. ": " .. text)
-				end
-			end)
+				end)
+			end
+		end, 2000)
+	end
+end
+
+local function queue_msg(msg)
+	table.insert(msg_queue, msg)
+	if msg_timer then
+		vim.fn.timer_stop(msg_timer)
+	end
+	msg_timer = vim.fn.timer_start(100, flush_msg_queue, { ["repeat"] = 1 })
+end
+
+local function finish_init()
+	ws.ws_start(function(msg)
+		if msg.event == "newMessage" then
+			queue_msg(msg)
 		elseif msg.event == "userAction" then
 			local state = ui.state
 			if state.chat_id and msg.chat_id == state.chat_id then
