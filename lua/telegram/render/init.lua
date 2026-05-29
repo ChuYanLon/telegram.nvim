@@ -27,6 +27,7 @@ local function get_renderer(msg)
 		or t == "messageVideoNote"
 		or t == "messageAudio"
 		or t == "messageSticker"
+		or t == "messageAnimatedEmoji"
 	then
 		return media
 	end

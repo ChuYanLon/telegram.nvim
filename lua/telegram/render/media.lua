@@ -9,6 +9,7 @@ local labels = {
 	messageVideoNote = "Video Note",
 	messageAudio = "Audio",
 	messageSticker = "Sticker",
+	messageAnimatedEmoji = "Animated Emoji",
 }
 
 function M.render(msg)

@@ -34,6 +34,11 @@ export class MessageFormatter {
       own: msg.is_outgoing || false,
     };
 
+    if (msg.content?._ === 'messageAnimatedEmoji') {
+      const emoji = (msg.content as any).emoji as string | undefined;
+      if (emoji) formatted.text = emoji;
+    }
+
     if (msg.content?._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
       formatted.memberUserIds = msg.content.member_user_ids;
       formatted.addedMemberNames = await Promise.all(
