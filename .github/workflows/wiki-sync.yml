@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Sync wiki via gh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TMP_DIR=$(mktemp -d)
           gh repo clone "${{ github.repository }}.wiki" "$TMP_DIR"
