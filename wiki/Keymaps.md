@@ -2,25 +2,43 @@
 
 | Key | Action |
 |-----|--------|
-| `?` | Toggle help popup |
-| `i` | Open input editor to send a message |
-| `<CR>` | Reply to message / jump to original (if cursor is on a quote line) |
-| `e` | Edit own message at cursor |
-| `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
+| `?` | Show help popup |
+| `i` | Focus input editor |
+| `<CR>` | Reply to message / jump to original message |
+| `e` | Edit own message (highlighted in blue) |
+| `d` | Delete / revoke message (highlighted in red) |
 | `f` | Forward message to another chat |
-| `c` | Open DM with the sender of the message at cursor |
-| `G` | Refresh messages and jump to bottom |
-| `@` | Open context-aware tool picker |
+| `G` | Refresh messages, jump to bottom |
+| `@` | Open tool picker |
 
-## Chat Picker (`@` → chats)
+## Tools (`@` key)
 
-- Built-in fuzzy search (Snacks picker when available, `vim.ui.select` fallback)
-- `<CR>` — select chat
-- `<Esc>` — close
+| Tool | Description |
+|------|-------------|
+| **groups** | Switch to another chat (Snacks picker, falls back to `vim.ui.select`) |
+| **refresh** | Refresh current chat messages |
+| **send** | Send a message to current chat |
+| **search** | Search messages in current chat |
+| **refreshmedia** | Refresh media for current messages |
 
 ## Input Editor
 
 | Key | Action |
 |-----|--------|
 | `<CR>` | Send message / confirm edit |
-| `Esc` | Cancel reply/edit mode |
+| `Esc` | Cancel reply/edit/forward mode |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `:Tg` | Toggle Telegram panel (start backend + auth if first run) |
+| `:TgLogout` | Log out, delete local TDLib database, stop server |
+| `:TgSend <chatId> <text>` | Send a message programmatically |
+| `:TgTool` | Open tool picker (equivalent to `@`) |
+| `:TgIssue` | Browse GitHub issues, create branch, close, open in browser |
+| `:TgPr` | Create GitHub PR with branch picker (squash/merge option) |
+
+## Mouse
+
+Scrolling near the top/bottom of the buffer automatically loads older/newer messages.
