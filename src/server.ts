@@ -184,7 +184,7 @@ app.get('/searchMessages', async (req, res) => {
 
 app.get('/messages', async (req, res) => {
   try {
-    const { chatId, limit, before, after } = req.query;
+    const { chatId, limit, before, beforeDate, after, afterDate } = req.query;
     if (!chatId) {
       res.status(400).json({ error: 'chatId is required' });
       return;
@@ -192,12 +192,13 @@ app.get('/messages', async (req, res) => {
     const t0 = Date.now();
     let result;
     if (after) {
-      result = await tgClient.getMessagesAfter(Number(chatId), Number(after), limit ? Number(limit) : 50);
+      result = await tgClient.getMessagesAfter(Number(chatId), Number(after), Number(afterDate), limit ? Number(limit) : 50);
     } else {
       result = await tgClient.getMessages(
         Number(chatId),
         limit ? Number(limit) : 50,
-        before ? Number(before) : undefined
+        before ? Number(before) : undefined,
+        beforeDate ? Number(beforeDate) : undefined,
       );
     }
     const totalMs = Date.now() - t0;

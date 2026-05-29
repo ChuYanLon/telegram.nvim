@@ -380,10 +380,14 @@ end
 ---@param before any|nil
 ---@param on_ok fun(data: table)|nil
 ---@param on_err fun()|nil
-function M.get_messages_async(chat_id, limit, before, on_ok, on_err)
+function M.get_messages_async(chat_id, limit, before, on_ok, on_err, opts)
+	opts = opts or {}
 	local path = "/messages?chatId=" .. chat_id .. "&limit=" .. (limit or M.DEFAULT_LIMIT)
 	if before then
 		path = path .. "&before=" .. before
+	end
+	if opts.before_date then
+		path = path .. "&beforeDate=" .. opts.before_date
 	end
 	local url = base_url() .. path
 	local stdout = {}
@@ -415,7 +419,8 @@ function M.get_messages_async(chat_id, limit, before, on_ok, on_err)
 	})
 end
 
-function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err)
+function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opts)
+	opts = opts or {}
 	local url = base_url()
 		.. "/messages?chatId="
 		.. chat_id
@@ -423,6 +428,9 @@ function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err)
 		.. (limit or M.DEFAULT_LIMIT)
 		.. "&after="
 		.. after_id
+	if opts.after_date then
+		url = url .. "&afterDate=" .. opts.after_date
+	end
 	local stdout = {}
 	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
 		stdout_buffered = true,

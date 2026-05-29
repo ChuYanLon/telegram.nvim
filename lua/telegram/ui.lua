@@ -892,6 +892,10 @@ function M.open_chat(chat_id, chat_title)
 		server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
 			if state.chat_id == cid then
 				state.messages = data.messages or {}
+				table.sort(state.messages, function(a, b)
+					if a.date ~= b.date then return a.date < b.date end
+					return a.id < b.id
+				end)
 				render()
 				M.update_title()
 				if #state.messages > 0 then
@@ -1030,10 +1034,10 @@ function M.load_older()
 	end
 	state.loading = true
 	local chat_id = state.chat_id
-	local oldest_id = state.messages[1].id
+	local oldest = state.messages[1]
 	local cursor = vim.api.nvim_win_get_cursor(state.win)
 	local old_top = cursor[1]
-	server.get_messages_async(chat_id, server.DEFAULT_LIMIT, oldest_id, function(data)
+	server.get_messages_async(chat_id, server.DEFAULT_LIMIT, oldest.id, function(data)
 		if state.chat_id ~= chat_id then
 			state.loading = false
 			return
@@ -1049,11 +1053,11 @@ function M.load_older()
 		for _, m in ipairs(state.messages) do
 			seen[tostring(m.id)] = true
 		end
-		for i = 1, #new_msgs do
-			if not seen[tostring(new_msgs[i].id)] then
-				seen[tostring(new_msgs[i].id)] = true
-				table.insert(state.messages, 1, new_msgs[i])
-				new_lines = new_lines + #fmt_msg(new_msgs[i])
+		for _, m in ipairs(new_msgs) do
+			if not seen[tostring(m.id)] then
+				seen[tostring(m.id)] = true
+				table.insert(state.messages, m)
+				new_lines = new_lines + #fmt_msg(m)
 			end
 		end
 		if state.chat_id ~= chat_id then
@@ -1061,13 +1065,17 @@ function M.load_older()
 			return
 		end
 		if new_lines > 0 then
+			table.sort(state.messages, function(a, b)
+				if a.date ~= b.date then return a.date < b.date end
+				return a.id < b.id
+			end)
 			render()
 			pcall(vim.api.nvim_win_set_cursor, state.win, { old_top + new_lines, cursor[2] })
 		end
 		state.loading = false
 	end, function()
 		state.loading = false
-	end)
+	end, { before_date = oldest.date })
 end
 
 function M.load_newer()
@@ -1076,8 +1084,8 @@ function M.load_newer()
 	end
 	state.loading_newer = true
 	local chat_id = state.chat_id
-	local newest_id = state.messages[#state.messages].id
-	server.get_messages_after_async(chat_id, newest_id, server.DEFAULT_LIMIT, function(data)
+	local newest = state.messages[#state.messages]
+	server.get_messages_after_async(chat_id, newest.id, server.DEFAULT_LIMIT, function(data)
 		if state.chat_id ~= chat_id then
 			state.loading_newer = false
 			return
@@ -1099,12 +1107,16 @@ function M.load_newer()
 			end
 		end
 		if #new_msgs > 0 then
+			table.sort(state.messages, function(a, b)
+				if a.date ~= b.date then return a.date < b.date end
+				return a.id < b.id
+			end)
 			render()
 		end
 		state.loading_newer = false
 	end, function()
 		state.loading_newer = false
-	end)
+	end, { after_date = newest.date })
 end
 
 function M.refresh_messages(on_complete)
@@ -1122,13 +1134,16 @@ function M.refresh_messages(on_complete)
 		local raw = data.messages or {}
 		state.messages = {}
 		local seen = {}
-		for i = #raw, 1, -1 do
-			local msg = raw[i]
+		for _, msg in ipairs(raw) do
 			if not seen[tostring(msg.id)] then
 				seen[tostring(msg.id)] = true
 				table.insert(state.messages, msg)
 			end
 		end
+		table.sort(state.messages, function(a, b)
+			if a.date ~= b.date then return a.date < b.date end
+			return a.id < b.id
+		end)
 		if state.chat_id ~= chat_id then
 			return
 		end

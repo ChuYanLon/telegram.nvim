@@ -420,7 +420,7 @@ export class TelegramLSPClient {
     return this.formatter.format(msg);
   }
 
-  async getMessages(chatId: number, limit = 50, before?: number) {
+  async getMessages(chatId: number, limit = 50, before?: number, beforeDate?: number) {
     if (!this._ready) throw new Error('Client not ready yet');
     const fromMessageId = before || 0;
     const offset = before ? -1 : 0;
@@ -438,7 +438,11 @@ export class TelegramLSPClient {
     const t1 = Date.now();
     const raw = result.messages || [];
     const senderCache = raw.length > 1 ? await this.formatter.preloadSenders(raw) : null;
-    const msgs = await Promise.all(raw.map(m => this.formatter.format(m, senderCache)));
+    let msgs = (await Promise.all(raw.map(m => this.formatter.format(m, senderCache)))).filter(Boolean) as FormattedMessage[];
+    if (before && beforeDate) {
+      msgs = msgs.filter(m => m.date < beforeDate || (m.date === beforeDate && m.id < before));
+    }
+    msgs.sort((a, b) => b.date - a.date);
     const fmtMs = Date.now() - t1;
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
@@ -448,7 +452,7 @@ export class TelegramLSPClient {
     };
   }
 
-  async getMessagesAfter(chatId: number, afterId: number, limit = 50) {
+  async getMessagesAfter(chatId: number, afterId: number, afterDate: number, limit = 50) {
     if (!this._ready) throw new Error('Client not ready yet');
     const result = await this.client.invoke({
       _: 'getChatHistory',
@@ -460,16 +464,13 @@ export class TelegramLSPClient {
     }) as { messages?: RawTdMessage[] };
     const raw = result.messages || [];
     const senderCache = raw.length > 1 ? await this.formatter.preloadSenders(raw) : null;
-    const msgs = (await Promise.all(
+    let msgs = (await Promise.all(
       raw.map(m => this.formatter.format(m, senderCache))
     )).filter(Boolean) as FormattedMessage[];
-    const newer: FormattedMessage[] = [];
-    for (const m of msgs) {
-      if (m.id > afterId) newer.push(m);
-      else break;
-    }
+    msgs = msgs.filter(m => m.date > afterDate || (m.date === afterDate && m.id > afterId));
+    msgs.sort((a, b) => a.date - b.date);
     const chat = this._chats.get(chatId);
-    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: newer.reverse() };
+    return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: msgs };
   }
 
   // Test accessors that delegate to sub-modules
@@ -503,13 +504,21 @@ export class TelegramLSPClient {
     const allRaw = [...(olderResult.messages || []), ...(newerResult.messages || [])];
     const senderCache = allRaw.length > 1 ? await this.formatter.preloadSenders(allRaw) : null;
 
+    const centerDate = target ? target.date : 0;
     const older = (await Promise.all(
       (olderResult.messages || []).map(m => this.formatter.format(m, senderCache))
-    )).filter(Boolean).filter(m => !target || (m as FormattedMessage).id !== messageId).reverse() as FormattedMessage[];
+    )).filter(Boolean).filter(m => {
+      const fm = m as FormattedMessage;
+      if (target && fm.id === messageId) return false;
+      return fm.date < centerDate || (fm.date === centerDate && fm.id < messageId);
+    }).sort((a, b) => (a as FormattedMessage).date - (b as FormattedMessage).date) as FormattedMessage[];
 
     const newer = (await Promise.all(
       (newerResult.messages || []).map(m => this.formatter.format(m, senderCache))
-    )).filter(Boolean).filter(m => !target || (m as FormattedMessage).id > messageId).reverse().slice(0, half) as FormattedMessage[];
+    )).filter(Boolean).filter(m => {
+      const fm = m as FormattedMessage;
+      return fm.date > centerDate || (fm.date === centerDate && fm.id > messageId);
+    }).sort((a, b) => (a as FormattedMessage).date - (b as FormattedMessage).date).slice(0, half) as FormattedMessage[];
 
     const allMsgs = [...older, ...(target ? [target] : []), ...newer];
     const chat = this._chats.get(chatId);

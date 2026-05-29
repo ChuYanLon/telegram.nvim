@@ -162,6 +162,11 @@ local function flush_msg_queue()
 		end
 	end
 
+	table.sort(st.messages, function(a, b)
+		if a.date ~= b.date then return a.date < b.date end
+		return a.id < b.id
+	end)
+
 	ui.render()
 
 	local last = current_msgs[#current_msgs]
