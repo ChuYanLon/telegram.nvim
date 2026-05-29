@@ -122,7 +122,13 @@ export class TelegramLSPClient {
     let offsetChatId = 0;
     const limit = 100;
 
+    const MAX_ITERATIONS = 1000;
+    let iterations = 0;
     while (true) {
+      if (++iterations > MAX_ITERATIONS) {
+        console.warn('getChats: exceeded max iterations (' + MAX_ITERATIONS + '), stopping');
+        break;
+      }
       const result = await this.client.invoke({
         _: 'getChats',
         chat_list: { _: 'chatListMain' },
