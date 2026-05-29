@@ -4,7 +4,7 @@ local render_msg = require("telegram.render").render
 
 local M = {}
 
-local typing_popup = nil
+
 
 local state = {
 	buf = nil,
@@ -369,27 +369,10 @@ function M.update_title()
 	end
 
 	local winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
+	if typing ~= "" then
+		winbar = winbar .. "  %#TgService#" .. typing .. "%*"
+	end
 	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
-	if typing_popup and vim.api.nvim_win_is_valid(typing_popup) then
-		vim.api.nvim_win_close(typing_popup, true)
-		typing_popup = nil
-	end
-	if typing ~= "" and state.win and vim.api.nvim_win_is_valid(state.win) then
-		local buf = vim.api.nvim_create_buf(false, true)
-		vim.api.nvim_buf_set_lines(buf, 0, -1, false, { " " .. typing })
-		local width = vim.api.nvim_win_get_width(state.win)
-		typing_popup = vim.api.nvim_open_win(buf, false, {
-			relative = "win",
-			win = state.win,
-			row = 0,
-			col = 0,
-			width = width,
-			height = 1,
-			style = "minimal",
-			noautocmd = true,
-		})
-		vim.api.nvim_set_option_value("winhighlight", "Normal:TgService", { win = typing_popup })
-	end
 end
 
 local function show_group_selector()
@@ -932,16 +915,10 @@ function M.jump_to_bottom()
 	pcall(vim.api.nvim_win_set_cursor, state.win, { total - 1, 0 })
 end
 
-local function close_typing_popup()
-	if typing_popup and vim.api.nvim_win_is_valid(typing_popup) then
-		vim.api.nvim_win_close(typing_popup, true)
-		typing_popup = nil
-	end
-end
+
 
 function M.close_chat()
 	close_help()
-	close_typing_popup()
 	if state.chat_id then
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
