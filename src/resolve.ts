@@ -21,7 +21,8 @@ export class Resolver {
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${userId}`;
       this._users.set(userId, name);
       return name;
-    } catch {
+    } catch (e) {
+      console.warn('getUserName failed for', userId, (e as Error).message);
       return `user_${userId}`;
     }
   }

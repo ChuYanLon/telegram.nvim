@@ -163,7 +163,7 @@ export class MessageFormatter {
           replyTo.sender = await this.resolver.resolveSender(orig.sender_id);
         }
       }
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('_formatReplyTo getMessage failed:', (e as Error).message); }
     if (r.chat_id && r.chat_id !== msg.chat_id) {
       replyTo.chat_id = r.chat_id;
     }
