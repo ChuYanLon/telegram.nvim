@@ -7,6 +7,7 @@ local type_labels = {
 	messageDice = "[Dice]",
 	messageGame = "[Game]",
 	messageCall = "[Call]",
+	messageAnimatedEmoji = "",
 }
 
 function M.render(msg)
