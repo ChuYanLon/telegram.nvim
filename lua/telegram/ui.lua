@@ -300,14 +300,17 @@ function M.set_groups(groups)
 end
 
 function M.set_typing(chat_id, user_id, user_name, action_type, active)
-	if chat_id ~= state.chat_id or not user_id then
-		return
-	end
 	if active then
-		state.typing_users[user_id] =
+		state.typing_users[chat_id] = state.typing_users[chat_id] or {}
+		state.typing_users[chat_id][user_id] =
 			{ name = user_name or "Unknown", action_desc = action_descriptions[action_type] or "typing..." }
 	else
-		state.typing_users[user_id] = nil
+		if state.typing_users[chat_id] then
+			state.typing_users[chat_id][user_id] = nil
+			if not next(state.typing_users[chat_id]) then
+				state.typing_users[chat_id] = nil
+			end
+		end
 	end
 	M.update_title()
 end
@@ -356,8 +359,10 @@ function M.update_title()
 	end
 
 	local typing_items = {}
-	for _, info in pairs(state.typing_users) do
-		table.insert(typing_items, info)
+	if state.chat_id and state.typing_users[state.chat_id] then
+		for _, info in pairs(state.typing_users[state.chat_id]) do
+			table.insert(typing_items, info)
+		end
 	end
 	local typing = ""
 	if #typing_items > 0 then
