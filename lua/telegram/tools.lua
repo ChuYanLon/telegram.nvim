@@ -134,25 +134,36 @@ M.register("search", {
 	end,
 })
 
+local function open_target(target)
+	vim.fn.jobstart({
+		"sh", "-c",
+		'xdg-open "' .. target .. '" 2>/dev/null || open "' .. target .. '" 2>/dev/null || true',
+	})
+end
+
 M.register("openlink", {
-	description = "Open URL under cursor in browser",
+	description = "Open URL or media file under cursor",
 	condition = function()
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
-		return text and text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+		if not text then return false end
+		return text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+			or text:match("!%[%w+%]%((.-)%)")
 	end,
 	callback = function()
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
-		if text then
-			local url = text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
-			if url then
-				vim.fn.jobstart({
-					"sh", "-c",
-					'xdg-open "' .. url .. '" 2>/dev/null || open "' .. url .. '" 2>/dev/null || true',
-				})
-				vim.notify("Opening: " .. url, vim.log.levels.INFO, { title = "tg" })
-			end
+		if not text then return end
+		local url = text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+		if url then
+			vim.notify("Opening: " .. url, vim.log.levels.INFO, { title = "tg" })
+			open_target(url)
+			return
+		end
+		local filepath = text:match("!%[%w+%]%((.-)%)")
+		if filepath and #filepath > 0 then
+			vim.notify("Opening: " .. filepath, vim.log.levels.INFO, { title = "tg" })
+			open_target(filepath)
 		end
 	end,
 })
