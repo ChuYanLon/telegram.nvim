@@ -7,8 +7,9 @@ require("telegram").setup({
   -- api_id = 12345,
   -- api_hash = "abcdef1234567890",
   -- data_dir = vim.fn.stdpath("data") .. "/telegram",  -- default
+  -- http_port = 8080,
+  -- ws_port = 8081,
 })
-```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -17,6 +18,8 @@ require("telegram").setup({
 | `api_id` | `number?` | `1025907` | Telegram API ID |
 | `api_hash` | `string?` | built-in | Telegram API hash |
 | `data_dir` | `string?` | stdpath data | Directory for TDLib database and files |
+| `http_port` | `number?` | `8080` | Backend HTTP server port |
+| `ws_port` | `number?` | `8081` | Backend WebSocket server port |
 
 ## Environment Variables
 
@@ -26,8 +29,8 @@ require("telegram").setup({
 | `TG_PROXY` | `proxy` in setup |
 | `TG_API_ID` | `api_id` in setup |
 | `TG_API_HASH` | `api_hash` in setup |
-| `TG_PORT` | Backend HTTP port (default `8080`) |
-| `TG_WS_PORT` | WebSocket port (default `8081`) |
+| `TG_PORT` | Backend HTTP port (default `8080`, overrides `http_port`) |
+| `TG_WS_PORT` | WebSocket port (default `8081`, overrides `ws_port`) |
 | `TG_DATA_DIR` | Database/files directory |
 
 ## Proxy

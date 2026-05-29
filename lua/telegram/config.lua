@@ -9,6 +9,8 @@ M.config = {
 	api_id = nil,
 	api_hash = nil,
 	proxy = nil,
+	http_port = 8080,
+	ws_port = 8081,
 }
 
 function M.setup(opts)

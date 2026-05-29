@@ -2,9 +2,9 @@ local config = require("telegram.config")
 
 local M = {}
 
-local http_port = 8080
+local http_port = tonumber(vim.env.TG_PORT) or config.config.http_port or 8080
 M.http_port = http_port
-local ws_port = 8081
+local ws_port = tonumber(vim.env.TG_WS_PORT) or config.config.ws_port or 8081
 local server_job = nil
 local server_pid = nil
 local server_owner = false

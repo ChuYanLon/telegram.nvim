@@ -238,7 +238,7 @@ ldconfig 2>/dev/null || true
 | `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion                |
 | `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
 
-> The server runs on ports 8080/8081 (hardcoded in `server.lua:5-7`, or overridable via `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
+> The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
 ## Neovim Keymaps
 
@@ -291,6 +291,8 @@ Pass options via `setup()`:
 require("telegram").setup({
   -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
   -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
+  -- http_port = 8080,                      -- HTTP server port
+  -- ws_port = 8081,                        -- WebSocket server port
 })
 ```
 
@@ -343,7 +345,7 @@ A: The backend was migrated from JavaScript to TypeScript (v0.3.0) for better ty
 A: Run `:TgLogout`, or manually delete the `tdlib_db/` and `tdlib_files/` directories.
 
 **Q: Port conflict?**
-A: Default ports are 8080/8081 (hardcoded in `server.lua`). The plugin checks if a server is already running on the port and reconnects if it's ours. If occupied by another process, startup fails — change `http_port` in `server.lua:5-6` to use different ports. Server process is terminated on Neovim exit.
+A: Default ports are 8080/8081. Configure via `setup({ http_port = ..., ws_port = ... })` or `TG_PORT`/`TG_WS_PORT` env vars. The plugin checks if a server is already running and reconnects if it's ours. If occupied by another process, startup fails — change to different ports. Server process is terminated on Neovim exit.
 
 ## Development Workflow
 
