@@ -23,13 +23,20 @@
 
 ## Installing libtdjson
 
-| OS | Command |
-|----|---------|
-| **Arch Linux** | `sudo pacman -S tdlib` |
-| **macOS** | `brew install tdlib` |
-| **Ubuntu/Debian** | Build from source |
-| **Windows** | Download from TDLib releases |
+Build from source on all platforms:
 
-For other Linux distros, build from [source](https://github.com/tdlib/td#building). The plugin auto-detects `libtdjson` via `ldconfig`, `LD_LIBRARY_PATH`, and common paths.
+```bash
+git clone https://github.com/tdlib/td.git
+cd td
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=~/.local \
+    -DCMAKE_CXX_FLAGS="-O2 -g0" \
+    ..
+cmake --build . --target install -j$(nproc)
+ldconfig 2>/dev/null || true
+```
+
+The plugin auto-detects `libtdjson` via `ldconfig`, `LD_LIBRARY_PATH`, and common paths.
 
 
