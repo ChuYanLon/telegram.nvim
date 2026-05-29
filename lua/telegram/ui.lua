@@ -63,6 +63,14 @@ local function hide_chat()
 	state.mounted = false
 end
 
+local function open_split()
+	if vim.o.splitright then
+		vim.cmd("botright vsplit")
+	else
+		vim.cmd("topleft vsplit")
+	end
+end
+
 local action_descriptions = {
 	chatActionTyping = "typing...",
 	chatActionRecordingVideo = "recording video...",
@@ -716,7 +724,7 @@ function M.open_chat(chat_id, chat_title)
 			M.update_title()
 			return
 		end
-		vim.cmd("botright vsplit")
+		open_split()
 		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
@@ -748,7 +756,7 @@ function M.open_chat(chat_id, chat_title)
 		pcall(vim.diagnostic.disable, state.buf)
 		pcall(vim.diagnostic.reset, state.buf)
 
-		vim.cmd("botright vsplit")
+		open_split()
 		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
@@ -787,7 +795,7 @@ function M.open_chat(chat_id, chat_title)
 						if #wins2 > 1 then
 							return
 						end
-						vim.cmd("botright vsplit")
+						open_split()
 						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 						vim.api.nvim_set_current_win(state.win)
 					end)
@@ -856,7 +864,7 @@ function M.open_chat(chat_id, chat_title)
 		})
 	else
 		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-			vim.cmd("botright vsplit")
+			open_split()
 			vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 			state.win = vim.api.nvim_get_current_win()
 			vim.api.nvim_win_set_buf(state.win, state.buf)
