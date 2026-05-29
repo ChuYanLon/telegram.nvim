@@ -291,9 +291,9 @@ local function finish_init()
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
 					local g = ui.state.groups[msg.chat_id]
-					if msg.last_message then
+					if type(msg.last_message) == "table" then
 						local lm = msg.last_message
-						local sender = lm.sender and lm.sender.name or "?"
+						local sender = type(lm.sender) == "table" and lm.sender.name or "?"
 						g.last_msg = ("[%s] %s: %s"):format(
 							os.date("%Y-%m-%d %H:%M", lm.date),
 							sender,
