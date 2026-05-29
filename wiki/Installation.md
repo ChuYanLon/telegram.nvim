@@ -32,7 +32,4 @@
 
 For other Linux distros, build from [source](https://github.com/tdlib/td#building). The plugin auto-detects `libtdjson` via `ldconfig`, `LD_LIBRARY_PATH`, and common paths.
 
-## Telegram API Credentials
 
-Built-in API ID/key are provided (1025907 / 452b0359b988148995f22ff0f4229750).  
-Override via `TG_API_ID` / `TG_API_HASH` env vars or `setup({ api_id = ..., api_hash = ... })`.

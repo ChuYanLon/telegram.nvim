@@ -2,19 +2,24 @@ local config = require("telegram.config")
 
 local M = {}
 
-local http_port = tonumber(vim.env.TG_PORT) or config.config.http_port or 8080
-M.http_port = http_port
-local ws_port = tonumber(vim.env.TG_WS_PORT) or config.config.ws_port or 8081
+local function http_port()
+	return tonumber(vim.env.TG_PORT) or config.config.http_port or 8080
+end
+M.get_http_port = http_port
+M.get_ws_port = ws_port
+local function ws_port()
+	return tonumber(vim.env.TG_WS_PORT) or config.config.ws_port or 8081
+end
 local server_job = nil
 local server_pid = nil
 local server_owner = false
 local cached_groups = nil
 
 local function base_url()
-	return "http://localhost:" .. http_port
+	return "http://localhost:" .. http_port()
 end
 local function ws_url_internal()
-	return "ws://localhost:" .. ws_port
+	return "ws://localhost:" .. ws_port()
 end
 
 function M.ws_url()
@@ -170,14 +175,14 @@ function M.start_server()
 		return server_wait_reachable()
 	end
 	if status == "other" then
-		vim.notify("Port " .. http_port .. " is occupied by another process", vim.log.levels.WARN, { title = "tg" })
+		vim.notify("Port " .. http_port() .. " is occupied by another process", vim.log.levels.WARN, { title = "tg" })
 		return false
 	end
 	server_owner = true
 	local env = {
 		TG_DATA_DIR = config.config.data_dir,
-		TG_PORT = tostring(http_port),
-		TG_WS_PORT = tostring(ws_port),
+		TG_PORT = tostring(http_port()),
+		TG_WS_PORT = tostring(ws_port()),
 	}
 	if config.config.tdlib_path then
 		env.TG_TDLIB_PATH = config.config.tdlib_path
