@@ -20,6 +20,8 @@
 | **send** | Send a message to current chat |
 | **search** | Search messages in current chat |
 | **refreshmedia** | Refresh media for current messages |
+| **openlink** | Open URL under cursor in browser |
+| **openlink** | Open URL under cursor in browser |
 
 ## Input Editor
 
