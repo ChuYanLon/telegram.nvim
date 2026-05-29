@@ -298,9 +298,22 @@ app.get('/messageMedia', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);
 });
+
+async function shutdown() {
+  console.log('Shutting down...');
+  wss.close();
+  server.close();
+  try {
+    await tgClient.client.close();
+  } catch {}
+  process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', () => process.exit(0));
 
 tgClient.start().catch(console.error);
