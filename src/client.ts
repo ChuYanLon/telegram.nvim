@@ -93,12 +93,18 @@ export class TelegramLSPClient {
 
       this.auth.setBroadcast(global.broadcast);
 
-      await this.client.login({
-        type: 'user',
-        getPhoneNumber: this.auth.getPhoneNumber.bind(this.auth),
-        getAuthCode: this.auth.getAuthCode.bind(this.auth),
-        getPassword: this.auth.getPassword.bind(this.auth),
-      });
+      const LOGIN_TIMEOUT = 5 * 60 * 1000;
+      await Promise.race([
+        this.client.login({
+          type: 'user',
+          getPhoneNumber: this.auth.getPhoneNumber.bind(this.auth),
+          getAuthCode: this.auth.getAuthCode.bind(this.auth),
+          getPassword: this.auth.getPassword.bind(this.auth),
+        }),
+        new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error('Login timed out after 5 minutes')), LOGIN_TIMEOUT)
+        ),
+      ]);
 
       this.updates.listen(this.client);
       this._ready = true;
