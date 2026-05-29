@@ -112,6 +112,10 @@ local function flush_msg_queue()
 	end
 
 	if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
+		for _, msg in ipairs(current_msgs) do
+			local sender = msg.sender and msg.sender.name or "?"
+			queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+		end
 		return
 	end
 
