@@ -221,7 +221,7 @@ ldconfig 2>/dev/null || true
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `:Tg`         | Global toggle: opens tg window if closed, hides it if open (from any buffer). First run: server + auth, then opens last chat |
 | `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                             |
-| `:TgSend`     | Send a message programmatically: `:TgSend <chatId> <text>`                                                                    |
+| `:TgSend`     | Send a message: `:TgSend <text>` to current chat, or `:TgSend <chatId> <text>` to specific chat                                      |
 | `:TgTool`     | Open tool picker (`@` equivalent)                                                                                             |
 | `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion                |
 | `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
