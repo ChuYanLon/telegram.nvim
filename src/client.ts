@@ -67,7 +67,11 @@ export class TelegramLSPClient {
     try {
       const verOption = await this.client.invoke({ _: 'getOption', name: 'version' }) as { value?: string };
       if (verOption?.value) {
-        const parts = verOption.value.split('.').map(Number);
+        const match = verOption.value.match(/\d+\.\d+\.\d+/);
+        if (!match) {
+          throw new Error(`Cannot parse TDLib version: ${verOption.value}`);
+        }
+        const parts = match[0].split('.').map(Number);
         if (parts[0] < 1 || (parts[0] === 1 && parts[1] < 8) || (parts[0] === 1 && parts[1] === 8 && parts[2] < 64)) {
           throw new Error(`TDLib version ${verOption.value} is too old. Minimum required: 1.8.64`);
         }
