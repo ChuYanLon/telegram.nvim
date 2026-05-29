@@ -134,6 +134,29 @@ M.register("search", {
 	end,
 })
 
+M.register("openlink", {
+	description = "Open URL under cursor in browser",
+	condition = function()
+		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
+		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
+		return text and text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+	end,
+	callback = function()
+		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
+		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
+		if text then
+			local url = text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+			if url then
+				vim.fn.jobstart({
+					"sh", "-c",
+					'xdg-open "' .. url .. '" 2>/dev/null || open "' .. url .. '" 2>/dev/null || true',
+				})
+				vim.notify("Opening: " .. url, vim.log.levels.INFO, { title = "tg" })
+			end
+		end
+	end,
+})
+
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
 	condition = function()
