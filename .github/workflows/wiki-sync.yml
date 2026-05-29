@@ -23,11 +23,14 @@ jobs:
           cd "$TMP_DIR"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git pull --rebase origin master 2>/dev/null || true
           git add .
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to sync"
             exit 0
           fi
           git commit -m "sync wiki from main repo"
-          git push
+          git push --force origin master 2>&1 || {
+            echo "Push failed, retrying with rebase..."
+            git pull --rebase origin master
+            git push --force origin master
+          }
