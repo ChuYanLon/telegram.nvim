@@ -830,13 +830,7 @@ function M.open_chat(chat_id, chat_title)
 			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
-					local width = vim.g.telegram_width or 50
-					vim.api.nvim_win_set_config(state.win, {
-						width = width,
-						height = vim.o.lines - 2,
-						col = vim.o.columns - width,
-						row = 0,
-					})
+					vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 				end
 			end,
 		})
