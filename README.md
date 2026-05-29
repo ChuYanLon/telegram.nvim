@@ -168,20 +168,6 @@ Media messages are shown as thumbnails or tags:
 
 ### Installing libtdjson
 
-**Arch Linux:**
-
-```bash
-sudo pacman -S tdlib
-```
-
-**macOS:**
-
-```bash
-brew install tdlib
-```
-
-**Other Linux:** Build from source:
-
 ```bash
 git clone https://github.com/tdlib/td.git
 cd td
