@@ -35,7 +35,8 @@
 |---------|-------------|
 | `:Tg` | Toggle Telegram panel (start backend + auth if first run) |
 | `:TgLogout` | Log out, delete local TDLib database, stop server |
-| `:TgSend <chatId> <text>` | Send a message programmatically |
+| `:TgSend <text>` | Send to current chat |
+| `:TgSend <chatId> <text>` | Send to specific chat by ID |
 | `:TgTool` | Open tool picker (equivalent to `@`) |
 | `:TgIssue` | Browse GitHub issues, create branch, close, open in browser |
 | `:TgPr` | Create GitHub PR with branch picker (squash/merge option) |
