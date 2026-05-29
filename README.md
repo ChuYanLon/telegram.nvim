@@ -76,6 +76,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] URLs are highlighted and clickable
 - [x] Code blocks (backtick) are detected and formatted
 - [x] Single-panel chat layout with floating input popup
+- [x] Adjustable panel position — respects `splitright`; width via `g:telegram_width`
 - [x] `?` opens a help popup with all keybindings
 - [x] Different highlight colors for reply / edit / delete / forward targets
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
@@ -114,7 +115,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Inline bots** / bot commands
 - [ ] **Message threads** / topic view
 - [ ] **Customizable keymaps** — all hardcoded for now
-- [ ] **Adjustable layout** — panel sizes and position are fixed
 - [ ] **Dark/light theme adaptation** — colors are hardcoded
 
 ### Service messages
