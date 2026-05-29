@@ -149,11 +149,11 @@ local function flush_msg_queue()
 			if st.groups[st.chat_id] then
 				st.groups[st.chat_id].unread_count = st.unread
 			end
-			local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
-			if not is_focused or not at_bottom then
-				local sender = msg.sender and msg.sender.name or "?"
-				queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
-			end
+		local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
+		if not is_focused then
+			local sender = msg.sender and msg.sender.name or "?"
+			queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+		end
 
 			table.insert(st.messages, {
 				id = mid,
