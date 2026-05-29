@@ -50,14 +50,21 @@ function M.auth_poll(on_done)
 				end
 			end
 			vim.ui.input({ prompt = prompt .. ": " }, function(val)
-				if val and #val > 0 then
-					server.post_auth_input(val)
-				else
-					vim.notify("Auth cancelled", vim.log.levels.INFO, { title = "tg" })
-					return
+			if val and #val > 0 then
+				server.post_auth_input(val)
+				local function wait_ack()
+					local h = server.server_health()
+					if h and h.auth and h.auth.canInput == false then
+						vim.defer_fn(poll, 500)
+					else
+						vim.defer_fn(wait_ack, 200)
+					end
 				end
-				vim.defer_fn(poll, 500)
-			end)
+				wait_ack()
+			else
+				vim.notify("Auth cancelled", vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
 			return
 		end
 		vim.defer_fn(poll, 500)
