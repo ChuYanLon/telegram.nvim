@@ -1,4 +1,5 @@
-import type { TdUpdate, RawTdMessage, RawTdChat, BroadcastFn } from './types';
+import type { TdUpdate, RawTdMessage, RawTdChat, FormattedMessage, BroadcastFn } from './types';
+import { extractText } from './format';
 import type { MessageFormatter } from './format';
 import type { Resolver } from './resolve';
 
@@ -8,6 +9,7 @@ export class UpdateDispatcher {
     private resolver: Resolver,
     private chats: Map<number, RawTdChat>,
     private getBroadcast: () => BroadcastFn | undefined,
+    private invoke: (q: unknown) => Promise<unknown>,
   ) {}
 
   listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
@@ -33,6 +35,21 @@ export class UpdateDispatcher {
           break;
         case 'updateChatMember':
           await this.handleChatMemberUpdate(update);
+          break;
+        case 'updateMessageContent':
+          await this.handleMessageContentUpdate(update);
+          break;
+        case 'updateDeleteMessages':
+          await this.handleDeleteMessages(update);
+          break;
+        case 'updateChatLastMessage':
+          await this.handleChatLastMessage(update);
+          break;
+        case 'updateChatReadInbox':
+          this.handleChatReadInbox(update);
+          break;
+        case 'updateChatUnreadMentionCount':
+          this.handleChatUnreadMentionCount(update);
           break;
         default:
           console.log(update);
@@ -124,6 +141,79 @@ export class UpdateDispatcher {
       actor: { id: actorUserId, name: actorName },
       old_status: update.old_status,
       new_status: update.new_status,
+    });
+  }
+
+  async handleMessageContentUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const chatId = update.chat_id!;
+    const messageId = update.message_id as number;
+    if (!chatId || !messageId) return;
+    const newContent = update.new_content as { _: string; text?: { text: string }; caption?: { text: string } } | undefined;
+    if (!newContent) return;
+    const chat = this.chats.get(chatId);
+    broadcast({
+      event: 'messageContentUpdated',
+      chat_id: chatId,
+      message_id: messageId,
+      chat_title: chat ? chat.title : 'Unknown',
+      text: extractText(newContent),
+      type: newContent._,
+    });
+  }
+
+  async handleDeleteMessages(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const chatId = update.chat_id!;
+    const messageIds = update.message_ids as number[];
+    if (!chatId || !messageIds) return;
+    broadcast({
+      event: 'messagesDeleted',
+      chat_id: chatId,
+      message_ids: messageIds,
+      is_permanent: update.is_permanent,
+    });
+  }
+
+  async handleChatLastMessage(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const chatId = update.chat_id!;
+    if (!chatId) return;
+    const rawMsg = update.last_message as RawTdMessage | null;
+    const chat = this.chats.get(chatId);
+    let formatted = null as FormattedMessage | null;
+    if (rawMsg) {
+      formatted = await this.formatter.format(rawMsg);
+    }
+    broadcast({
+      event: 'chatLastMessageUpdated',
+      chat_id: chatId,
+      chat_title: chat ? chat.title : 'Unknown',
+      last_message: formatted,
+    });
+  }
+
+  handleChatReadInbox(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    broadcast({
+      event: 'chatReadInbox',
+      chat_id: update.chat_id,
+      last_read_inbox_message_id: update.last_read_inbox_message_id,
+      unread_count: update.unread_count,
+    });
+  }
+
+  handleChatUnreadMentionCount(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    broadcast({
+      event: 'chatUnreadMentionCount',
+      chat_id: update.chat_id,
+      unread_mention_count: update.unread_mention_count,
     });
   }
 }

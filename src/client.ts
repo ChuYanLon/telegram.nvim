@@ -51,6 +51,7 @@ export class TelegramLSPClient {
       this.resolver,
       this._chats,
       () => global.broadcast,
+      (q) => this.client.invoke(q),
     );
   }
 
