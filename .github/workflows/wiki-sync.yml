@@ -14,7 +14,7 @@ jobs:
       - name: Sync wiki
         run: |
           TMP_DIR=$(mktemp -d)
-          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" "$TMP_DIR" 2>/dev/null || {
+          git clone "https://x-access-token:${{ secrets.WIKI_SYNC_TOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" "$TMP_DIR" 2>/dev/null || {
             echo "Wiki repo not initialized yet."
             echo "Visit https://github.com/${{ github.repository }}/wiki to create the first page."
             exit 0
