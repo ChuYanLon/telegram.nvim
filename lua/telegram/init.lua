@@ -256,6 +256,67 @@ local function finish_init()
 					end
 				end)
 			end
+		elseif msg.event == "messageContentUpdated" then
+			if msg.chat_id == ui.state.chat_id then
+				vim.schedule(function()
+					for _, m in ipairs(ui.state.messages) do
+						if m.id == msg.message_id then
+							m.text = msg.text or ""
+							m.type = msg.type or m.type
+							ui.render()
+							break
+						end
+					end
+				end)
+			end
+		elseif msg.event == "messagesDeleted" then
+			if msg.chat_id == ui.state.chat_id then
+				vim.schedule(function()
+					local ids = {}
+					for _, id in ipairs(msg.message_ids) do
+						ids[tostring(id)] = true
+					end
+					local i = 1
+					while i <= #ui.state.messages do
+						if ids[tostring(ui.state.messages[i].id)] then
+							table.remove(ui.state.messages, i)
+						else
+							i = i + 1
+						end
+					end
+					ui.render()
+				end)
+			end
+		elseif msg.event == "chatLastMessageUpdated" then
+			vim.schedule(function()
+				if msg.chat_id and ui.state.groups[msg.chat_id] then
+					local g = ui.state.groups[msg.chat_id]
+					if msg.last_message then
+						local lm = msg.last_message
+						local sender = lm.sender and lm.sender.name or "?"
+						g.last_msg = ("[%s] %s: %s"):format(
+							os.date("%Y-%m-%d %H:%M", lm.date),
+							sender,
+							(lm.text or ""):gsub("\n", " "):sub(1, 40)
+						)
+					else
+						g.last_msg = nil
+					end
+					ui.update_title()
+				end
+			end)
+		elseif msg.event == "chatReadInbox" then
+			vim.schedule(function()
+				if msg.chat_id and ui.state.groups[msg.chat_id] then
+					ui.state.groups[msg.chat_id].unread_count = msg.unread_count or 0
+					if msg.chat_id == ui.state.chat_id then
+						ui.state.unread = msg.unread_count or 0
+						ui.update_title()
+					end
+				end
+			end)
+		elseif msg.event == "chatUnreadMentionCount" then
+			-- no UI for mention count yet
 		end
 	end)
 	initialized = true
