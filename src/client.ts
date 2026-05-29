@@ -189,7 +189,7 @@ export class TelegramLSPClient {
         const info: any = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id });
         group.description = info.description;
       }
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('_enrichChatGroup failed:', (e as Error).message); }
 
     return group;
   }
@@ -349,7 +349,7 @@ export class TelegramLSPClient {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
       }
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     return {
       id: chat.id,
       title: chat.title,
@@ -368,21 +368,21 @@ export class TelegramLSPClient {
         message_ids: messageId ? [messageId] : [],
         force_read: true,
       });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('viewMessages failed:', (e as Error).message); }
   }
 
   async openChat(chatId: number) {
     if (!this._ready) return;
     try {
       await this.client.invoke({ _: 'openChat', chat_id: chatId });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('openChat failed:', (e as Error).message); }
   }
 
   async closeChat(chatId: number) {
     if (!this._ready) return;
     try {
       await this.client.invoke({ _: 'closeChat', chat_id: chatId });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('closeChat failed:', (e as Error).message); }
   }
 
   async sendChatAction(chatId: number, action: string) {
@@ -393,7 +393,7 @@ export class TelegramLSPClient {
         chat_id: chatId,
         action: { _: action },
       });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('sendChatAction failed:', (e as Error).message); }
   }
 
   async searchMessages(chatId: number, query: string, limit = 50) {
@@ -603,7 +603,7 @@ export class TelegramLSPClient {
       const formatted = await this.formatter.format(msg);
       if (formatted?.filePath) return { path: formatted.filePath };
       return { path: '' };
-    } catch { return null; }
+    } catch (e) { console.warn('getMessageMedia failed:', (e as Error).message); return null; }
   }
 }
 
