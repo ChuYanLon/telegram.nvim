@@ -21,6 +21,7 @@ jobs:
           cd "$TMP_DIR"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git config credential.helper "!gh auth git-credential"
           git add .
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to sync"
