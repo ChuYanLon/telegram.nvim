@@ -47,6 +47,7 @@ export class MessageFormatter {
     const fileInfo = this._extractFileInfo(msg.content);
     if (fileInfo) {
       formatted.filePath = fileInfo.path;
+      if (fileInfo.mediaPath) formatted.mediaPath = fileInfo.mediaPath;
       formatted.mimeType = fileInfo.mimeType;
     }
     if (msg.content && msg.content._ && msg.content._ !== 'messageText') {
@@ -62,7 +63,7 @@ export class MessageFormatter {
     return formatted;
   }
 
-  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mimeType: string; fileId: number; priorityFileId?: number } | null {
+  private _extractFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mediaPath?: string; mimeType: string; fileId: number; priorityFileId?: number } | null {
     if (!content) return null;
     const t = content._ as string;
     if (t === 'messageText') return null;
@@ -126,18 +127,25 @@ export class MessageFormatter {
     }
 
     const file = media[cfg.fileField] as Record<string, unknown> | undefined;
-    if (file) {
-      const info = getFileInfo(file, mimeType);
-      if (info && info.path) return info;
-      if (info && info.fileId > 0) return info;
-    }
+    const mainInfo = file ? getFileInfo(file, mimeType) : null;
 
     const thumb = media['thumbnail'] as Record<string, unknown> | undefined;
-    if (thumb) {
-      const thumbFile = thumb['file'] as Record<string, unknown> | undefined;
-      const info = getFileInfo(thumbFile, 'image/jpeg');
-      if (info) return info;
+    const thumbInfo = thumb ? getFileInfo(thumb['file'] as Record<string, unknown> | undefined, 'image/jpeg') : null;
+
+    // For non-photo media: filePath = thumbnail (for inline display), mediaPath = original file
+    if (t !== 'messagePhoto') {
+      if (thumbInfo || mainInfo) {
+        const result: any = { path: thumbInfo?.path || '', mimeType: 'image/jpeg', fileId: thumbInfo?.fileId || 0 };
+        if (mainInfo?.path) result.mediaPath = mainInfo.path;
+        if (thumbInfo?.fileId) result.priorityFileId = mainInfo?.fileId || 0;
+        return result;
+      }
+      return null;
     }
+
+    if (mainInfo && mainInfo.path) return mainInfo;
+    if (mainInfo && mainInfo.fileId > 0) return mainInfo;
+    if (thumbInfo) return thumbInfo;
 
     return null;
   }

@@ -542,7 +542,7 @@ export class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
 
-  async getMessageMedia(chatId: number, messageId: number): Promise<{ path: string } | null> {
+  async getMessageMedia(chatId: number, messageId: number): Promise<{ path: string; mediaPath?: string } | null> {
     try {
       const msg = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
       if (!msg || !msg.content) return null;
@@ -597,7 +597,10 @@ export class TelegramLSPClient {
           if (media) {
             collect(media, key.replace('_note', '').replace('_', ''), 'thumbnail');
             const main = media[key.replace('_note', '').replace('_', '')] as Record<string, unknown> | undefined;
-            targetId = (main?.['id'] as number) || 0;
+            // Poll for thumbnail first, main file second
+            const thumb = media['thumbnail'] as Record<string, unknown> | undefined;
+            const thumbFile = thumb?.['file'] as Record<string, unknown> | undefined;
+            targetId = (thumbFile?.['id'] as number) || (main?.['id'] as number) || 0;
           }
         }
       }
@@ -617,7 +620,11 @@ export class TelegramLSPClient {
       }
 
       const formatted = await this.formatter.format(msg);
-      if (formatted?.filePath) return { path: formatted.filePath };
+      if (formatted?.filePath) {
+        const result: { path: string; mediaPath?: string } = { path: formatted.filePath };
+        if (formatted.mediaPath) result.mediaPath = formatted.mediaPath;
+        return result;
+      }
       return { path: '' };
     } catch (e) { console.warn('getMessageMedia failed:', (e as Error).message); return null; }
   }

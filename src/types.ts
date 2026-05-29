@@ -19,6 +19,7 @@ export interface FormattedMessage {
   memberUserIds?: number[];
   addedMemberNames?: string[];
   filePath?: string;
+  mediaPath?: string;
   mimeType?: string;
 }
 

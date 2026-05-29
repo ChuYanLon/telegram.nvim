@@ -131,9 +131,10 @@ local function flush_msg_queue()
 					m.sender = msg.sender
 					m.text = msg.text
 					m.replyTo = msg.replyTo
-					m.filePath = msg.filePath
-					m.mimeType = msg.mimeType
-					skip_insert = true
+				m.filePath = msg.filePath
+				m.mediaPath = msg.mediaPath
+				m.mimeType = msg.mimeType
+				skip_insert = true
 					break
 				end
 			end
@@ -159,6 +160,7 @@ local function flush_msg_queue()
 				own = msg.own,
 				replyTo = msg.replyTo,
 				filePath = msg.filePath,
+				mediaPath = msg.mediaPath,
 				mimeType = msg.mimeType,
 			})
 		end
@@ -186,22 +188,20 @@ local function flush_msg_queue()
 
 	local t = last and last.type or ""
 	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
-		vim.defer_fn(function()
-			local cid = last.chat and last.chat.id
-			if st.chat_id == cid then
-				server.get_media_async(st.chat_id, last.id, function(res)
-					if res and res.path and #res.path > 0 then
-						for _, m in ipairs(st.messages) do
-							if tostring(m.id) == tostring(last.id) then
-								m.filePath = res.path
-								ui.render()
-								break
+			server.get_media_async(st.chat_id, last.id, function(res)
+				if res and res.path and #res.path > 0 then
+					for _, m in ipairs(st.messages) do
+						if tostring(m.id) == tostring(last.id) then
+							if res.mediaPath and #res.mediaPath > 0 then
+								m.mediaPath = res.mediaPath
 							end
+							m.filePath = res.path
+							ui.render()
+							break
 						end
 					end
-				end)
-			end
-		end, 2000)
+				end
+			end)
 	end
 end
 
@@ -250,6 +250,7 @@ local function finish_init()
 								own = msg.own,
 								replyTo = msg.replyTo,
 								filePath = msg.filePath,
+								mediaPath = msg.mediaPath,
 								mimeType = msg.mimeType,
 							}
 							ui.render()

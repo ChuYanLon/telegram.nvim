@@ -160,6 +160,13 @@ M.register("openlink", {
 			open_target(url)
 			return
 		end
+		-- For media messages, prefer mediaPath (original file) over filePath (thumbnail)
+		local media = ui.curr_msg()
+		if media and media.mediaPath and #media.mediaPath > 0 then
+			vim.notify("Opening: " .. media.mediaPath, vim.log.levels.INFO, { title = "tg" })
+			open_target(media.mediaPath)
+			return
+		end
 		local filepath = text:match("!%[%w+%]%((.-)%)")
 		if filepath and #filepath > 0 then
 			vim.notify("Opening: " .. filepath, vim.log.levels.INFO, { title = "tg" })
