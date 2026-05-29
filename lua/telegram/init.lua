@@ -479,25 +479,31 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 
 vim.api.nvim_create_user_command("Tg", M.list_groups, {})
 vim.api.nvim_create_user_command("TgLogout", M.logout, {})
+vim.api.nvim_create_user_command("TgTool", function()
+	tools.pick()
+end, {})
+
 vim.api.nvim_create_user_command("TgSend", function(opts)
 	local args = vim.fn.split(opts.args)
-	if #args < 2 then
-		vim.notify("Usage: TgSend <chatId> <text>", vim.log.levels.ERROR, { title = "tg" })
-		return
+	local chat_id, text
+	if #args == 1 then
+		chat_id = ui.state.chat_id
+		text = args[1]
+	else
+		chat_id = tonumber(args[1])
+		text = table.concat(args, " ", 2)
 	end
-	local chat_id = tonumber(args[1])
 	if not chat_id then
-		vim.notify("chatId must be a number", vim.log.levels.ERROR, { title = "tg" })
+		vim.notify("No chat open and no chatId provided", vim.log.levels.ERROR, { title = "tg" })
 		return
 	end
-	local text = table.concat(args, " ", 2)
+	if not text or #text == 0 then
+		vim.notify("Text is required", vim.log.levels.ERROR, { title = "tg" })
+		return
+	end
 	if not server.send_message(chat_id, text) then
 		vim.notify("Failed to send message", vim.log.levels.ERROR, { title = "tg" })
 	end
 end, { nargs = "+" })
-
-vim.api.nvim_create_user_command("TgTool", function()
-	tools.pick()
-end, {})
 
 return M
