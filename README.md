@@ -135,7 +135,7 @@ System messages (members added, group renamed, etc.) are rendered as readable te
 
 ### Media labels
 
-Media messages that cannot be rendered natively are shown as tags:
+Media messages are shown as thumbnails or tags:
 
 | Tag | Meaning |
 |-----|---------|
@@ -153,6 +153,8 @@ Media messages that cannot be rendered natively are shown as tags:
 | `[Dice]` | Dice rolled |
 | `[Game]` | Game played |
 | `[Call]` | Voice/video call |
+| emoji character | Animated emoji (inline text) |
+| `![Video](/thumbnail)` | Video thumbnail preview (click `@openlink` to play) |
 
 ## Requirements
 
