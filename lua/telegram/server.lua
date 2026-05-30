@@ -542,4 +542,151 @@ function M.forward_messages(from_chat_id, message_ids, to_chat_id)
 	return http_post("/forwardMessages", { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
 end
 
+-- ─── Member Management ─────────────────────────────────────────────────
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.ban_member(chat_id, user_id)
+	return http_post("/chat/ban", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.unban_member(chat_id, user_id)
+	return http_post("/chat/unban", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.promote_member(chat_id, user_id)
+	return http_post("/chat/promote", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.demote_member(chat_id, user_id)
+	return http_post("/chat/demote", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.restrict_member(chat_id, user_id)
+	return http_post("/chat/restrict", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.unrestrict_member(chat_id, user_id)
+	return http_post("/chat/unrestrict", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.add_member(chat_id, user_id)
+	return http_post("/chat/add-member", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@return table|nil
+function M.get_members(chat_id)
+	return http_get("/chat/members?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@return table|nil
+function M.get_admins(chat_id)
+	return http_get("/chat/admins?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param restrict_all boolean
+---@return boolean
+function M.set_default_permissions(chat_id, restrict_all)
+	local perms = {
+		can_send_messages = not restrict_all,
+		can_send_audios = not restrict_all,
+		can_send_documents = not restrict_all,
+		can_send_photos = not restrict_all,
+		can_send_videos = not restrict_all,
+		can_send_video_notes = not restrict_all,
+		can_send_voice_notes = not restrict_all,
+		can_send_polls = not restrict_all,
+		can_send_other_messages = not restrict_all,
+		can_add_web_page_previews = not restrict_all,
+		can_change_info = not restrict_all,
+		can_invite_users = not restrict_all,
+		can_pin_messages = not restrict_all,
+		can_manage_topics = not restrict_all,
+	}
+	return http_post("/chat/set-permissions", { chatId = chat_id, permissions = perms }) ~= nil
+end
+
+---@param chat_id any
+---@param delay_seconds integer
+---@return boolean
+function M.set_slow_mode(chat_id, delay_seconds)
+	return http_post("/chat/set-slow-mode", { chatId = chat_id, delaySeconds = delay_seconds }) ~= nil
+end
+
+-- ─── Group Settings ─────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param title string
+---@return boolean
+function M.set_chat_title(chat_id, title)
+	return http_post("/chat/set-title", { chatId = chat_id, title = title }) ~= nil
+end
+
+---@param chat_id any
+---@param description string
+---@return boolean
+function M.set_chat_description(chat_id, description)
+	return http_post("/chat/set-description", { chatId = chat_id, description = description }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.leave_chat(chat_id)
+	return http_post("/chat/leave", { chatId = chat_id }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.delete_chat_history(chat_id)
+	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
+end
+
+-- ─── Invite Links ──────────────────────────────────────────────────────
+
+---@param chat_id any
+---@return table|nil
+function M.get_invite_links(chat_id)
+	return http_get("/chat/invite-links?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param expire_date integer|nil
+---@param member_limit integer|nil
+---@return boolean
+function M.create_invite_link(chat_id, expire_date, member_limit)
+	local body = { chatId = chat_id }
+	if expire_date then body.expireDate = expire_date end
+	if member_limit then body.memberLimit = member_limit end
+	return http_post("/chat/create-invite-link", body) ~= nil
+end
+
+---@param chat_id any
+---@param invite_link string
+---@return boolean
+function M.revoke_invite_link(chat_id, invite_link)
+	return http_post("/chat/revoke-invite-link", { chatId = chat_id, inviteLink = invite_link }) ~= nil
+end
+
 return M

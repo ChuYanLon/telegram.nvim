@@ -490,6 +490,274 @@ export class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: msgs };
   }
 
+  // ─── Member Management ───────────────────────────────────────────────
+
+  async banChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusBanned' },
+    });
+    return { ok: true };
+  }
+
+  async unbanChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusMember' },
+    });
+    return { ok: true };
+  }
+
+  async promoteChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusAdministrator',
+        custom_title: '',
+        is_anonymous: false,
+        can_manage_chat: true,
+        can_change_info: true,
+        can_post_messages: true,
+        can_edit_messages: true,
+        can_delete_messages: true,
+        can_invite_users: true,
+        can_restrict_members: true,
+        can_pin_messages: true,
+        can_manage_topics: true,
+        can_promote_members: true,
+        can_manage_video_chats: true,
+        can_post_stories: true,
+        can_edit_stories: true,
+        can_delete_stories: true,
+      },
+    });
+    return { ok: true };
+  }
+
+  async demoteChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusMember' },
+    });
+    return { ok: true };
+  }
+
+  async restrictChatMember(chatId: number, userId: number, untilDate = 0): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusRestricted',
+        is_member: true,
+        permissions: {
+          _: 'chatPermissions',
+          can_send_messages: false,
+          can_send_audios: false,
+          can_send_documents: false,
+          can_send_photos: false,
+          can_send_videos: false,
+          can_send_video_notes: false,
+          can_send_voice_notes: false,
+          can_send_polls: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false,
+          can_change_info: false,
+          can_invite_users: false,
+          can_pin_messages: false,
+          can_manage_topics: false,
+        },
+        until_date: untilDate,
+      },
+    });
+    return { ok: true };
+  }
+
+  async unrestrictChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusRestricted',
+        is_member: true,
+        permissions: {
+          _: 'chatPermissions',
+          can_send_messages: true,
+          can_send_audios: true,
+          can_send_documents: true,
+          can_send_photos: true,
+          can_send_videos: true,
+          can_send_video_notes: true,
+          can_send_voice_notes: true,
+          can_send_polls: true,
+          can_send_other_messages: true,
+          can_add_web_page_previews: true,
+          can_change_info: true,
+          can_invite_users: true,
+          can_pin_messages: true,
+          can_manage_topics: true,
+        },
+        until_date: 0,
+      },
+    });
+    return { ok: true };
+  }
+
+  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const chat = await this.getRawChat(chatId);
+    if (chat.type._ === 'chatTypeBasicGroup') {
+      await this.client.invoke({ _: 'addChatMember', chat_id: chatId, user_id: userId });
+    } else {
+      // For supergroups, share an invite link instead
+      const link = await this.createChatInviteLink(chatId);
+      throw new Error(`Cannot add member directly to a supergroup. Share this invite link: ${link.invite_link || 'failed to generate'}`);
+    }
+    return { ok: true };
+  }
+
+  async searchChatMembers(chatId: number, query = '', limit = 200): Promise<any[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'searchChatMembers',
+      chat_id: chatId,
+      query,
+      limit,
+      filter: { _: 'chatMembersFilterMembers' },
+    }) as { members?: any[] };
+    return this._resolveChatMembers(result.members || []);
+  }
+
+  async getChatAdministrators(chatId: number): Promise<any[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'getChatAdministrators',
+      chat_id: chatId,
+    }) as any[];
+    return this._resolveChatMembers(result || []);
+  }
+
+  async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatPermissions',
+      chat_id: chatId,
+      permissions: { _: 'chatPermissions', ...permissions },
+    });
+    return { ok: true };
+  }
+
+  async setChatSlowModeDelay(chatId: number, delaySeconds: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatSlowModeDelay',
+      chat_id: chatId,
+      slow_mode_delay: delaySeconds,
+    });
+    return { ok: true };
+  }
+
+  // ─── Group Settings ─────────────────────────────────────────────────
+
+  async setChatTitle(chatId: number, title: string): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'setChatTitle', chat_id: chatId, title });
+    return { ok: true };
+  }
+
+  async setChatDescription(chatId: number, description: string): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'setChatDescription', chat_id: chatId, description });
+    return { ok: true };
+  }
+
+  async leaveChat(chatId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'leaveChat', chat_id: chatId });
+    return { ok: true };
+  }
+
+  async deleteChatHistory(chatId: number, removeFromChatList = true): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'deleteChatHistory',
+      chat_id: chatId,
+      remove_from_chat_list: removeFromChatList,
+      revoke: false,
+    });
+    return { ok: true };
+  }
+
+  // ─── Invite Links ───────────────────────────────────────────────────
+
+  async createChatInviteLink(chatId: number, expireDate?: number, memberLimit?: number): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const params: Record<string, unknown> = { _: 'createChatInviteLink', chat_id: chatId };
+    if (expireDate !== undefined) params.expire_date = expireDate;
+    if (memberLimit !== undefined) params.member_limit = memberLimit;
+    return await this.client.invoke(params);
+  }
+
+  async getChatInviteLinks(chatId: number): Promise<any[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'getChatInviteLinks',
+      chat_id: chatId,
+      creator_user_id: (await this.client.invoke({ _: 'getMe' })).id,
+      is_revoked: false,
+      limit: 50,
+    }) as { invite_links?: any[] };
+    return result.invite_links || [];
+  }
+
+  async editChatInviteLink(chatId: number, inviteLink: string, expireDate?: number, memberLimit?: number): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const params: Record<string, unknown> = { _: 'editChatInviteLink', chat_id: chatId, invite_link: inviteLink };
+    if (expireDate !== undefined) params.expire_date = expireDate;
+    if (memberLimit !== undefined) params.member_limit = memberLimit;
+    return await this.client.invoke(params);
+  }
+
+  async revokeChatInviteLink(chatId: number, inviteLink: string): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    return await this.client.invoke({
+      _: 'revokeChatInviteLink',
+      chat_id: chatId,
+      invite_link: inviteLink,
+    });
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  private async _resolveChatMembers(members: any[]): Promise<any[]> {
+    return Promise.all(members.map(async (m) => {
+      const sender = m.member_id || { _: 'messageSenderUser', user_id: 0 };
+      const userInfo = await this.resolver.resolveSender(sender);
+      const status = m.status?._?.replace('chatMemberStatus', '') || 'member';
+      return {
+        user_id: sender.user_id || sender.chat_id || 0,
+        name: userInfo?.name || 'Unknown',
+        status,
+        joined_date: m.joined_chat_date,
+      };
+    }));
+  }
+
   // Test accessors that delegate to sub-modules
   _extractText(content: any) { return extractText(content); }
   _formatMessage(msg: any, cache?: any) { return this.formatter.format(msg, cache); }

@@ -578,6 +578,9 @@ local function setup_chat_keymaps()
 			M.jump_to_bottom()
 		end)
 	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "B", function()
+		M.ban_sender()
+	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "c", function()
 		local target = M.curr_msg()
 		if not target or not target.sender or not target.sender.id then
@@ -641,10 +644,15 @@ function M.show_help()
 		" d          delete / revoke",
 		" f          forward message",
 		" G          refresh + jump to bottom",
+		" B          ban message sender",
 		" c          open DM with message sender",
 		"",
 		"-- Tools (@) --",
 		" chats      switch chat (Snacks picker)",
+		" members    view and manage members",
+		" admins     view administrators",
+		" invitelinks  manage invite links",
+		" groupsettings  group settings menu",
 		" refresh    reload messages",
 		" send       send a message",
 		" search     search history",
@@ -1155,5 +1163,250 @@ function M.refresh_messages(on_complete)
 end
 
 M.show_groups_picker = show_groups_picker
+
+-- ─── Group Management UI ────────────────────────────────────────────────
+
+local function user_actions_menu(chat_id, user, on_done)
+	vim.ui.select({ "Ban", "Unban", "Promote to admin", "Demote", "Restrict", "Unrestrict", "Cancel" }, {
+		prompt = user.name .. " (" .. user.status .. "):",
+	}, function(choice)
+		if not choice or choice == "Cancel" then
+			if on_done then on_done() end
+			return
+		end
+		local ok = false
+		if choice == "Ban" then ok = server.ban_member(chat_id, user.user_id)
+		elseif choice == "Unban" then ok = server.unban_member(chat_id, user.user_id)
+		elseif choice == "Promote to admin" then ok = server.promote_member(chat_id, user.user_id)
+		elseif choice == "Demote" then ok = server.demote_member(chat_id, user.user_id)
+		elseif choice == "Restrict" then ok = server.restrict_member(chat_id, user.user_id)
+		elseif choice == "Unrestrict" then ok = server.unrestrict_member(chat_id, user.user_id)
+		end
+		if ok then
+			vim.notify(choice .. ": " .. user.name, vim.log.levels.INFO, { title = "tg" })
+		end
+		if on_done then on_done() end
+	end)
+end
+
+local function status_icon(status)
+	local icons = { creator = "\xE2\xAD\x90", administrator = "\xE2\x9C\xA8", member = "\xF0\x9F\x91\xA4", restricted = "\xE2\x9B\x94", banned = "\xE2\x9D\x8C", left = "\xE2\x9C\x8C" }
+	return icons[status] or ""
+end
+
+---@param chat_id any
+function M.show_member_list(chat_id)
+	local data = server.get_members(chat_id)
+	if not data or not data.members then
+		vim.notify("Failed to load members", vim.log.levels.ERROR, { title = "tg" })
+		return
+	end
+	local items = {}
+	for _, m in ipairs(data.members) do
+		table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+	end
+	if #items == 0 then
+		vim.notify("No members found", vim.log.levels.INFO, { title = "tg" })
+		return
+	end
+	vim.ui.select(items, {
+		prompt = "Members (" .. #items .. ")",
+		format_item = function(item) return item.label end,
+	}, function(choice)
+		if choice then
+			user_actions_menu(chat_id, choice)
+		end
+	end)
+end
+
+---@param chat_id any
+function M.show_admin_list(chat_id)
+	local data = server.get_admins(chat_id)
+	if not data or not data.members then
+		vim.notify("Failed to load admins", vim.log.levels.ERROR, { title = "tg" })
+		return
+	end
+	local items = {}
+	for _, m in ipairs(data.members) do
+		table.insert(items, m.name .. " (" .. m.status .. ")")
+	end
+	if #items == 0 then
+		vim.notify("No admins found", vim.log.levels.INFO, { title = "tg" })
+		return
+	end
+	vim.notify(table.concat(items, "\n"), vim.log.levels.INFO, { title = "Admins of " .. (state.chat_title or "") })
+end
+
+---@param chat_id any
+function M.show_invite_links(chat_id)
+	vim.ui.select({ "Create new invite link", "View existing links", "Revoke a link", "Cancel" }, {
+		prompt = "Invite Links",
+	}, function(choice)
+		if not choice or choice == "Cancel" then return end
+		if choice == "Create new invite link" then
+			vim.ui.input({ prompt = "Member limit (0 = unlimited): " }, function(limit)
+				local member_limit = limit and tonumber(limit) or nil
+				if member_limit and member_limit <= 0 then member_limit = nil end
+				if server.create_invite_link(chat_id, nil, member_limit) then
+					vim.notify("Invite link created!", vim.log.levels.INFO, { title = "tg" })
+				end
+			end)
+		elseif choice == "View existing links" then
+			local data = server.get_invite_links(chat_id)
+			if not data or not data.invite_links or #data.invite_links == 0 then
+				vim.notify("No invite links", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local lines = {}
+			for _, link in ipairs(data.invite_links) do
+				local info = link.invite_link
+				if link.member_limit and link.member_limit > 0 then
+					info = info .. " (limit: " .. link.member_limit .. ")"
+				end
+				table.insert(lines, info)
+			end
+			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Invite Links" })
+		elseif choice == "Revoke a link" then
+			local data = server.get_invite_links(chat_id)
+			if not data or not data.invite_links or #data.invite_links == 0 then
+				vim.notify("No invite links to revoke", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, link in ipairs(data.invite_links) do
+				table.insert(items, { link = link.invite_link, label = link.invite_link })
+			end
+			vim.ui.select(items, {
+				prompt = "Select link to revoke",
+				format_item = function(item) return item.label end,
+			}, function(choice)
+				if choice then
+					if server.revoke_invite_link(chat_id, choice.link) then
+						vim.notify("Link revoked", vim.log.levels.INFO, { title = "tg" })
+					end
+				end
+			end)
+		end
+	end)
+end
+
+---@param chat_id any
+function M.show_group_settings(chat_id)
+	vim.ui.select({ "Change title", "Change description", "Add member", "Set default permissions", "Set slow mode", "Leave group", "Delete history", "Cancel" }, {
+		prompt = "Group Settings",
+	}, function(choice)
+		if not choice or choice == "Cancel" then return end
+		if choice == "Change title" then
+			vim.ui.input({ prompt = "New title: " }, function(title)
+				if title and #title > 0 then
+					if server.set_chat_title(chat_id, title) then
+						state.chat_title = title
+						M.update_title()
+						vim.notify("Title updated", vim.log.levels.INFO, { title = "tg" })
+					end
+				end
+			end)
+		elseif choice == "Change description" then
+			vim.ui.input({ prompt = "New description: " }, function(desc)
+				if desc then
+					if server.set_chat_description(chat_id, desc) then
+						vim.notify("Description updated", vim.log.levels.INFO, { title = "tg" })
+					end
+				end
+			end)
+		elseif choice == "Add member" then
+			vim.ui.input({ prompt = "User ID to add: " }, function(user_id)
+				if user_id and #user_id > 0 then
+					local id = tonumber(user_id)
+					if not id then
+						vim.notify("Invalid user ID", vim.log.levels.ERROR, { title = "tg" })
+						return
+					end
+					local ok, err = server.add_member(chat_id, id)
+					if ok then
+						vim.notify("Member added", vim.log.levels.INFO, { title = "tg" })
+					else
+						vim.notify(err or "Failed to add member", vim.log.levels.ERROR, { title = "tg" })
+					end
+				end
+			end)
+		elseif choice == "Set default permissions" then
+			vim.ui.select({ "Allow all (default)", "Restrict all", "Cancel" }, {
+				prompt = "Default permissions for new members",
+			}, function(perm_choice)
+				if not perm_choice or perm_choice == "Cancel" then return end
+				local restrict = perm_choice == "Restrict all"
+				if server.set_default_permissions(chat_id, restrict) then
+					vim.notify("Permissions updated", vim.log.levels.INFO, { title = "tg" })
+				end
+			end)
+		elseif choice == "Set slow mode" then
+			vim.ui.input({ prompt = "Slow mode delay in seconds (0 = off): " }, function(delay)
+				local d = delay and tonumber(delay)
+				if d ~= nil then
+					if server.set_slow_mode(chat_id, d) then
+						vim.notify("Slow mode set to " .. d .. "s", vim.log.levels.INFO, { title = "tg" })
+					end
+				end
+			end)
+		elseif choice == "Leave group" then
+			vim.ui.select({ "Yes, leave", "Cancel" }, {
+				prompt = "Are you sure you want to leave this group?",
+			}, function(confirm)
+				if confirm == "Yes, leave" then
+					if server.leave_chat(chat_id) then
+						vim.notify("Left group", vim.log.levels.INFO, { title = "tg" })
+						vim.schedule(function()
+							M.destroy_chat()
+						end)
+					end
+				end
+			end)
+		elseif choice == "Delete history" then
+			vim.ui.select({ "Yes, delete history", "Cancel" }, {
+				prompt = "Delete chat history permanently?",
+			}, function(confirm)
+				if confirm == "Yes, delete history" then
+					if server.delete_chat_history(chat_id) then
+						vim.notify("History deleted", vim.log.levels.INFO, { title = "tg" })
+					end
+				end
+			end)
+		end
+	end)
+end
+
+---@param chat_id any
+---@param user_id any
+---@param user_name string
+function M.show_user_actions(chat_id, user_id, user_name)
+	user_actions_menu(chat_id, { user_id = user_id, name = user_name, status = "member" })
+end
+
+function M.ban_sender()
+	local target = M.curr_msg()
+	if not target or not target.sender or not target.sender.id then
+		vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+		return
+	end
+	if target.own then
+		vim.notify("Cannot ban yourself", vim.log.levels.WARN, { title = "tg" })
+		return
+	end
+	local user_id = tonumber(target.sender.id)
+	if not user_id then
+		vim.notify("Cannot identify sender", vim.log.levels.WARN, { title = "tg" })
+		return
+	end
+	vim.ui.select({ "Ban " .. target.sender.name, "Cancel" }, {
+		prompt = "Ban user?",
+	}, function(choice)
+		if choice and choice ~= "Cancel" then
+			if server.ban_member(state.chat_id, user_id) then
+				vim.notify("Banned " .. target.sender.name, vim.log.levels.INFO, { title = "tg" })
+			end
+		end
+	end)
+end
 
 return M

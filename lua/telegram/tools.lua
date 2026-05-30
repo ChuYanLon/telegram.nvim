@@ -175,6 +175,54 @@ M.register("openlink", {
 	end,
 })
 
+M.register("members", {
+	description = "View and manage chat members",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		ui.show_member_list(ui.state.chat_id)
+	end,
+})
+
+M.register("admins", {
+	description = "View chat administrators",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		ui.show_admin_list(ui.state.chat_id)
+	end,
+})
+
+M.register("invitelinks", {
+	description = "Manage invite links",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		ui.show_invite_links(ui.state.chat_id)
+	end,
+})
+
+M.register("groupsettings", {
+	description = "Group settings (title, description, slow mode, etc.)",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		ui.show_group_settings(ui.state.chat_id)
+	end,
+})
+
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
 	condition = function()
