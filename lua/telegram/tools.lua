@@ -209,7 +209,7 @@ M.register("invitelinks", {
 })
 
 M.register("groupsettings", {
-	description = "Group settings (title, description, slow mode, etc.)",
+	description = "Group settings (title, description, permissions, etc.)",
 	condition = is_group,
 	callback = function()
 		if not ui.state.chat_id then

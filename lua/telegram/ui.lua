@@ -40,6 +40,7 @@ local state = {
 	group_cursor = 1,
 	permissions = {},
 	my_user_id = nil,
+	default_restricted = false,
 }
 
 M.state = state
@@ -880,6 +881,7 @@ function M.open_chat(chat_id, chat_title)
 	if chat_info then
 		state.online_count = chat_info.onlineMemberCount or state.online_count
 		state.description = chat_info.description or ""
+		state.default_restricted = chat_info.defaultRestricted or false
 		M.update_title()
 	end
 
@@ -1324,7 +1326,6 @@ function M.show_group_settings(chat_id)
 	end
 	if can("can_restrict_members") then
 		table.insert(actions, "Set default permissions")
-		table.insert(actions, "Set slow mode")
 	end
 	table.insert(actions, "Leave group")
 	table.insert(actions, "Delete history")
@@ -1371,22 +1372,21 @@ function M.show_group_settings(chat_id)
 				end
 			end)
 		elseif choice == "Set default permissions" then
-			vim.ui.select({ "Allow all (default)", "Restrict all", "Cancel" }, {
+			local restrict_options = { "Normal (send)", "Restrict all (read only)" }
+			for i, v in ipairs(restrict_options) do
+				local is_restrict = v:find("^Restrict") ~= nil
+				local on = is_restrict == state.default_restricted
+				restrict_options[i] = on and v .. " (current)" or v
+			end
+			table.insert(restrict_options, "Cancel")
+			vim.ui.select(restrict_options, {
 				prompt = "Default permissions for new members",
 			}, function(perm_choice)
 				if not perm_choice or perm_choice == "Cancel" then return end
-				local restrict = perm_choice == "Restrict all"
+				local restrict = perm_choice:find("^Restrict") ~= nil
 				if server.set_default_permissions(chat_id, restrict) then
-					vim.notify("Permissions updated", vim.log.levels.INFO, { title = "tg" })
-				end
-			end)
-		elseif choice == "Set slow mode" then
-			vim.ui.input({ prompt = "Slow mode delay in seconds (0 = off): " }, function(delay)
-				local d = delay and tonumber(delay)
-				if d ~= nil then
-					if server.set_slow_mode(chat_id, d) then
-						vim.notify("Slow mode set to " .. d .. "s", vim.log.levels.INFO, { title = "tg" })
-					end
+					state.default_restricted = restrict
+					vim.notify("Permissions " .. (restrict and "restricted" or "allowed"), vim.log.levels.INFO, { title = "tg" })
 				end
 			end)
 		elseif choice == "Leave group" then

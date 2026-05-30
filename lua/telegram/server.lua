@@ -620,19 +620,12 @@ function M.set_default_permissions(chat_id, restrict_all)
 		can_send_polls = not restrict_all,
 		can_send_other_messages = not restrict_all,
 		can_add_web_page_previews = not restrict_all,
-		can_change_info = not restrict_all,
-		can_invite_users = not restrict_all,
-		can_pin_messages = not restrict_all,
-		can_manage_topics = not restrict_all,
+		can_change_info = false,
+		can_invite_users = false,
+		can_pin_messages = false,
+		can_manage_topics = false,
 	}
 	return http_post("/chat/set-permissions", { chatId = chat_id, permissions = perms }) ~= nil
-end
-
----@param chat_id any
----@param delay_seconds integer
----@return boolean
-function M.set_slow_mode(chat_id, delay_seconds)
-	return http_post("/chat/set-slow-mode", { chatId = chat_id, delaySeconds = delay_seconds }) ~= nil
 end
 
 -- ─── Group Settings ─────────────────────────────────────────────────────

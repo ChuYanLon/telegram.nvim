@@ -376,15 +376,6 @@ app.post('/chat/set-permissions', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
-app.post('/chat/set-slow-mode', async (req, res) => {
-  try {
-    const { chatId, delaySeconds } = req.body;
-    if (!chatId || delaySeconds === undefined) { res.status(400).json({ error: 'chatId and delaySeconds are required' }); return; }
-    const result = await tgClient.setChatSlowModeDelay(Number(chatId), Number(delaySeconds));
-    res.json(result);
-  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
-});
-
 // ─── Group Settings ────────────────────────────────────────────────────
 
 app.post('/chat/set-title', async (req, res) => {
