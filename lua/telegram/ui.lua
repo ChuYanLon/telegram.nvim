@@ -1190,8 +1190,8 @@ function M.refresh_messages(on_complete)
 		if on_complete then
 			on_complete()
 		end
-	end, function()
-		vim.notify("Failed to load messages", vim.log.levels.ERROR, { title = "tg" })
+	end, function(err)
+		vim.notify("Failed to load messages: " .. tostring(err), vim.log.levels.ERROR, { title = "tg" })
 		if on_complete then
 			on_complete()
 		end

@@ -123,69 +123,45 @@ local function request_curl(opts, callback)
 	})
 end
 
----@type boolean|nil  true = vim.net works, false = curl-only
-local net_ok = nil
-
-function M.get_transport()
-	return net_ok == nil and "probing" or (net_ok and "vim.net.request" or "curl")
-end
-
 local function request_async(opts, callback)
-	if net_ok == nil then
-		if vim.net and vim.net.request then
-			-- Probe: if callback fires within 2s, use vim.net; else curl forever
-			net_ok = false
-			local timed_out = true
-			vim.fn.timer_start(2000, function()
-				if timed_out then
-					request_curl(opts, callback)
-				end
-			end, { ["repeat"] = 1 })
-			vim.net.request(base_url() .. "/health", { timeout = 2000 }, function(err, body, status)
-				if timed_out then return end
-				timed_out = false
-				if not err and status and status < 400 then
-					net_ok = true
-					vim.schedule(function()
-						vim.notify("tg: using vim.net.request", vim.log.levels.INFO, { title = "tg" })
-					end)
-					request_async(opts, callback)
-				else
-					vim.schedule(function()
-						vim.notify("tg: vim.net.request unavailable, using curl", vim.log.levels.INFO, { title = "tg" })
-					end)
-					request_curl(opts, callback)
-				end
-			end)
-		else
-			net_ok = false
-			request_curl(opts, callback)
-		end
-		return
-	end
-
-	if net_ok then
-		vim.net.request(opts.url, {
+	if vim.net and vim.net.request then
+		local ok2, result = pcall(vim.net.request, opts.url, {
 			method = opts.body and "POST" or "GET",
 			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
 			body = opts.body,
 			timeout = 15000,
-		}, function(err, body, status)
-			if err then
-				callback(nil, err)
+		}, function(...)
+			local args = { ... }
+			if args[1] then
+				callback(nil, args[1])
 				return
 			end
-			local ok, data = pcall(vim.json.decode, body or "{}")
-			if not ok then
-				callback(nil, "HTTP " .. (status or "?") .. " (body not JSON)")
+			local data, status = args[2], args[3]
+			-- Response may be wrapped: { body = json_string, status = int }
+			if type(data) == "table" and data.body then
+				local ok, d = pcall(vim.json.decode, data.body)
+				if ok then data = d end
+				status = data.status or status
+			end
+			if type(data) == "string" then
+				local ok, d = pcall(vim.json.decode, data)
+				if ok then data = d end
+			end
+			if type(data) ~= "table" then
+				callback(nil, "invalid response: " .. tostring(data))
 				return
 			end
-			if (status or 200) >= 400 or (type(data) == "table" and data.error) then
-				callback(nil, (type(data) == "table" and data.error) or ("HTTP " .. (status or "?")))
+			status = tonumber(status) or 200
+			if status >= 400 or data.error then
+				callback(nil, data.error or ("HTTP " .. tostring(status)))
 				return
 			end
 			callback(data, nil)
 		end)
+		if not ok2 then
+			vim.notify("vim.net.request call failed: " .. tostring(result), vim.log.levels.ERROR, { title = "tg" })
+			request_curl(opts, callback)
+		end
 	else
 		request_curl(opts, callback)
 	end
@@ -478,7 +454,11 @@ function M.get_messages_async(chat_id, limit, before, on_ok, on_err, opts)
 		path = path .. "&beforeDate=" .. opts.before_date
 	end
 	request_async({ url = base_url() .. path }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then
+			if on_err then vim.schedule(function() on_err(err) end) end
+		else
+			vim.schedule(function() on_ok(data) end)
+		end
 	end)
 end
 
@@ -495,7 +475,7 @@ function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opt
 		url = url .. "&afterDate=" .. opts.after_date
 	end
 	request_async({ url = url }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -508,7 +488,7 @@ function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
 		.. "&limit="
 		.. (limit or 11)
 	request_async({ url = url }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
