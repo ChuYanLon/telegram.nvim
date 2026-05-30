@@ -843,6 +843,8 @@ export class TelegramLSPClient {
         } else if (s._ === 'chatMemberStatusMember') {
           perms.can_send_messages = canSendByDefault;
         }
+      } else if (chat.type._ === 'chatTypePrivate' || chat.type._ === 'chatTypeSecret') {
+        perms.can_send_messages = true;
       }
 
       return perms;
