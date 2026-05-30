@@ -134,6 +134,14 @@ M.register("search", {
 	end,
 })
 
+local function is_service()
+	local t = ui.curr_msg()
+	if not t or not t.type then return false end
+	return t.type:find("Chat") or t.type:find("Group") or t.type:find("Service")
+		or t.type:find("Forum") or t.type:find("^messagePin")
+		or t.type == "messageScreenshotTaken" or t.type == "messageCustomServiceAction"
+end
+
 local function open_target(target)
 	vim.fn.jobstart({
 		"sh", "-c",
@@ -144,6 +152,7 @@ end
 M.register("openlink", {
 	description = "Open URL or media file under cursor",
 	condition = function()
+		if is_service() then return false end
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
 		if not text then return false end
@@ -223,6 +232,7 @@ M.register("groupsettings", {
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
 	condition = function()
+		if is_service() then return false end
 		local t = ui.curr_msg()
 		return t and t.type and t.type ~= "messageText" and t.type:find("^message")
 	end,
