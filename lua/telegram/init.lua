@@ -217,6 +217,20 @@ local function queue_msg(msg)
 	msg_timer = vim.fn.timer_start(100, flush_msg_queue, { ["repeat"] = 1 })
 end
 
+local refresh_timer = nil
+local function refresh_groups_list()
+	if refresh_timer then
+		vim.fn.timer_stop(refresh_timer)
+	end
+	refresh_timer = vim.fn.timer_start(500, function()
+		refresh_timer = nil
+		local chats = server.get_chats()
+		if chats then
+			ui.set_groups(chats)
+		end
+	end, { ["repeat"] = 1 })
+end
+
 local function finish_init()
 	ws.ws_start(function(msg)
 		if msg.event == "newMessage" then
@@ -340,6 +354,57 @@ local function finish_init()
 			end)
 		elseif msg.event == "chatUnreadMentionCount" then
 			-- no UI for mention count yet
+		elseif msg.event == "NewChat" then
+			vim.schedule(function()
+				refresh_groups_list()
+			end)
+		elseif msg.event == "chatMember" then
+			local ns = msg.new_status and msg.new_status._
+			if ns == "chatMemberStatusLeft" or ns == "chatMemberStatusBanned" then
+				vim.schedule(function()
+					local cid = msg.chat_id
+					if not cid then return end
+					local removed = false
+					if ui.state.groups[cid] then
+						ui.state.groups[cid] = nil
+						for i, id in ipairs(ui.state.group_ids) do
+							if id == cid then
+								table.remove(ui.state.group_ids, i)
+								break
+							end
+						end
+						removed = true
+					end
+					if ui.state.chat_id == cid then
+						ui.destroy_chat()
+					end
+					if removed then
+						vim.notify("Removed from " .. (msg.chat_title or "chat"), vim.log.levels.INFO, { title = "tg" })
+					end
+				end)
+			end
+		elseif msg.event == "ChatPosition" then
+			local pos = msg.position
+			if pos and pos.order == "0" then
+				vim.schedule(function()
+					local cid = msg.chat_id
+					if not cid then return end
+					local removed = false
+					if ui.state.groups[cid] then
+						ui.state.groups[cid] = nil
+						for i, id in ipairs(ui.state.group_ids) do
+							if id == cid then
+								table.remove(ui.state.group_ids, i)
+								break
+							end
+						end
+						removed = true
+					end
+					if ui.state.chat_id == cid then
+						ui.destroy_chat()
+					end
+				end)
+			end
 		end
 	end)
 	initialized = true

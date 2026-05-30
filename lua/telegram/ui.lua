@@ -1399,6 +1399,13 @@ function M.show_group_settings(chat_id)
 			}, function(confirm)
 				if confirm == "Yes, leave" then
 					if server.leave_chat(chat_id) then
+						state.groups[chat_id] = nil
+						for i, id in ipairs(state.group_ids) do
+							if id == chat_id then
+								table.remove(state.group_ids, i)
+								break
+							end
+						end
 						vim.notify("Left group", vim.log.levels.INFO, { title = "tg" })
 						vim.schedule(function()
 							M.destroy_chat()
