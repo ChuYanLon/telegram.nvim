@@ -51,8 +51,14 @@ export class UpdateDispatcher {
         case 'updateChatUnreadMentionCount':
           this.handleChatUnreadMentionCount(update);
           break;
+        case 'updateChatTitle':
+          this.handleChatTitle(update);
+          break;
+        case 'updateChatPermissions':
+          this.handleChatPermissions(update);
+          break;
         default:
-          console.log(update);
+          this.broadcastRaw(update);
       }
     });
   }
@@ -205,6 +211,34 @@ export class UpdateDispatcher {
       last_read_inbox_message_id: update.last_read_inbox_message_id,
       unread_count: update.unread_count,
     });
+  }
+
+  handleChatTitle(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    broadcast({
+      event: 'chatTitle',
+      chat_id: update.chat_id,
+      title: update.title,
+    });
+  }
+
+  handleChatPermissions(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const perms = (update as any).permissions as Record<string, unknown> | undefined;
+    broadcast({
+      event: 'chatPermissions',
+      chat_id: update.chat_id,
+      default_restricted: perms?.can_send_basic_messages === false,
+    });
+  }
+
+  broadcastRaw(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const event = update._.replace(/^update/, '');
+    broadcast({ event, ...update });
   }
 
   handleChatUnreadMentionCount(update: TdUpdate) {

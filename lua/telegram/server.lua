@@ -13,7 +13,6 @@ end
 local server_job = nil
 local server_pid = nil
 local server_owner = false
-local cached_groups = nil
 
 local function base_url()
 	return "http://localhost:" .. http_port()
@@ -296,24 +295,7 @@ end
 
 ---@return table|nil
 function M.get_groups()
-	if not cached_groups then
-		cached_groups = http_get("/groups")
-	end
-	return cached_groups
-end
-
-function M.invalidate_groups()
-	cached_groups = nil
-end
-
----@return table|nil
-function M.refresh_groups()
-	cached_groups = nil
-	return M.get_groups()
-end
-
-function M.clear_groups_cache()
-	cached_groups = nil
+	return http_get("/groups")
 end
 
 ---@param chat_id any

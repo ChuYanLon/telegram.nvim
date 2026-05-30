@@ -128,7 +128,9 @@ export class TelegramLSPClient {
 
   async getChats(force?: boolean): Promise<RawTdChat[]> {
     if (!this._ready) throw new Error('Client not ready yet');
-    if (this._chatsLoaded && !force) return [...this._chats.values()];
+    if (!force && this._chatsLoaded) return [...this._chats.values()];
+    this._chats.clear();
+    this._chatsLoaded = false;
 
     let offsetOrder = '9223372036854775807';
     let offsetChatId = 0;
@@ -230,7 +232,7 @@ export class TelegramLSPClient {
   }
 
   async getAllChats(): Promise<ChatInfo[]> {
-    const chats = await this.getChats();
+    const chats = await this.getChats(true);
     const results = chats.map(async (chat) => {
       const t = chat.type._;
       if (t === 'chatTypeBasicGroup' || (t === 'chatTypeSupergroup' && !chat.type.is_channel)) {
@@ -288,7 +290,7 @@ export class TelegramLSPClient {
   }
 
   async getGroups(): Promise<GroupInfo[]> {
-    const chats = await this.getChats();
+    const chats = await this.getChats(true);
     const groups = chats.filter((c) => {
       const t = c.type._;
       if (t === 'chatTypeBasicGroup') return true;

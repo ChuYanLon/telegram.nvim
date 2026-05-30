@@ -322,6 +322,22 @@ local function finish_init()
 					end
 				end
 			end)
+		elseif msg.event == "chatTitle" then
+			vim.schedule(function()
+				if msg.chat_id and ui.state.groups[msg.chat_id] then
+					ui.state.groups[msg.chat_id].title = msg.title
+					if msg.chat_id == ui.state.chat_id then
+						ui.state.chat_title = msg.title
+						ui.update_title()
+					end
+				end
+			end)
+		elseif msg.event == "chatPermissions" then
+			vim.schedule(function()
+				if msg.chat_id == ui.state.chat_id then
+					ui.state.default_restricted = msg.default_restricted or false
+				end
+			end)
 		elseif msg.event == "chatUnreadMentionCount" then
 			-- no UI for mention count yet
 		end
