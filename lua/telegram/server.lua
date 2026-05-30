@@ -139,9 +139,9 @@ local function request_async(opts, callback)
 			local data, status = args[2], args[3]
 			-- Response may be wrapped: { body = json_string, status = int }
 			if type(data) == "table" and data.body then
+				status = data.status or status
 				local ok, d = pcall(vim.json.decode, data.body)
 				if ok then data = d end
-				status = data.status or status
 			end
 			if type(data) == "string" then
 				local ok, d = pcall(vim.json.decode, data)
