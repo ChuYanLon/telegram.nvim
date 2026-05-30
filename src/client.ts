@@ -1,6 +1,8 @@
 import * as tdl from 'tdl';
 import * as dotenv from 'dotenv';
 import path from 'path';
+
+
 import type { RawTdChat, RawTdMessage, GroupInfo, ChatInfo, FormattedMessage } from './types';
 import { initTdlibModule, getResolvedTdlibPath } from './tdlib';
 import { AuthManager } from './auth';
@@ -126,7 +128,9 @@ export class TelegramLSPClient {
 
   async getChats(force?: boolean): Promise<RawTdChat[]> {
     if (!this._ready) throw new Error('Client not ready yet');
-    if (this._chatsLoaded && !force) return [...this._chats.values()];
+    if (!force && this._chatsLoaded) return [...this._chats.values()];
+    this._chats.clear();
+    this._chatsLoaded = false;
 
     let offsetOrder = '9223372036854775807';
     let offsetChatId = 0;
@@ -228,12 +232,19 @@ export class TelegramLSPClient {
   }
 
   async getAllChats(): Promise<ChatInfo[]> {
-    const chats = await this.getChats();
+    const chats = await this.getChats(true);
     const results = chats.map(async (chat) => {
       const t = chat.type._;
-      if (t === 'chatTypeBasicGroup' || (t === 'chatTypeSupergroup' && !chat.type.is_channel)) {
+      if (t === 'chatTypeBasicGroup') {
         const g = await this._enrichGroup(chat);
         return g ? { ...g, type: 'group' as const } : null;
+      }
+      if (t === 'chatTypeSupergroup') {
+        const g = await this._enrichGroup(chat);
+        if (!g) return null;
+        return chat.type.is_channel
+          ? { ...g, type: 'channel' as const }
+          : { ...g, type: 'group' as const };
       }
       if (t === 'chatTypePrivate' || t === 'chatTypeSecret') {
         return this._enrichPrivate(chat);
@@ -286,7 +297,7 @@ export class TelegramLSPClient {
   }
 
   async getGroups(): Promise<GroupInfo[]> {
-    const chats = await this.getChats();
+    const chats = await this.getChats(true);
     const groups = chats.filter((c) => {
       const t = c.type._;
       if (t === 'chatTypeBasicGroup') return true;
@@ -357,13 +368,21 @@ export class TelegramLSPClient {
     if (!this._ready) throw new Error('Client not ready yet');
     const chat = await this.getRawChat(chatId);
     let memberCount = 0;
+    let description = '';
+    const chatObj = chat as any;
+    const chatPerms = chatObj.permissions as Record<string, unknown> | undefined;
+    const defaultRestricted = chatPerms?.can_send_basic_messages === false;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
         memberCount = sg.member_count;
+        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
+        description = info.description || '';
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
+        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as any;
+        description = info.description || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     return {
@@ -372,6 +391,8 @@ export class TelegramLSPClient {
       unreadCount: chat.unread_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
       memberCount,
+      description,
+      defaultRestricted,
     };
   }
 
@@ -488,6 +509,359 @@ export class TelegramLSPClient {
     msgs.sort((a, b) => a.date - b.date);
     const chat = this._chats.get(chatId);
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: msgs };
+  }
+
+  // ─── Member Management ───────────────────────────────────────────────
+
+  async banChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusBanned' },
+    });
+    return { ok: true };
+  }
+
+  async unbanChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusMember' },
+    });
+    return { ok: true };
+  }
+
+  async promoteChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusAdministrator',
+        custom_title: '',
+        is_anonymous: false,
+        can_manage_chat: true,
+        can_change_info: true,
+        can_post_messages: true,
+        can_edit_messages: true,
+        can_delete_messages: true,
+        can_invite_users: true,
+        can_restrict_members: true,
+        can_pin_messages: true,
+        can_manage_topics: true,
+        can_promote_members: true,
+        can_manage_video_chats: true,
+        can_post_stories: true,
+        can_edit_stories: true,
+        can_delete_stories: true,
+      },
+    });
+    return { ok: true };
+  }
+
+  async demoteChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: { _: 'chatMemberStatusMember' },
+    });
+    return { ok: true };
+  }
+
+  async restrictChatMember(chatId: number, userId: number, untilDate = 0): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusRestricted',
+        is_member: true,
+        permissions: {
+          _: 'chatPermissions',
+          can_send_messages: false,
+          can_send_audios: false,
+          can_send_documents: false,
+          can_send_photos: false,
+          can_send_videos: false,
+          can_send_video_notes: false,
+          can_send_voice_notes: false,
+          can_send_polls: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false,
+          can_change_info: false,
+          can_invite_users: false,
+          can_pin_messages: false,
+          can_manage_topics: false,
+        },
+        until_date: untilDate,
+      },
+    });
+    return { ok: true };
+  }
+
+  async unrestrictChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatMemberStatus',
+      chat_id: chatId,
+      member_id: { _: 'messageSenderUser', user_id: userId },
+      status: {
+        _: 'chatMemberStatusRestricted',
+        is_member: true,
+        permissions: {
+          _: 'chatPermissions',
+          can_send_messages: true,
+          can_send_audios: true,
+          can_send_documents: true,
+          can_send_photos: true,
+          can_send_videos: true,
+          can_send_video_notes: true,
+          can_send_voice_notes: true,
+          can_send_polls: true,
+          can_send_other_messages: true,
+          can_add_web_page_previews: true,
+          can_change_info: true,
+          can_invite_users: true,
+          can_pin_messages: true,
+          can_manage_topics: true,
+        },
+        until_date: 0,
+      },
+    });
+    return { ok: true };
+  }
+
+  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const chat = await this.getRawChat(chatId);
+    if (chat.type._ === 'chatTypeBasicGroup') {
+      await this.client.invoke({ _: 'addChatMember', chat_id: chatId, user_id: userId });
+    } else {
+      // For supergroups, share an invite link instead
+      const link = await this.createChatInviteLink(chatId);
+      throw new Error(`Cannot add member directly to a supergroup. Share this invite link: ${link.invite_link || 'failed to generate'}`);
+    }
+    return { ok: true };
+  }
+
+  async searchChatMembers(chatId: number, query = '', limit = 200): Promise<any[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'searchChatMembers',
+      chat_id: chatId,
+      query,
+      limit,
+      filter: { _: 'chatMembersFilterMembers' },
+    }) as { members?: any[] };
+    return this._resolveChatMembers(result.members || []);
+  }
+
+  async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const allow = permissions.can_send_messages;
+    const perms: Record<string, unknown> = { _: 'chatPermissions' };
+    if (allow) {
+      perms.can_send_basic_messages = true;
+      perms.can_send_audios = true;
+      perms.can_send_documents = true;
+      perms.can_send_photos = true;
+      perms.can_send_videos = true;
+      perms.can_send_video_notes = true;
+      perms.can_send_voice_notes = true;
+      perms.can_send_polls = true;
+      perms.can_send_other_messages = true;
+      perms.can_add_link_previews = true;
+    } else {
+      perms.can_send_basic_messages = false;
+      perms.can_send_audios = false;
+      perms.can_send_documents = false;
+      perms.can_send_photos = false;
+      perms.can_send_videos = false;
+      perms.can_send_video_notes = false;
+      perms.can_send_voice_notes = false;
+      perms.can_send_polls = false;
+      perms.can_send_other_messages = false;
+      perms.can_add_link_previews = false;
+    }
+    await this.client.invoke({ _: 'setChatPermissions', chat_id: chatId, permissions: perms });
+    return { ok: true };
+  }
+
+  // ─── Group Settings ─────────────────────────────────────────────────
+
+  async setChatTitle(chatId: number, title: string): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'setChatTitle', chat_id: chatId, title });
+    return { ok: true };
+  }
+
+  async setChatDescription(chatId: number, description: string): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'setChatDescription', chat_id: chatId, description });
+    return { ok: true };
+  }
+
+  async leaveChat(chatId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'leaveChat', chat_id: chatId });
+    return { ok: true };
+  }
+
+  async deleteChatHistory(chatId: number, removeFromChatList = true): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'deleteChatHistory',
+      chat_id: chatId,
+      remove_from_chat_list: removeFromChatList,
+      revoke: false,
+    });
+    return { ok: true };
+  }
+
+  // ─── Invite Links ───────────────────────────────────────────────────
+
+  async createChatInviteLink(chatId: number, expireDate?: number, memberLimit?: number): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const params: Record<string, unknown> = { _: 'createChatInviteLink', chat_id: chatId };
+    if (expireDate !== undefined) params.expire_date = expireDate;
+    if (memberLimit !== undefined) params.member_limit = memberLimit;
+    return await this.client.invoke(params);
+  }
+
+  async getChatInviteLinks(chatId: number): Promise<any[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'getChatInviteLinks',
+      chat_id: chatId,
+      creator_user_id: (await this.client.invoke({ _: 'getMe' })).id,
+      is_revoked: false,
+      limit: 50,
+    }) as { invite_links?: any[] };
+    return result.invite_links || [];
+  }
+
+  async editChatInviteLink(chatId: number, inviteLink: string, expireDate?: number, memberLimit?: number): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const params: Record<string, unknown> = { _: 'editChatInviteLink', chat_id: chatId, invite_link: inviteLink };
+    if (expireDate !== undefined) params.expire_date = expireDate;
+    if (memberLimit !== undefined) params.member_limit = memberLimit;
+    return await this.client.invoke(params);
+  }
+
+  async revokeChatInviteLink(chatId: number, inviteLink: string): Promise<any> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    return await this.client.invoke({
+      _: 'revokeChatInviteLink',
+      chat_id: chatId,
+      invite_link: inviteLink,
+    });
+  }
+
+  // ─── Permissions ─────────────────────────────────────────────────────
+
+  async getMyPermissions(chatId: number): Promise<Record<string, unknown>> {
+    if (!this._ready) return {};
+    try {
+      const chat = await this.getRawChat(chatId);
+      const me = await this.client.invoke({ _: 'getMe' }) as { id: number };
+      const perms: Record<string, unknown> = {
+        my_user_id: me.id,
+        is_owner: false,
+        is_admin: false,
+        can_send_messages: false,
+        can_restrict_members: false,
+        can_promote_members: false,
+        can_change_info: false,
+        can_pin_messages: false,
+        can_invite_users: false,
+        can_delete_messages: false,
+        can_manage_chat: false,
+      };
+
+      if (chat.type._ === 'chatTypeSupergroup') {
+        const sg: any = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        const s = sg.status;
+        const isChannel = !!chat.type.is_channel;
+        if (s._ === 'chatMemberStatusCreator') {
+          perms.is_owner = true;
+          perms.is_admin = true;
+          perms.can_send_messages = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_pin_messages = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
+        } else if (s._ === 'chatMemberStatusAdministrator') {
+          perms.is_admin = true;
+          perms.can_send_messages = isChannel ? !!s.can_post_messages : true;
+          perms.can_restrict_members = !!s.can_restrict_members;
+          perms.can_promote_members = !!s.can_promote_members;
+          perms.can_change_info = !!s.can_change_info;
+          perms.can_pin_messages = !!s.can_pin_messages;
+          perms.can_invite_users = !!s.can_invite_users;
+          perms.can_delete_messages = !!s.can_delete_messages;
+          perms.can_manage_chat = !!s.can_manage_chat;
+        }
+        if (isChannel && s._ === 'chatMemberStatusMember') {
+          perms.can_send_messages = false;
+        }
+      } else if (chat.type._ === 'chatTypeBasicGroup') {
+        const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        const s = bg.status;
+        if (s._ === 'chatMemberStatusCreator') {
+          perms.is_owner = true;
+          perms.is_admin = true;
+          perms.can_send_messages = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_pin_messages = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
+        } else if (s._ === 'chatMemberStatusAdministrator') {
+          perms.is_admin = true;
+          perms.can_send_messages = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
+        }
+      }
+
+      return perms;
+    } catch (e) {
+      console.warn('getMyPermissions failed:', (e as Error).message);
+      return {};
+    }
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  private async _resolveChatMembers(members: any[]): Promise<any[]> {
+    return Promise.all(members.map(async (m) => {
+      const sender = m.member_id || { _: 'messageSenderUser', user_id: 0 };
+      const userInfo = await this.resolver.resolveSender(sender);
+      const status = m.status?._?.replace('chatMemberStatus', '') || 'member';
+      return {
+        user_id: sender.user_id || sender.chat_id || 0,
+        name: userInfo?.name || 'Unknown',
+        status,
+        joined_date: m.joined_chat_date,
+      };
+    }));
   }
 
   // Test accessors that delegate to sub-modules

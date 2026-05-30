@@ -21,6 +21,7 @@ export interface FormattedMessage {
   filePath?: string;
   mediaPath?: string;
   mimeType?: string;
+  views?: number;
 }
 
 export interface RawTdMessage {
@@ -43,6 +44,7 @@ export interface RawTdMessage {
     origin_sender_name?: string;
     chat_id?: number;
   } | null;
+  views?: number;
 }
 
 export interface RawTdChat {
@@ -75,7 +77,7 @@ export interface GroupInfo {
 export interface ChatInfo {
   id: number;
   title: string;
-  type: 'group' | 'private';
+  type: 'group' | 'private' | 'channel';
   unreadCount: number;
   onlineMemberCount: number;
   lastMessage?: FormattedMessage | null;

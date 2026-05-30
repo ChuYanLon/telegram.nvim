@@ -16,7 +16,7 @@ pnpm install
 ├── lua/telegram/          # Neovim Lua frontend
 │   ├── init.lua           # Entry point, message handling, WS routing
 │   ├── ui.lua             # UI rendering (popups, keymaps, virtual scroll)
-│   ├── server.lua         # HTTP client to backend (curl-based, retry)
+│   ├── server.lua         # Async HTTP client (vim.net.request or curl fallback)
 │   ├── ws.lua             # WebSocket client (subprocess, reconnect)
 │   ├── auth.lua           # Authentication flow
 │   ├── config.lua         # Configuration, highlight groups

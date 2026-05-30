@@ -284,6 +284,174 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
+// ─── Member Management ────────────────────────────────────────────────
+
+app.post('/chat/ban', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.banChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/unban', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.unbanChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/promote', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.promoteChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/demote', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.demoteChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/restrict', async (req, res) => {
+  try {
+    const { chatId, userId, untilDate } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.restrictChatMember(Number(chatId), Number(userId), untilDate ? Number(untilDate) : 0);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/unrestrict', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.unrestrictChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/add-member', async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const result = await tgClient.addChatMember(Number(chatId), Number(userId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/chat/my-permissions', async (req, res) => {
+  try {
+    const { chatId } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.getMyPermissions(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/chat/members', async (req, res) => {
+  try {
+    const { chatId } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.searchChatMembers(Number(chatId));
+    res.json({ members: result });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/set-permissions', async (req, res) => {
+  try {
+    const { chatId, permissions } = req.body;
+    if (!chatId || !permissions) { res.status(400).json({ error: 'chatId and permissions are required' }); return; }
+    const result = await tgClient.setChatDefaultPermissions(Number(chatId), permissions);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Group Settings ────────────────────────────────────────────────────
+
+app.post('/chat/set-title', async (req, res) => {
+  try {
+    const { chatId, title } = req.body;
+    if (!chatId || !title) { res.status(400).json({ error: 'chatId and title are required' }); return; }
+    const result = await tgClient.setChatTitle(Number(chatId), title);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/set-description', async (req, res) => {
+  try {
+    const { chatId, description } = req.body;
+    if (!chatId || description === undefined) { res.status(400).json({ error: 'chatId and description are required' }); return; }
+    const result = await tgClient.setChatDescription(Number(chatId), description);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/leave', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.leaveChat(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/delete-history', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.deleteChatHistory(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Invite Links ──────────────────────────────────────────────────────
+
+app.post('/chat/create-invite-link', async (req, res) => {
+  try {
+    const { chatId, expireDate, memberLimit } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.createChatInviteLink(Number(chatId), expireDate ? Number(expireDate) : undefined, memberLimit ? Number(memberLimit) : undefined);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/chat/invite-links', async (req, res) => {
+  try {
+    const { chatId } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.getChatInviteLinks(Number(chatId));
+    res.json({ invite_links: result });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/edit-invite-link', async (req, res) => {
+  try {
+    const { chatId, inviteLink, expireDate, memberLimit } = req.body;
+    if (!chatId || !inviteLink) { res.status(400).json({ error: 'chatId and inviteLink are required' }); return; }
+    const result = await tgClient.editChatInviteLink(Number(chatId), inviteLink, expireDate ? Number(expireDate) : undefined, memberLimit ? Number(memberLimit) : undefined);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/revoke-invite-link', async (req, res) => {
+  try {
+    const { chatId, inviteLink } = req.body;
+    if (!chatId || !inviteLink) { res.status(400).json({ error: 'chatId and inviteLink are required' }); return; }
+    const result = await tgClient.revokeChatInviteLink(Number(chatId), inviteLink);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageMedia', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

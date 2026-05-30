@@ -13,7 +13,6 @@ end
 local server_job = nil
 local server_pid = nil
 local server_owner = false
-local cached_groups = nil
 
 local function base_url()
 	return "http://localhost:" .. http_port()
@@ -36,7 +35,6 @@ local function curl_with_retry(curl_args)
 		if vim.v.shell_error == 0 then
 			return result
 		end
-		-- Server responded with an error body — persistent, don't retry
 		if result and #result > 0 then
 			local ok, data = pcall(vim.json.decode, result)
 			local err = (ok and type(data) == "table" and data.error) or result
@@ -99,6 +97,74 @@ local function http_post(path, body)
 		return nil
 	end
 	return data
+end
+
+---@param opts { url: string, body?: string }
+---@param callback fun(data: table|nil, err: string|nil)
+local function request_curl(opts, callback)
+	local args = { "curl", "-s", "--connect-timeout", "3", "--max-time", "15" }
+	if opts.body then
+		table.insert(args, "-X"); table.insert(args, "POST")
+		table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
+		table.insert(args, "-d"); table.insert(args, opts.body)
+	end
+	table.insert(args, opts.url)
+	local stdout = {}
+	vim.fn.jobstart(args, {
+		stdout_buffered = true,
+		on_stdout = function(_, data) stdout = data end,
+		on_exit = function(_, code)
+			if code ~= 0 then callback(nil, "curl exit " .. code) return end
+			local ok, data = pcall(vim.json.decode, table.concat(stdout))
+			if not ok then callback(nil, "Invalid JSON response") return end
+			if type(data) == "table" and data.error then callback(nil, data.error) return end
+			callback(data, nil)
+		end,
+	})
+end
+
+local function request_async(opts, callback)
+	if vim.net and vim.net.request then
+		local ok2, result = pcall(vim.net.request, opts.url, {
+			method = opts.body and "POST" or "GET",
+			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
+			body = opts.body,
+			timeout = 15000,
+		}, function(...)
+			local args = { ... }
+			if args[1] then
+				callback(nil, args[1])
+				return
+			end
+			local data, status = args[2], args[3]
+			-- Response may be wrapped: { body = json_string, status = int }
+			if type(data) == "table" and data.body then
+				status = data.status or status
+				local ok, d = pcall(vim.json.decode, data.body)
+				if ok then data = d end
+			end
+			if type(data) == "string" then
+				local ok, d = pcall(vim.json.decode, data)
+				if ok then data = d end
+			end
+			if type(data) ~= "table" then
+				callback(nil, "invalid response: " .. tostring(data))
+				return
+			end
+			status = tonumber(status) or 200
+			if status >= 400 or data.error then
+				callback(nil, data.error or ("HTTP " .. tostring(status)))
+				return
+			end
+			callback(data, nil)
+		end)
+		if not ok2 then
+			vim.notify("vim.net.request call failed: " .. tostring(result), vim.log.levels.ERROR, { title = "tg" })
+			request_curl(opts, callback)
+		end
+	else
+		request_curl(opts, callback)
+	end
 end
 
 ---@return table|nil
@@ -250,6 +316,15 @@ function M.get_chat(chat_id)
 end
 
 ---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_chat_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
 ---@return boolean
 function M.open_chat(chat_id)
 	return http_post("/chat/open", { chatId = chat_id }) ~= nil
@@ -282,6 +357,14 @@ function M.get_chats()
 	return http_get("/chats")
 end
 
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_chats_async(on_ok, on_err)
+	request_async({ url = base_url() .. "/chats" }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
 ---@param username string
 ---@return table|nil
 function M.search_user(username)
@@ -296,24 +379,7 @@ end
 
 ---@return table|nil
 function M.get_groups()
-	if not cached_groups then
-		cached_groups = http_get("/groups")
-	end
-	return cached_groups
-end
-
-function M.invalidate_groups()
-	cached_groups = nil
-end
-
----@return table|nil
-function M.refresh_groups()
-	cached_groups = nil
-	return M.get_groups()
-end
-
-function M.clear_groups_cache()
-	cached_groups = nil
+	return http_get("/groups")
 end
 
 ---@param chat_id any
@@ -328,6 +394,16 @@ end
 ---@return table|nil
 function M.search_messages(chat_id, query)
 	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+"))
+end
+
+---@param chat_id any
+---@param query string
+---@param on_ok fun(data: table)
+---@param on_err fun()|nil
+function M.search_messages_async(chat_id, query, on_ok, on_err)
+	request_async({ url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+") }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 function M.get_media(chat_id, message_id)
@@ -346,26 +422,9 @@ function M.get_media(chat_id, message_id)
 end
 
 function M.get_media_async(chat_id, message_id, on_ok)
-	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 or #stdout == 0 then
-				if on_ok then vim.schedule(function() on_ok(nil) end) end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_ok then vim.schedule(function() on_ok(nil) end) end
-				return
-			end
-			if on_ok then vim.schedule(function() on_ok(data) end) end
-		end,
-	})
+	request_async({ url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id }, function(data, err)
+		vim.schedule(function() on_ok(err and nil or data) end)
+	end)
 end
 
 ---@param chat_id any
@@ -394,34 +453,13 @@ function M.get_messages_async(chat_id, limit, before, on_ok, on_err, opts)
 	if opts.before_date then
 		path = path .. "&beforeDate=" .. opts.before_date
 	end
-	local url = base_url() .. path
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = base_url() .. path }, function(data, err)
+		if err then
+			if on_err then vim.schedule(function() on_err(err) end) end
+		else
+			vim.schedule(function() on_ok(data) end)
+		end
+	end)
 end
 
 function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opts)
@@ -436,33 +474,9 @@ function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opt
 	if opts.after_date then
 		url = url .. "&afterDate=" .. opts.after_date
 	end
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
@@ -473,33 +487,9 @@ function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
 		.. message_id
 		.. "&limit="
 		.. (limit or 11)
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 ---@param chat_id any
@@ -540,6 +530,173 @@ end
 ---@return boolean
 function M.forward_messages(from_chat_id, message_ids, to_chat_id)
 	return http_post("/forwardMessages", { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
+end
+
+-- ─── Member Management ─────────────────────────────────────────────────
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.ban_member(chat_id, user_id)
+	return http_post("/chat/ban", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.unban_member(chat_id, user_id)
+	return http_post("/chat/unban", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.promote_member(chat_id, user_id)
+	return http_post("/chat/promote", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.demote_member(chat_id, user_id)
+	return http_post("/chat/demote", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.restrict_member(chat_id, user_id)
+	return http_post("/chat/restrict", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.unrestrict_member(chat_id, user_id)
+	return http_post("/chat/unrestrict", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@param user_id any
+---@return boolean
+function M.add_member(chat_id, user_id)
+	return http_post("/chat/add-member", { chatId = chat_id, userId = user_id }) ~= nil
+end
+
+---@param chat_id any
+---@return table|nil
+function M.get_my_permissions(chat_id)
+	return http_get("/chat/my-permissions?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_my_permissions_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/my-permissions?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@return table|nil
+function M.get_members(chat_id)
+	return http_get("/chat/members?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_members_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/members?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param restrict_all boolean
+---@return boolean
+function M.set_default_permissions(chat_id, restrict_all)
+	local perms = {
+		can_send_messages = not restrict_all,
+		can_send_audios = not restrict_all,
+		can_send_documents = not restrict_all,
+		can_send_photos = not restrict_all,
+		can_send_videos = not restrict_all,
+		can_send_video_notes = not restrict_all,
+		can_send_voice_notes = not restrict_all,
+		can_send_polls = not restrict_all,
+		can_send_other_messages = not restrict_all,
+		can_add_web_page_previews = not restrict_all,
+		can_change_info = false,
+		can_invite_users = false,
+		can_pin_messages = false,
+		can_manage_topics = false,
+	}
+	return http_post("/chat/set-permissions", { chatId = chat_id, permissions = perms }) ~= nil
+end
+
+-- ─── Group Settings ─────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param title string
+---@return boolean
+function M.set_chat_title(chat_id, title)
+	return http_post("/chat/set-title", { chatId = chat_id, title = title }) ~= nil
+end
+
+---@param chat_id any
+---@param description string
+---@return boolean
+function M.set_chat_description(chat_id, description)
+	return http_post("/chat/set-description", { chatId = chat_id, description = description }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.leave_chat(chat_id)
+	return http_post("/chat/leave", { chatId = chat_id }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.delete_chat_history(chat_id)
+	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
+end
+
+-- ─── Invite Links ──────────────────────────────────────────────────────
+
+---@param chat_id any
+---@return table|nil
+function M.get_invite_links(chat_id)
+	return http_get("/chat/invite-links?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_invite_links_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/invite-links?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param expire_date integer|nil
+---@param member_limit integer|nil
+---@return boolean
+function M.create_invite_link(chat_id, expire_date, member_limit)
+	local body = { chatId = chat_id }
+	if expire_date then body.expireDate = expire_date end
+	if member_limit then body.memberLimit = member_limit end
+	return http_post("/chat/create-invite-link", body) ~= nil
+end
+
+---@param chat_id any
+---@param invite_link string
+---@return boolean
+function M.revoke_invite_link(chat_id, invite_link)
+	return http_post("/chat/revoke-invite-link", { chatId = chat_id, inviteLink = invite_link }) ~= nil
 end
 
 return M
