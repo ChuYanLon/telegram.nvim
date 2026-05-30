@@ -196,7 +196,9 @@ M.register("members", {
 
 M.register("invitelinks", {
 	description = "Manage invite links",
-	condition = is_group,
+	condition = function()
+		return is_group() and (ui.state.permissions.can_invite_users == true)
+	end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })

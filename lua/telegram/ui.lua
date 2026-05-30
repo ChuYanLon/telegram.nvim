@@ -1248,9 +1248,9 @@ function M.show_invite_links(chat_id)
 	local actions = {}
 	if can("can_invite_users") then
 		table.insert(actions, "Create new invite link")
+		table.insert(actions, "View existing links")
 		table.insert(actions, "Revoke a link")
 	end
-	table.insert(actions, "View existing links")
 	table.insert(actions, "Cancel")
 	vim.ui.select(actions, {
 		prompt = "Invite Links",
