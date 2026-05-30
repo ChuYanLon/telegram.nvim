@@ -175,9 +175,16 @@ M.register("openlink", {
 	end,
 })
 
+local function is_group()
+	local cid = ui.state.chat_id
+	if not cid then return false end
+	local g = ui.state.groups[cid]
+	return g and g.type ~= "private"
+end
+
 M.register("members", {
 	description = "View and manage chat members",
-	condition = function() return ui.state.chat_id ~= nil end,
+	condition = is_group,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -187,21 +194,9 @@ M.register("members", {
 	end,
 })
 
-M.register("admins", {
-	description = "View chat administrators",
-	condition = function() return ui.state.chat_id ~= nil end,
-	callback = function()
-		if not ui.state.chat_id then
-			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
-			return
-		end
-		ui.show_admin_list(ui.state.chat_id)
-	end,
-})
-
 M.register("invitelinks", {
 	description = "Manage invite links",
-	condition = function() return ui.state.chat_id ~= nil end,
+	condition = is_group,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -213,7 +208,7 @@ M.register("invitelinks", {
 
 M.register("groupsettings", {
 	description = "Group settings (title, description, slow mode, etc.)",
-	condition = function() return ui.state.chat_id ~= nil end,
+	condition = is_group,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })

@@ -349,20 +349,20 @@ app.post('/chat/add-member', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.get('/chat/my-permissions', async (req, res) => {
+  try {
+    const { chatId } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.getMyPermissions(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/chat/members', async (req, res) => {
   try {
     const { chatId } = req.query;
     if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
     const result = await tgClient.searchChatMembers(Number(chatId));
-    res.json({ members: result });
-  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
-});
-
-app.get('/chat/admins', async (req, res) => {
-  try {
-    const { chatId } = req.query;
-    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
-    const result = await tgClient.getChatAdministrators(Number(chatId));
     res.json({ members: result });
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });

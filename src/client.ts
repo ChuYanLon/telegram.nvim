@@ -357,13 +357,18 @@ export class TelegramLSPClient {
     if (!this._ready) throw new Error('Client not ready yet');
     const chat = await this.getRawChat(chatId);
     let memberCount = 0;
+    let description = '';
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
         memberCount = sg.member_count;
+        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as { description?: string };
+        description = info.description || '';
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
+        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as { description?: string };
+        description = info.description || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     return {
@@ -372,6 +377,7 @@ export class TelegramLSPClient {
       unreadCount: chat.unread_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
       memberCount,
+      description,
     };
   }
 
@@ -643,15 +649,6 @@ export class TelegramLSPClient {
     return this._resolveChatMembers(result.members || []);
   }
 
-  async getChatAdministrators(chatId: number): Promise<any[]> {
-    if (!this._ready) throw new Error('Client not ready yet');
-    const result = await this.client.invoke({
-      _: 'getChatAdministrators',
-      chat_id: chatId,
-    }) as any[];
-    return this._resolveChatMembers(result || []);
-  }
-
   async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
     await this.client.invoke({
@@ -740,6 +737,64 @@ export class TelegramLSPClient {
       chat_id: chatId,
       invite_link: inviteLink,
     });
+  }
+
+  // ─── Permissions ─────────────────────────────────────────────────────
+
+  async getMyPermissions(chatId: number): Promise<Record<string, boolean>> {
+    if (!this._ready) return {};
+    try {
+      const chat = await this.getRawChat(chatId);
+      const perms: Record<string, boolean> = {
+        is_owner: false,
+        is_admin: false,
+        can_restrict_members: false,
+        can_promote_members: false,
+        can_change_info: false,
+        can_pin_messages: false,
+        can_invite_users: false,
+        can_delete_messages: false,
+        can_manage_chat: false,
+      };
+
+      if (chat.type._ === 'chatTypeSupergroup') {
+        const sg: any = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
+        const s = sg.status;
+        if (s._ === 'chatMemberStatusCreator') {
+          perms.is_owner = true;
+          for (const k of Object.keys(perms)) perms[k] = true;
+        } else if (s._ === 'chatMemberStatusAdministrator') {
+          perms.is_admin = true;
+          perms.can_restrict_members = !!s.can_restrict_members;
+          perms.can_promote_members = !!s.can_promote_members;
+          perms.can_change_info = !!s.can_change_info;
+          perms.can_pin_messages = !!s.can_pin_messages;
+          perms.can_invite_users = !!s.can_invite_users;
+          perms.can_delete_messages = !!s.can_delete_messages;
+          perms.can_manage_chat = !!s.can_manage_chat;
+        }
+      } else if (chat.type._ === 'chatTypeBasicGroup') {
+        const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
+        const s = bg.status;
+        if (s._ === 'chatMemberStatusCreator') {
+          perms.is_owner = true;
+          for (const k of Object.keys(perms)) perms[k] = true;
+        } else if (s._ === 'chatMemberStatusAdministrator') {
+          perms.is_admin = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
+        }
+      }
+
+      return perms;
+    } catch (e) {
+      console.warn('getMyPermissions failed:', (e as Error).message);
+      return {};
+    }
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────

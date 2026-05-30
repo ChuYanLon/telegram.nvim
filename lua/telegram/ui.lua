@@ -38,6 +38,8 @@ local state = {
 	_input_start = 0,
 
 	group_cursor = 1,
+	permissions = {},
+	description = "",
 }
 
 M.state = state
@@ -650,7 +652,6 @@ function M.show_help()
 		"-- Tools (@) --",
 		" chats      switch chat (Snacks picker)",
 		" members    view and manage members",
-		" admins     view administrators",
 		" invitelinks  manage invite links",
 		" groupsettings  group settings menu",
 		" refresh    reload messages",
@@ -878,7 +879,14 @@ function M.open_chat(chat_id, chat_title)
 	local chat_info = server.get_chat(state.chat_id)
 	if chat_info then
 		state.online_count = chat_info.onlineMemberCount or state.online_count
+		state.description = chat_info.description or ""
 		M.update_title()
+	end
+
+	state.permissions = {}
+	local perms = server.get_my_permissions(state.chat_id)
+	if perms then
+		state.permissions = perms
 	end
 
 	local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
@@ -1166,8 +1174,24 @@ M.show_groups_picker = show_groups_picker
 
 -- ─── Group Management UI ────────────────────────────────────────────────
 
+local function can(perm)
+	return state.permissions and state.permissions[perm] == true
+end
+
 local function user_actions_menu(chat_id, user, on_done)
-	vim.ui.select({ "Ban", "Unban", "Promote to admin", "Demote", "Restrict", "Unrestrict", "Cancel" }, {
+	local actions = {}
+	if can("can_restrict_members") then
+		table.insert(actions, "Ban")
+		table.insert(actions, "Unban")
+		table.insert(actions, "Restrict")
+		table.insert(actions, "Unrestrict")
+	end
+	if can("can_promote_members") then
+		table.insert(actions, "Promote to admin")
+		table.insert(actions, "Demote")
+	end
+	table.insert(actions, "Cancel")
+	vim.ui.select(actions, {
 		prompt = user.name .. " (" .. user.status .. "):",
 	}, function(choice)
 		if not choice or choice == "Cancel" then
@@ -1220,26 +1244,15 @@ function M.show_member_list(chat_id)
 end
 
 ---@param chat_id any
-function M.show_admin_list(chat_id)
-	local data = server.get_admins(chat_id)
-	if not data or not data.members then
-		vim.notify("Failed to load admins", vim.log.levels.ERROR, { title = "tg" })
-		return
-	end
-	local items = {}
-	for _, m in ipairs(data.members) do
-		table.insert(items, m.name .. " (" .. m.status .. ")")
-	end
-	if #items == 0 then
-		vim.notify("No admins found", vim.log.levels.INFO, { title = "tg" })
-		return
-	end
-	vim.notify(table.concat(items, "\n"), vim.log.levels.INFO, { title = "Admins of " .. (state.chat_title or "") })
-end
-
----@param chat_id any
 function M.show_invite_links(chat_id)
-	vim.ui.select({ "Create new invite link", "View existing links", "Revoke a link", "Cancel" }, {
+	local actions = {}
+	if can("can_invite_users") then
+		table.insert(actions, "Create new invite link")
+		table.insert(actions, "Revoke a link")
+	end
+	table.insert(actions, "View existing links")
+	table.insert(actions, "Cancel")
+	vim.ui.select(actions, {
 		prompt = "Invite Links",
 	}, function(choice)
 		if not choice or choice == "Cancel" then return end
@@ -1292,22 +1305,40 @@ end
 
 ---@param chat_id any
 function M.show_group_settings(chat_id)
-	vim.ui.select({ "Change title", "Change description", "Add member", "Set default permissions", "Set slow mode", "Leave group", "Delete history", "Cancel" }, {
+	local actions = {}
+	if can("can_change_info") then
+		table.insert(actions, "Change title")
+		table.insert(actions, "Change description")
+	end
+	if can("can_invite_users") then
+		table.insert(actions, "Add member")
+	end
+	if can("can_restrict_members") then
+		table.insert(actions, "Set default permissions")
+		table.insert(actions, "Set slow mode")
+	end
+	table.insert(actions, "Leave group")
+	table.insert(actions, "Delete history")
+	table.insert(actions, "Cancel")
+	vim.ui.select(actions, {
 		prompt = "Group Settings",
 	}, function(choice)
 		if not choice or choice == "Cancel" then return end
 		if choice == "Change title" then
-			vim.ui.input({ prompt = "New title: " }, function(title)
+			vim.ui.input({ prompt = "New title: ", default = state.chat_title }, function(title)
 				if title and #title > 0 then
 					if server.set_chat_title(chat_id, title) then
 						state.chat_title = title
+						if state.groups[chat_id] then
+							state.groups[chat_id].title = title
+						end
 						M.update_title()
 						vim.notify("Title updated", vim.log.levels.INFO, { title = "tg" })
 					end
 				end
 			end)
 		elseif choice == "Change description" then
-			vim.ui.input({ prompt = "New description: " }, function(desc)
+			vim.ui.input({ prompt = "New description: ", default = state.description }, function(desc)
 				if desc then
 					if server.set_chat_description(chat_id, desc) then
 						vim.notify("Description updated", vim.log.levels.INFO, { title = "tg" })
@@ -1384,6 +1415,10 @@ function M.show_user_actions(chat_id, user_id, user_name)
 end
 
 function M.ban_sender()
+	if not can("can_restrict_members") then
+		vim.notify("No permission to restrict members", vim.log.levels.WARN, { title = "tg" })
+		return
+	end
 	local target = M.curr_msg()
 	if not target or not target.sender or not target.sender.id then
 		vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })

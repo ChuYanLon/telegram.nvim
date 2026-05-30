@@ -595,14 +595,14 @@ end
 
 ---@param chat_id any
 ---@return table|nil
-function M.get_members(chat_id)
-	return http_get("/chat/members?chatId=" .. chat_id)
+function M.get_my_permissions(chat_id)
+	return http_get("/chat/my-permissions?chatId=" .. chat_id)
 end
 
 ---@param chat_id any
 ---@return table|nil
-function M.get_admins(chat_id)
-	return http_get("/chat/admins?chatId=" .. chat_id)
+function M.get_members(chat_id)
+	return http_get("/chat/members?chatId=" .. chat_id)
 end
 
 ---@param chat_id any
