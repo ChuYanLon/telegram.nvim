@@ -741,11 +741,13 @@ export class TelegramLSPClient {
 
   // ─── Permissions ─────────────────────────────────────────────────────
 
-  async getMyPermissions(chatId: number): Promise<Record<string, boolean>> {
+  async getMyPermissions(chatId: number): Promise<Record<string, unknown>> {
     if (!this._ready) return {};
     try {
       const chat = await this.getRawChat(chatId);
-      const perms: Record<string, boolean> = {
+      const me = await this.client.invoke({ _: 'getMe' }) as { id: number };
+      const perms: Record<string, unknown> = {
+        my_user_id: me.id,
         is_owner: false,
         is_admin: false,
         can_restrict_members: false,
@@ -762,7 +764,14 @@ export class TelegramLSPClient {
         const s = sg.status;
         if (s._ === 'chatMemberStatusCreator') {
           perms.is_owner = true;
-          for (const k of Object.keys(perms)) perms[k] = true;
+          perms.is_admin = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_pin_messages = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
         } else if (s._ === 'chatMemberStatusAdministrator') {
           perms.is_admin = true;
           perms.can_restrict_members = !!s.can_restrict_members;
@@ -778,7 +787,14 @@ export class TelegramLSPClient {
         const s = bg.status;
         if (s._ === 'chatMemberStatusCreator') {
           perms.is_owner = true;
-          for (const k of Object.keys(perms)) perms[k] = true;
+          perms.is_admin = true;
+          perms.can_restrict_members = true;
+          perms.can_promote_members = true;
+          perms.can_change_info = true;
+          perms.can_pin_messages = true;
+          perms.can_invite_users = true;
+          perms.can_delete_messages = true;
+          perms.can_manage_chat = true;
         } else if (s._ === 'chatMemberStatusAdministrator') {
           perms.is_admin = true;
           perms.can_restrict_members = true;

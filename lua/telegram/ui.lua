@@ -39,7 +39,7 @@ local state = {
 
 	group_cursor = 1,
 	permissions = {},
-	description = "",
+	my_user_id = nil,
 }
 
 M.state = state
@@ -887,6 +887,7 @@ function M.open_chat(chat_id, chat_title)
 	local perms = server.get_my_permissions(state.chat_id)
 	if perms then
 		state.permissions = perms
+		state.my_user_id = perms.my_user_id
 	end
 
 	local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
@@ -1179,7 +1180,7 @@ local function can(perm)
 end
 
 local function user_actions_menu(chat_id, user, on_done)
-	local actions = {}
+	local actions = { "Open DM" }
 	if can("can_restrict_members") then
 		table.insert(actions, "Ban")
 		table.insert(actions, "Unban")
@@ -1199,7 +1200,13 @@ local function user_actions_menu(chat_id, user, on_done)
 			return
 		end
 		local ok = false
-		if choice == "Ban" then ok = server.ban_member(chat_id, user.user_id)
+		if choice == "Open DM" then
+			local chat = server.open_private_chat(user.user_id)
+			if chat then
+				M.open_chat(chat.id, chat.title)
+			end
+			ok = true
+		elseif choice == "Ban" then ok = server.ban_member(chat_id, user.user_id)
 		elseif choice == "Unban" then ok = server.unban_member(chat_id, user.user_id)
 		elseif choice == "Promote to admin" then ok = server.promote_member(chat_id, user.user_id)
 		elseif choice == "Demote" then ok = server.demote_member(chat_id, user.user_id)
@@ -1227,7 +1234,9 @@ function M.show_member_list(chat_id)
 	end
 	local items = {}
 	for _, m in ipairs(data.members) do
-		table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+		if m.user_id ~= state.my_user_id then
+			table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+		end
 	end
 	if #items == 0 then
 		vim.notify("No members found", vim.log.levels.INFO, { title = "tg" })
