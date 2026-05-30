@@ -786,6 +786,9 @@ export class TelegramLSPClient {
         can_manage_chat: false,
       };
 
+      const chatPerms = (chat as any).permissions as Record<string, unknown> | undefined;
+      const canSendByDefault = chatPerms?.can_send_basic_messages !== false;
+
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg: any = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
         const s = sg.status;
@@ -811,9 +814,8 @@ export class TelegramLSPClient {
           perms.can_invite_users = !!s.can_invite_users;
           perms.can_delete_messages = !!s.can_delete_messages;
           perms.can_manage_chat = !!s.can_manage_chat;
-        }
-        if (isChannel && s._ === 'chatMemberStatusMember') {
-          perms.can_send_messages = false;
+        } else if (s._ === 'chatMemberStatusMember') {
+          perms.can_send_messages = isChannel ? false : canSendByDefault;
         }
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
@@ -838,6 +840,8 @@ export class TelegramLSPClient {
           perms.can_invite_users = true;
           perms.can_delete_messages = true;
           perms.can_manage_chat = true;
+        } else if (s._ === 'chatMemberStatusMember') {
+          perms.can_send_messages = canSendByDefault;
         }
       }
 

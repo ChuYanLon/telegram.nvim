@@ -61,6 +61,7 @@ export interface RawTdChat {
   online_member_count?: number;
   last_message?: RawTdMessage | null;
   positions?: { list: { _: string }; order: string }[];
+  permissions?: Record<string, unknown>;
 }
 
 export interface GroupInfo {
