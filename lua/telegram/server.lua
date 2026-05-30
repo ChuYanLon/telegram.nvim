@@ -101,50 +101,93 @@ end
 
 ---@param opts { url: string, body?: string }
 ---@param callback fun(data: table|nil, err: string|nil)
+local function request_curl(opts, callback)
+	local args = { "curl", "-s", "--connect-timeout", "3", "--max-time", "15" }
+	if opts.body then
+		table.insert(args, "-X"); table.insert(args, "POST")
+		table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
+		table.insert(args, "-d"); table.insert(args, opts.body)
+	end
+	table.insert(args, opts.url)
+	local stdout = {}
+	vim.fn.jobstart(args, {
+		stdout_buffered = true,
+		on_stdout = function(_, data) stdout = data end,
+		on_exit = function(_, code)
+			if code ~= 0 then callback(nil, "curl exit " .. code) return end
+			local ok, data = pcall(vim.json.decode, table.concat(stdout))
+			if not ok then callback(nil, "Invalid JSON response") return end
+			if type(data) == "table" and data.error then callback(nil, data.error) return end
+			callback(data, nil)
+		end,
+	})
+end
+
+---@type boolean|nil  true = vim.net works, false = curl-only
+local net_ok = nil
+
+function M.get_transport()
+	return net_ok == nil and "probing" or (net_ok and "vim.net.request" or "curl")
+end
+
 local function request_async(opts, callback)
-	if vim.net and vim.net.request then
-		vim.net.request({
-			url = opts.url,
+	if net_ok == nil then
+		if vim.net and vim.net.request then
+			-- Probe: if callback fires within 2s, use vim.net; else curl forever
+			net_ok = false
+			local timed_out = true
+			vim.fn.timer_start(2000, function()
+				if timed_out then
+					request_curl(opts, callback)
+				end
+			end, { ["repeat"] = 1 })
+			vim.net.request(base_url() .. "/health", { timeout = 2000 }, function(err, body, status)
+				if timed_out then return end
+				timed_out = false
+				if not err and status and status < 400 then
+					net_ok = true
+					vim.schedule(function()
+						vim.notify("tg: using vim.net.request", vim.log.levels.INFO, { title = "tg" })
+					end)
+					request_async(opts, callback)
+				else
+					vim.schedule(function()
+						vim.notify("tg: vim.net.request unavailable, using curl", vim.log.levels.INFO, { title = "tg" })
+					end)
+					request_curl(opts, callback)
+				end
+			end)
+		else
+			net_ok = false
+			request_curl(opts, callback)
+		end
+		return
+	end
+
+	if net_ok then
+		vim.net.request(opts.url, {
 			method = opts.body and "POST" or "GET",
 			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
 			body = opts.body,
 			timeout = 15000,
-		}, function(err, response)
+		}, function(err, body, status)
 			if err then
 				callback(nil, err)
 				return
 			end
-			local ok, data = pcall(vim.json.decode, response.body or "{}")
+			local ok, data = pcall(vim.json.decode, body or "{}")
 			if not ok then
-				callback(nil, "Invalid JSON response")
+				callback(nil, "HTTP " .. (status or "?") .. " (body not JSON)")
 				return
 			end
-			if type(data) == "table" and data.error then
-				callback(nil, data.error)
+			if (status or 200) >= 400 or (type(data) == "table" and data.error) then
+				callback(nil, (type(data) == "table" and data.error) or ("HTTP " .. (status or "?")))
 				return
 			end
 			callback(data, nil)
 		end)
 	else
-		local args = { "curl", "-s", "--connect-timeout", "3", "--max-time", "15" }
-		if opts.body then
-			table.insert(args, "-X"); table.insert(args, "POST")
-			table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
-			table.insert(args, "-d"); table.insert(args, opts.body)
-		end
-		table.insert(args, opts.url)
-		local stdout = {}
-		vim.fn.jobstart(args, {
-			stdout_buffered = true,
-			on_stdout = function(_, data) stdout = data end,
-			on_exit = function(_, code)
-				if code ~= 0 then callback(nil, "curl exit " .. code) return end
-				local ok, data = pcall(vim.json.decode, table.concat(stdout))
-				if not ok then callback(nil, "Invalid JSON response") return end
-				if type(data) == "table" and data.error then callback(nil, data.error) return end
-				callback(data, nil)
-			end,
-		})
+		request_curl(opts, callback)
 	end
 end
 
