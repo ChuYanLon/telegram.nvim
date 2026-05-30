@@ -35,7 +35,6 @@ local function curl_with_retry(curl_args)
 		if vim.v.shell_error == 0 then
 			return result
 		end
-		-- Server responded with an error body — persistent, don't retry
 		if result and #result > 0 then
 			local ok, data = pcall(vim.json.decode, result)
 			local err = (ok and type(data) == "table" and data.error) or result
@@ -98,6 +97,55 @@ local function http_post(path, body)
 		return nil
 	end
 	return data
+end
+
+---@param opts { url: string, body?: string }
+---@param callback fun(data: table|nil, err: string|nil)
+local function request_async(opts, callback)
+	if vim.net and vim.net.request then
+		vim.net.request({
+			url = opts.url,
+			method = opts.body and "POST" or "GET",
+			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
+			body = opts.body,
+			timeout = 15000,
+		}, function(err, response)
+			if err then
+				callback(nil, err)
+				return
+			end
+			local ok, data = pcall(vim.json.decode, response.body or "{}")
+			if not ok then
+				callback(nil, "Invalid JSON response")
+				return
+			end
+			if type(data) == "table" and data.error then
+				callback(nil, data.error)
+				return
+			end
+			callback(data, nil)
+		end)
+	else
+		local args = { "curl", "-s", "--connect-timeout", "3", "--max-time", "15" }
+		if opts.body then
+			table.insert(args, "-X"); table.insert(args, "POST")
+			table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
+			table.insert(args, "-d"); table.insert(args, opts.body)
+		end
+		table.insert(args, opts.url)
+		local stdout = {}
+		vim.fn.jobstart(args, {
+			stdout_buffered = true,
+			on_stdout = function(_, data) stdout = data end,
+			on_exit = function(_, code)
+				if code ~= 0 then callback(nil, "curl exit " .. code) return end
+				local ok, data = pcall(vim.json.decode, table.concat(stdout))
+				if not ok then callback(nil, "Invalid JSON response") return end
+				if type(data) == "table" and data.error then callback(nil, data.error) return end
+				callback(data, nil)
+			end,
+		})
+	end
 end
 
 ---@return table|nil
@@ -249,6 +297,15 @@ function M.get_chat(chat_id)
 end
 
 ---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_chat_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
 ---@return boolean
 function M.open_chat(chat_id)
 	return http_post("/chat/open", { chatId = chat_id }) ~= nil
@@ -279,6 +336,14 @@ M.DEFAULT_LIMIT = 50
 ---@return table|nil
 function M.get_chats()
 	return http_get("/chats")
+end
+
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_chats_async(on_ok, on_err)
+	request_async({ url = base_url() .. "/chats" }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 ---@param username string
@@ -317,30 +382,9 @@ end
 ---@param on_ok fun(data: table)
 ---@param on_err fun()|nil
 function M.search_messages_async(chat_id, query, on_ok, on_err)
-	local url = base_url()
-		.. "/searchMessages?chatId="
-		.. chat_id
-		.. "&query="
-		.. query:gsub(" ", "+")
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then vim.schedule(on_err) end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then vim.schedule(on_err) end
-				return
-			end
-			if on_ok then vim.schedule(function() on_ok(data) end) end
-		end,
-	})
+	request_async({ url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+") }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 function M.get_media(chat_id, message_id)
@@ -359,26 +403,9 @@ function M.get_media(chat_id, message_id)
 end
 
 function M.get_media_async(chat_id, message_id, on_ok)
-	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 or #stdout == 0 then
-				if on_ok then vim.schedule(function() on_ok(nil) end) end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_ok then vim.schedule(function() on_ok(nil) end) end
-				return
-			end
-			if on_ok then vim.schedule(function() on_ok(data) end) end
-		end,
-	})
+	request_async({ url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id }, function(data, err)
+		vim.schedule(function() on_ok(err and nil or data) end)
+	end)
 end
 
 ---@param chat_id any
@@ -407,34 +434,9 @@ function M.get_messages_async(chat_id, limit, before, on_ok, on_err, opts)
 	if opts.before_date then
 		path = path .. "&beforeDate=" .. opts.before_date
 	end
-	local url = base_url() .. path
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = base_url() .. path }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opts)
@@ -449,33 +451,9 @@ function M.get_messages_after_async(chat_id, after_id, limit, on_ok, on_err, opt
 	if opts.after_date then
 		url = url .. "&afterDate=" .. opts.after_date
 	end
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
@@ -486,33 +464,9 @@ function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
 		.. message_id
 		.. "&limit="
 		.. (limit or 11)
-	local stdout = {}
-	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "3", "--max-time", "15", "--fail-with-body", url }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			stdout = data
-		end,
-		on_exit = function(_, code)
-			if code ~= 0 then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			local ok, data = pcall(vim.json.decode, table.concat(stdout))
-			if not ok or not data then
-				if on_err then
-					vim.schedule(on_err)
-				end
-				return
-			end
-			if on_ok then
-				vim.schedule(function()
-					on_ok(data)
-				end)
-			end
-		end,
-	})
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 ---@param chat_id any
@@ -613,9 +567,27 @@ function M.get_my_permissions(chat_id)
 end
 
 ---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_my_permissions_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/my-permissions?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
 ---@return table|nil
 function M.get_members(chat_id)
 	return http_get("/chat/members?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_members_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/members?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 ---@param chat_id any
@@ -675,6 +647,15 @@ end
 ---@return table|nil
 function M.get_invite_links(chat_id)
 	return http_get("/chat/invite-links?chatId=" .. chat_id)
+end
+
+---@param chat_id any
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_invite_links_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/invite-links?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
 end
 
 ---@param chat_id any

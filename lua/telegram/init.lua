@@ -224,10 +224,11 @@ local function refresh_groups_list()
 	end
 	refresh_timer = vim.fn.timer_start(500, function()
 		refresh_timer = nil
-		local chats = server.get_chats()
-		if chats then
-			ui.set_groups(chats)
-		end
+		server.get_chats_async(function(chats)
+			if chats then
+				ui.set_groups(chats)
+			end
+		end)
 	end, { ["repeat"] = 1 })
 end
 

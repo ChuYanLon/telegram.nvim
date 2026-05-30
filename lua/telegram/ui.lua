@@ -881,24 +881,38 @@ function M.open_chat(chat_id, chat_title)
 
 	server.open_chat(state.chat_id)
 
-	local cached = state.groups[state.chat_id]
+	local cid = state.chat_id
+	local cached = state.groups[cid]
 	state.online_count = (cached and cached.online_count) or 0
-	local chat_info = server.get_chat(state.chat_id)
-	if chat_info then
-		state.online_count = chat_info.onlineMemberCount or state.online_count
-		state.description = chat_info.description or ""
-		state.default_restricted = chat_info.defaultRestricted or false
-		M.update_title()
-	end
-
 	state.permissions = {}
-	local perms = server.get_my_permissions(state.chat_id)
-	if perms then
-		state.permissions = perms
-		state.my_user_id = perms.my_user_id
-	end
+	state.description = ""
 
-	local saved_id = state.saved_cursors and state.saved_cursors[state.chat_id]
+	local pending = 2
+	local function check_done()
+		pending = pending - 1
+		if pending == 0 then
+			M.update_title()
+		end
+	end
+	server.get_chat_async(cid, function(chat_info)
+		if state.chat_id ~= cid then return end
+		if chat_info then
+			state.online_count = chat_info.onlineMemberCount or state.online_count
+			state.description = chat_info.description or ""
+			state.default_restricted = chat_info.defaultRestricted or false
+		end
+		check_done()
+	end)
+	server.get_my_permissions_async(cid, function(perms)
+		if state.chat_id ~= cid then return end
+		if perms then
+			state.permissions = perms
+			state.my_user_id = perms.my_user_id
+		end
+		check_done()
+	end)
+
+	local saved_id = state.saved_cursors and state.saved_cursors[cid]
 	if saved_id then
 		state.messages = {}
 		state.exhausted = false
@@ -1240,28 +1254,30 @@ end
 
 ---@param chat_id any
 function M.show_member_list(chat_id)
-	local data = server.get_members(chat_id)
-	if not data or not data.members then
-		vim.notify("Failed to load members", vim.log.levels.ERROR, { title = "tg" })
-		return
-	end
-	local items = {}
-	for _, m in ipairs(data.members) do
-		if m.user_id ~= state.my_user_id then
-			table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+	vim.notify("Loading members...", vim.log.levels.INFO, { title = "tg" })
+	server.get_members_async(chat_id, function(data)
+		if not data or not data.members then
+			vim.notify("Failed to load members", vim.log.levels.ERROR, { title = "tg" })
+			return
 		end
-	end
-	if #items == 0 then
-		vim.notify("No members found", vim.log.levels.INFO, { title = "tg" })
-		return
-	end
-	vim.ui.select(items, {
-		prompt = "Members (" .. #items .. ")",
-		format_item = function(item) return item.label end,
-	}, function(choice)
-		if choice then
-			user_actions_menu(chat_id, choice)
+		local items = {}
+		for _, m in ipairs(data.members) do
+			if m.user_id ~= state.my_user_id then
+				table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+			end
 		end
+		if #items == 0 then
+			vim.notify("No members found", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		vim.ui.select(items, {
+			prompt = "Members (" .. #items .. ")",
+			format_item = function(item) return item.label end,
+		}, function(choice)
+			if choice then
+				user_actions_menu(chat_id, choice)
+			end
+		end)
 	end)
 end
 
@@ -1287,39 +1303,43 @@ function M.show_invite_links(chat_id)
 				end
 			end)
 		elseif choice == "View existing links" then
-			local data = server.get_invite_links(chat_id)
-			if not data or not data.invite_links or #data.invite_links == 0 then
-				vim.notify("No invite links", vim.log.levels.INFO, { title = "tg" })
-				return
-			end
-			local lines = {}
-			for _, link in ipairs(data.invite_links) do
-				local info = link.invite_link
-				if link.member_limit and link.member_limit > 0 then
-					info = info .. " (limit: " .. link.member_limit .. ")"
+			vim.notify("Loading invite links...", vim.log.levels.INFO, { title = "tg" })
+			server.get_invite_links_async(chat_id, function(data)
+				if not data or not data.invite_links or #data.invite_links == 0 then
+					vim.notify("No invite links", vim.log.levels.INFO, { title = "tg" })
+					return
 				end
-				table.insert(lines, info)
-			end
-			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Invite Links" })
-		elseif choice == "Revoke a link" then
-			local data = server.get_invite_links(chat_id)
-			if not data or not data.invite_links or #data.invite_links == 0 then
-				vim.notify("No invite links to revoke", vim.log.levels.INFO, { title = "tg" })
-				return
-			end
-			local items = {}
-			for _, link in ipairs(data.invite_links) do
-				table.insert(items, { link = link.invite_link, label = link.invite_link })
-			end
-			vim.ui.select(items, {
-				prompt = "Select link to revoke",
-				format_item = function(item) return item.label end,
-			}, function(choice)
-				if choice then
-					if server.revoke_invite_link(chat_id, choice.link) then
-						vim.notify("Link revoked", vim.log.levels.INFO, { title = "tg" })
+				local lines = {}
+				for _, link in ipairs(data.invite_links) do
+					local info = link.invite_link
+					if link.member_limit and link.member_limit > 0 then
+						info = info .. " (limit: " .. link.member_limit .. ")"
 					end
+					table.insert(lines, info)
 				end
+				vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Invite Links" })
+			end)
+		elseif choice == "Revoke a link" then
+			vim.notify("Loading invite links...", vim.log.levels.INFO, { title = "tg" })
+			server.get_invite_links_async(chat_id, function(data)
+				if not data or not data.invite_links or #data.invite_links == 0 then
+					vim.notify("No invite links to revoke", vim.log.levels.INFO, { title = "tg" })
+					return
+				end
+				local items = {}
+				for _, link in ipairs(data.invite_links) do
+					table.insert(items, { link = link.invite_link, label = link.invite_link })
+				end
+				vim.ui.select(items, {
+					prompt = "Select link to revoke",
+					format_item = function(item) return item.label end,
+				}, function(choice)
+					if choice then
+						if server.revoke_invite_link(chat_id, choice.link) then
+							vim.notify("Link revoked", vim.log.levels.INFO, { title = "tg" })
+						end
+					end
+				end)
 			end)
 		end
 	end)
@@ -1393,10 +1413,11 @@ function M.show_group_settings(chat_id)
 				end
 			end)
 		elseif choice == "Set default permissions" then
-			local chat_info = server.get_chat(chat_id)
-			if chat_info then
-				state.default_restricted = chat_info.defaultRestricted or false
-			end
+			server.get_chat_async(chat_id, function(chat_info)
+				if chat_info then
+					state.default_restricted = chat_info.defaultRestricted or false
+				end
+			end)
 			local restrict_options = { "Normal (send)", "Restrict all (read only)" }
 			for i, v in ipairs(restrict_options) do
 				local is_restrict = v:find("^Restrict") ~= nil
