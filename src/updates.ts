@@ -17,6 +17,7 @@ export class UpdateDispatcher {
       switch (update._) {
         case 'updateNewChat':
           this.chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
+          this.broadcastRaw(update);
           break;
         case 'updateNewMessage':
           await this.handleNewMessage(update.message as RawTdMessage);
