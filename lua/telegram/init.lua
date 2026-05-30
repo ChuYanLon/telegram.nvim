@@ -355,41 +355,39 @@ local function finish_init()
 		elseif msg.event == "chatUnreadMentionCount" then
 			-- no UI for mention count yet
 		elseif msg.event == "NewChat" then
-			vim.schedule(function()
-				refresh_groups_list()
-			end)
+			refresh_groups_list()
 		elseif msg.event == "chatMember" then
 			local ns = msg.new_status and msg.new_status._
 			if ns == "chatMemberStatusLeft" or ns == "chatMemberStatusBanned" then
-				vim.schedule(function()
-					local cid = msg.chat_id
-					if not cid then return end
-					local removed = false
-					if ui.state.groups[cid] then
-						ui.state.groups[cid] = nil
-						for i, id in ipairs(ui.state.group_ids) do
-							if id == cid then
-								table.remove(ui.state.group_ids, i)
-								break
+				local cid = msg.chat_id
+				local mid = msg.member and msg.member.id
+				if cid and mid and ui.state.my_user_id and mid == ui.state.my_user_id then
+					vim.schedule(function()
+						if ui.state.groups[cid] then
+							ui.state.groups[cid] = nil
+							for i, id in ipairs(ui.state.group_ids) do
+								if id == cid then
+									table.remove(ui.state.group_ids, i)
+									break
+								end
 							end
 						end
-						removed = true
-					end
-					if ui.state.chat_id == cid then
-						ui.destroy_chat()
-					end
-					if removed then
+						if ui.state.chat_id == cid then
+							ui.destroy_chat()
+						end
 						vim.notify("Removed from " .. (msg.chat_title or "chat"), vim.log.levels.INFO, { title = "tg" })
-					end
-				end)
+					end)
+				else
+					refresh_groups_list()
+				end
 			end
 		elseif msg.event == "ChatPosition" then
 			local pos = msg.position
-			if pos and pos.order == "0" then
+			local order = pos and pos.order
+			if pos and (order == 0 or order == "0") then
 				vim.schedule(function()
 					local cid = msg.chat_id
 					if not cid then return end
-					local removed = false
 					if ui.state.groups[cid] then
 						ui.state.groups[cid] = nil
 						for i, id in ipairs(ui.state.group_ids) do
@@ -398,7 +396,6 @@ local function finish_init()
 								break
 							end
 						end
-						removed = true
 					end
 					if ui.state.chat_id == cid then
 						ui.destroy_chat()
