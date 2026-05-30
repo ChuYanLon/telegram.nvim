@@ -360,18 +360,19 @@ export class TelegramLSPClient {
     const chat = await this.getRawChat(chatId);
     let memberCount = 0;
     let description = '';
-    let defaultRestricted = false;
+    const chatObj = chat as any;
+    const chatPerms = chatObj.permissions as Record<string, unknown> | undefined;
+    const defaultRestricted = chatPerms?.can_send_basic_messages === false;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
         memberCount = sg.member_count;
         const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
         description = info.description || '';
-        defaultRestricted = info.member_permissions?.can_send_basic_messages === false;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
-        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as { description?: string };
+        const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as any;
         description = info.description || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }

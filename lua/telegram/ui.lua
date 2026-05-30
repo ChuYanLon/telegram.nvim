@@ -1372,6 +1372,10 @@ function M.show_group_settings(chat_id)
 				end
 			end)
 		elseif choice == "Set default permissions" then
+			local chat_info = server.get_chat(chat_id)
+			if chat_info then
+				state.default_restricted = chat_info.defaultRestricted or false
+			end
 			local restrict_options = { "Normal (send)", "Restrict all (read only)" }
 			for i, v in ipairs(restrict_options) do
 				local is_restrict = v:find("^Restrict") ~= nil
