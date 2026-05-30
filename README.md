@@ -88,6 +88,10 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
 - [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
 - [x] **Private chats** (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
+- [x] **Channel support** — view channels and their messages; admin tools (member list, change info) shown based on permissions
+- [x] **Group management** — view members, ban/unban, restrict/unrestrict, promote/demote admins, add members
+- [x] **Group settings** — change title/description, set default permissions, leave group, delete history
+- [x] **Invite links** — create, view, and revoke invite links
 
 ### What doesn't work yet
 
@@ -98,18 +102,10 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Emoji picker**
 - [ ] **React to messages** (like, heart, etc.)
 - [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
-- [ ] **Pin messages**
+- [ ] **Pin / unpin messages**
 - [ ] **Multi-select messages** for batch operations
-- [ ] **Channel support** — currently filtered out, supergroups only
 - [ ] **Chat folders**
 - [ ] **Pinned chats** section
-- [ ] **Leave group**
-- [ ] **Change group name / description**
-- [ ] **Add / kick / ban members**
-- [ ] **Promote / demote admins**
-- [ ] **View member list**
-- [ ] **Pin / unpin messages**
-- [ ] **Generate invite link**
 - [ ] **Change group photo**
 - [ ] **Voice message** recording and sending
 - [ ] **Inline bots** / bot commands
@@ -245,13 +241,14 @@ Inside the chat window:
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help popup |
-| `i` | Open input editor to send a message |
+| `i` | Open input editor to send a message (only if user has permission — hidden for channel subscribers) |
 | `<CR>` | Reply to message / jump to original (if cursor is on a quote line) |
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another chat |
 | `c` | Open DM with the sender of the message at cursor |
 | `G` | Refresh messages and jump to bottom |
+| `B` | Ban the sender of the message at cursor |
 | `@` | Open context-aware tool picker |
 
 In the chat picker (`@` → chats):
