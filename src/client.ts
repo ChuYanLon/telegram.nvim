@@ -235,9 +235,16 @@ export class TelegramLSPClient {
     const chats = await this.getChats(true);
     const results = chats.map(async (chat) => {
       const t = chat.type._;
-      if (t === 'chatTypeBasicGroup' || (t === 'chatTypeSupergroup' && !chat.type.is_channel)) {
+      if (t === 'chatTypeBasicGroup') {
         const g = await this._enrichGroup(chat);
         return g ? { ...g, type: 'group' as const } : null;
+      }
+      if (t === 'chatTypeSupergroup') {
+        const g = await this._enrichGroup(chat);
+        if (!g) return null;
+        return chat.type.is_channel
+          ? { ...g, type: 'channel' as const }
+          : { ...g, type: 'group' as const };
       }
       if (t === 'chatTypePrivate' || t === 'chatTypeSecret') {
         return this._enrichPrivate(chat);
@@ -769,6 +776,7 @@ export class TelegramLSPClient {
         my_user_id: me.id,
         is_owner: false,
         is_admin: false,
+        can_send_messages: false,
         can_restrict_members: false,
         can_promote_members: false,
         can_change_info: false,
@@ -781,9 +789,11 @@ export class TelegramLSPClient {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg: any = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id });
         const s = sg.status;
+        const isChannel = !!chat.type.is_channel;
         if (s._ === 'chatMemberStatusCreator') {
           perms.is_owner = true;
           perms.is_admin = true;
+          perms.can_send_messages = true;
           perms.can_restrict_members = true;
           perms.can_promote_members = true;
           perms.can_change_info = true;
@@ -793,6 +803,7 @@ export class TelegramLSPClient {
           perms.can_manage_chat = true;
         } else if (s._ === 'chatMemberStatusAdministrator') {
           perms.is_admin = true;
+          perms.can_send_messages = isChannel ? !!s.can_post_messages : true;
           perms.can_restrict_members = !!s.can_restrict_members;
           perms.can_promote_members = !!s.can_promote_members;
           perms.can_change_info = !!s.can_change_info;
@@ -801,12 +812,16 @@ export class TelegramLSPClient {
           perms.can_delete_messages = !!s.can_delete_messages;
           perms.can_manage_chat = !!s.can_manage_chat;
         }
+        if (isChannel && s._ === 'chatMemberStatusMember') {
+          perms.can_send_messages = false;
+        }
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
         const s = bg.status;
         if (s._ === 'chatMemberStatusCreator') {
           perms.is_owner = true;
           perms.is_admin = true;
+          perms.can_send_messages = true;
           perms.can_restrict_members = true;
           perms.can_promote_members = true;
           perms.can_change_info = true;
@@ -816,6 +831,7 @@ export class TelegramLSPClient {
           perms.can_manage_chat = true;
         } else if (s._ === 'chatMemberStatusAdministrator') {
           perms.is_admin = true;
+          perms.can_send_messages = true;
           perms.can_restrict_members = true;
           perms.can_promote_members = true;
           perms.can_change_info = true;

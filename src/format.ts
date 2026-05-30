@@ -46,6 +46,8 @@ export class MessageFormatter {
       );
     }
 
+    if (msg.views) formatted.views = msg.views;
+
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
 

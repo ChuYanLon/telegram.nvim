@@ -312,6 +312,37 @@ function M.search_messages(chat_id, query)
 	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+"))
 end
 
+---@param chat_id any
+---@param query string
+---@param on_ok fun(data: table)
+---@param on_err fun()|nil
+function M.search_messages_async(chat_id, query, on_ok, on_err)
+	local url = base_url()
+		.. "/searchMessages?chatId="
+		.. chat_id
+		.. "&query="
+		.. query:gsub(" ", "+")
+	local stdout = {}
+	vim.fn.jobstart({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url }, {
+		stdout_buffered = true,
+		on_stdout = function(_, data)
+			stdout = data
+		end,
+		on_exit = function(_, code)
+			if code ~= 0 then
+				if on_err then vim.schedule(on_err) end
+				return
+			end
+			local ok, data = pcall(vim.json.decode, table.concat(stdout))
+			if not ok or not data then
+				if on_err then vim.schedule(on_err) end
+				return
+			end
+			if on_ok then vim.schedule(function() on_ok(data) end) end
+		end,
+	})
+end
+
 function M.get_media(chat_id, message_id)
 	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
 	local result = vim.fn.system({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url })

@@ -265,7 +265,9 @@ local function show_groups_picker(on_select)
 			prompt = "Select chat:",
 			format_item = function(item)
 				local label = item.title
-				if item.type == "private" then
+				if item.type == "channel" then
+					label = "# " .. label
+				elseif item.type == "private" then
 					label = "\xE2\x9C\x89 " .. label
 				end
 				if item.unread > 0 then
@@ -465,6 +467,10 @@ local function setup_chat_keymaps()
 
 	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "i", function()
+		if state.permissions.can_send_messages ~= true then
+			vim.notify("No permission to send messages", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
 		M.open_editor("Send", "", function(text)
 			if not text then
 				return
@@ -897,6 +903,7 @@ function M.open_chat(chat_id, chat_title)
 		state.messages = {}
 		state.exhausted = false
 		state.exhausted_forward = false
+		render()
 		local cid = state.chat_id
 		server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
 			if state.chat_id == cid then
@@ -919,6 +926,10 @@ function M.open_chat(chat_id, chat_title)
 			end
 		end)
 	else
+		state.messages = {}
+		state.exhausted = false
+		state.exhausted_forward = false
+		render()
 		M.refresh_messages(function()
 			M.jump_to_bottom()
 		end)
@@ -1314,20 +1325,30 @@ function M.show_invite_links(chat_id)
 	end)
 end
 
+local function is_channel()
+	local g = state.chat_id and state.groups[state.chat_id]
+	return g and g.type == "channel"
+end
+
 ---@param chat_id any
 function M.show_group_settings(chat_id)
+	local channel = is_channel()
 	local actions = {}
 	if can("can_change_info") then
 		table.insert(actions, "Change title")
 		table.insert(actions, "Change description")
 	end
-	if can("can_invite_users") then
+	if not channel and can("can_invite_users") then
 		table.insert(actions, "Add member")
 	end
-	if can("can_restrict_members") then
+	if not channel and can("can_restrict_members") then
 		table.insert(actions, "Set default permissions")
 	end
-	table.insert(actions, "Leave group")
+	if channel then
+		table.insert(actions, "Unsubscribe from channel")
+	else
+		table.insert(actions, "Leave group")
+	end
 	table.insert(actions, "Delete history")
 	table.insert(actions, "Cancel")
 	vim.ui.select(actions, {
@@ -1391,6 +1412,26 @@ function M.show_group_settings(chat_id)
 				if server.set_default_permissions(chat_id, restrict) then
 					state.default_restricted = restrict
 					vim.notify("Permissions " .. (restrict and "restricted" or "allowed"), vim.log.levels.INFO, { title = "tg" })
+				end
+			end)
+		elseif choice == "Unsubscribe from channel" then
+			vim.ui.select({ "Yes, unsubscribe", "Cancel" }, {
+				prompt = "Unsubscribe from this channel?",
+			}, function(confirm)
+				if confirm == "Yes, unsubscribe" then
+					if server.delete_chat_history(chat_id) then
+						state.groups[chat_id] = nil
+						for i, id in ipairs(state.group_ids) do
+							if id == chat_id then
+								table.remove(state.group_ids, i)
+								break
+							end
+						end
+						vim.notify("Unsubscribed from channel", vim.log.levels.INFO, { title = "tg" })
+						vim.schedule(function()
+							M.destroy_chat()
+						end)
+					end
 				end
 			end)
 		elseif choice == "Leave group" then

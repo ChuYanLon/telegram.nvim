@@ -79,7 +79,11 @@ function M.render(msg)
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		table.insert(out, "[~] " .. s .. " performed an action at " .. date_str)
 	else
-		table.insert(out, string.format("## %s (%s)", sender, date_str))
+		local header = string.format("## %s (%s)", sender, date_str)
+	if msg.views and msg.views > 0 then
+		header = header .. string.format(" [%d views]", msg.views)
+	end
+	table.insert(out, header)
 
 		if msg.replyTo then
 			local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or "?"

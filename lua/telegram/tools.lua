@@ -78,7 +78,9 @@ M.register("refresh", {
 
 M.register("send", {
 	description = "Send a message to current chat",
-	condition = function() return ui.state.chat_id ~= nil end,
+	condition = function()
+		return ui.state.chat_id ~= nil and ui.state.permissions.can_send_messages == true
+	end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -105,30 +107,35 @@ M.register("search", {
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
+		local chat_id = ui.state.chat_id
 		vim.ui.input({ prompt = "Search: " }, function(query)
 			if not query or #query == 0 then
 				return
 			end
-			local data = server.search_messages(ui.state.chat_id, query)
-			if not data or not data.messages or #data.messages == 0 then
-				vim.notify('No results for "' .. query .. '"', vim.log.levels.INFO, { title = "tg" })
-				return
-			end
-			local items = {}
-			for _, m in ipairs(data.messages) do
-				local name = m.sender and m.sender.name or "?"
-				local preview = (m.text or ""):gsub("\n", " "):sub(1, 80)
-				table.insert(items, { id = m.id, label = name .. ": " .. preview })
-			end
-			vim.ui.select(items, {
-				prompt = "Search: " .. query,
-				format_item = function(item)
-					return item.label
-				end,
-			}, function(choice)
-				if choice then
-					ui.jump_to_message(choice.id)
+			vim.notify("Searching...", vim.log.levels.INFO, { title = "tg" })
+			server.search_messages_async(chat_id, query, function(data)
+				if not data or not data.messages or #data.messages == 0 then
+					vim.notify('No results for "' .. query .. '"', vim.log.levels.INFO, { title = "tg" })
+					return
 				end
+				local items = {}
+				for _, m in ipairs(data.messages) do
+					local name = m.sender and m.sender.name or "?"
+					local preview = (m.text or ""):gsub("\n", " "):sub(1, 80)
+					table.insert(items, { id = m.id, label = name .. ": " .. preview })
+				end
+				vim.ui.select(items, {
+					prompt = "Search: " .. query,
+					format_item = function(item)
+						return item.label
+					end,
+				}, function(choice)
+					if choice then
+						ui.jump_to_message(choice.id)
+					end
+				end)
+			end, function()
+				vim.notify("Search failed", vim.log.levels.ERROR, { title = "tg" })
 			end)
 		end)
 	end,
@@ -188,12 +195,24 @@ local function is_group()
 	local cid = ui.state.chat_id
 	if not cid then return false end
 	local g = ui.state.groups[cid]
-	return g and g.type ~= "private"
+	return g and g.type == "group"
+end
+
+local function is_channel()
+	local cid = ui.state.chat_id
+	if not cid then return false end
+	local g = ui.state.groups[cid]
+	return g and g.type == "channel"
 end
 
 M.register("members", {
 	description = "View and manage chat members",
-	condition = is_group,
+	condition = function()
+		if is_channel() then
+			return ui.state.permissions.can_manage_chat == true
+		end
+		return is_group()
+	end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
@@ -206,7 +225,7 @@ M.register("members", {
 M.register("invitelinks", {
 	description = "Manage invite links",
 	condition = function()
-		return is_group() and (ui.state.permissions.can_invite_users == true)
+		return is_group() and not is_channel() and (ui.state.permissions.can_invite_users == true)
 	end,
 	callback = function()
 		if not ui.state.chat_id then
@@ -218,8 +237,8 @@ M.register("invitelinks", {
 })
 
 M.register("groupsettings", {
-	description = "Group settings (title, description, permissions, etc.)",
-	condition = is_group,
+	description = "Group / channel settings (title, description, permissions, etc.)",
+	condition = function() return is_group() or is_channel() end,
 	callback = function()
 		if not ui.state.chat_id then
 			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
