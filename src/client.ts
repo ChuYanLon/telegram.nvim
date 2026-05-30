@@ -1,6 +1,8 @@
 import * as tdl from 'tdl';
 import * as dotenv from 'dotenv';
 import path from 'path';
+
+
 import type { RawTdChat, RawTdMessage, GroupInfo, ChatInfo, FormattedMessage } from './types';
 import { initTdlibModule, getResolvedTdlibPath } from './tdlib';
 import { AuthManager } from './auth';
@@ -358,12 +360,14 @@ export class TelegramLSPClient {
     const chat = await this.getRawChat(chatId);
     let memberCount = 0;
     let description = '';
+    let defaultRestricted = false;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
         memberCount = sg.member_count;
-        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as { description?: string };
+        const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
         description = info.description || '';
+        defaultRestricted = info.member_permissions?.can_send_basic_messages === false;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
@@ -378,6 +382,7 @@ export class TelegramLSPClient {
       onlineMemberCount: chat.online_member_count || 0,
       memberCount,
       description,
+      defaultRestricted,
     };
   }
 
@@ -651,21 +656,32 @@ export class TelegramLSPClient {
 
   async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    await this.client.invoke({
-      _: 'setChatPermissions',
-      chat_id: chatId,
-      permissions: { _: 'chatPermissions', ...permissions },
-    });
-    return { ok: true };
-  }
-
-  async setChatSlowModeDelay(chatId: number, delaySeconds: number): Promise<{ ok: boolean }> {
-    if (!this._ready) throw new Error('Client not ready yet');
-    await this.client.invoke({
-      _: 'setChatSlowModeDelay',
-      chat_id: chatId,
-      slow_mode_delay: delaySeconds,
-    });
+    const allow = permissions.can_send_messages;
+    const perms: Record<string, unknown> = { _: 'chatPermissions' };
+    if (allow) {
+      perms.can_send_basic_messages = true;
+      perms.can_send_audios = true;
+      perms.can_send_documents = true;
+      perms.can_send_photos = true;
+      perms.can_send_videos = true;
+      perms.can_send_video_notes = true;
+      perms.can_send_voice_notes = true;
+      perms.can_send_polls = true;
+      perms.can_send_other_messages = true;
+      perms.can_add_link_previews = true;
+    } else {
+      perms.can_send_basic_messages = false;
+      perms.can_send_audios = false;
+      perms.can_send_documents = false;
+      perms.can_send_photos = false;
+      perms.can_send_videos = false;
+      perms.can_send_video_notes = false;
+      perms.can_send_voice_notes = false;
+      perms.can_send_polls = false;
+      perms.can_send_other_messages = false;
+      perms.can_add_link_previews = false;
+    }
+    await this.client.invoke({ _: 'setChatPermissions', chat_id: chatId, permissions: perms });
     return { ok: true };
   }
 
