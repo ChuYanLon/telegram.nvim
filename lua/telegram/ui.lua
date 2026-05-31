@@ -380,10 +380,7 @@ function M.set_typing(chat_id, user_id, user_name, action_type, active)
 end
 
 function M.set_online_count(count)
-	if not count or count == 0 then
-		return
-	end
-	state.online_count = count
+	state.online_count = count or 0
 	M.update_title()
 end
 
@@ -437,68 +434,6 @@ local function truncate_text(text, max_width)
 	return result
 end
 
-local function wrap_line(text, max_width)
-	local lines = {}
-	local cur = ""
-	local w = 0
-	for char in text:gmatch(".[\128-\191]*") do
-		local cw = vim.fn.strdisplaywidth(char)
-		if #lines >= 2 then
-			return lines, true
-		end
-		if w + cw > max_width then
-			lines[#lines + 1] = cur
-			cur = char
-			w = cw
-		else
-			cur = cur .. char
-			w = w + cw
-		end
-	end
-	if w > 0 and #lines < 2 then
-		lines[#lines + 1] = cur
-	end
-	return lines, false
-end
-
-local function format_desc_lines(text, max_width)
-	if not text or #text == 0 then
-		return {}
-	end
-	local paragraphs = vim.split(text, "\n")
-	local all = {}
-	local had_overflow = false
-	for _, para in ipairs(paragraphs) do
-		local wrapped, overflow = wrap_line(para, max_width)
-		for _, wl in ipairs(wrapped) do
-			all[#all + 1] = wl
-		end
-		if overflow then
-			had_overflow = true
-		end
-	end
-	if #all == 0 then
-		return {}
-	end
-	local out = { all[1] }
-	if #all >= 2 then
-		out[2] = all[2]
-	end
-	if had_overflow or #all > 2 then
-		local line = out[2] or ""
-		if vim.fn.strdisplaywidth(line) > max_width - 1 then
-			line = truncate_text(line, max_width - 1)
-		else
-			line = line .. "…"
-		end
-		out[2] = line
-	end
-	return out
-end
-
--- fixed title float height (lines)
-local TITLE_HEIGHT = 5
-
 function M.update_title()
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
@@ -546,35 +481,31 @@ function M.update_title()
 
 	local lines = {}
 
-	-- Line 1: Title + count (always)
-	lines[#lines + 1] = title .. "  (" .. count .. ")"
+	-- Line 1: Title (always)
+	lines[#lines + 1] = title
 
-	-- Line 2: Pinned message or blank
+	-- Line 2: Status (always)
+	local is_private = state.chat_id and state.groups[state.chat_id] and state.groups[state.chat_id].type == "private"
+	if has_typing then
+		lines[#lines + 1] = "status: " .. typing
+	elseif is_private then
+		lines[#lines + 1] = "status: " .. (state.online_count and state.online_count > 0 and "online" or "offline")
+	else
+		lines[#lines + 1] = "status: " .. count
+	end
+
+	-- Line 3: Pinned message (only if present)
 	if has_pinned then
-		lines[#lines + 1] = "[PIN] " .. truncate_text(state.pinned_message:gsub("\n", " "), text_width - 6)
-	else
-		lines[#lines + 1] = ""
+		local w = text_width - 8
+		lines[#lines + 1] = "pinned: " .. truncate_text(state.pinned_message:gsub("\n", " "), w)
 	end
 
-	-- Line 3: Description line 1 or blank
+	-- Line 4: Description (only if present)
 	if has_desc then
-		local dl = format_desc_lines(state.description, text_width)
-		lines[#lines + 1] = dl[1] or ""
-	else
-		lines[#lines + 1] = ""
+		lines[#lines + 1] = "desc: " .. truncate_text(state.description:gsub("\n", " "), text_width - 6)
 	end
 
-	-- Line 4: Description line 2 or typing or blank
-	if has_desc then
-		local dl = format_desc_lines(state.description, text_width)
-		lines[#lines + 1] = dl[2] or (has_typing and typing or "")
-	elseif has_typing then
-		lines[#lines + 1] = typing
-	else
-		lines[#lines + 1] = ""
-	end
-
-	-- Line 5: Separator (always)
+	-- Separator (always)
 	lines[#lines + 1] = sep
 
 	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
@@ -589,13 +520,13 @@ function M.update_title()
 	local float_opts = {
 		relative = "editor",
 		width = win_width,
-		height = TITLE_HEIGHT,
+		height = #lines,
 		row = win_pos[1],
 		col = win_pos[2],
 		style = "minimal",
 		border = "none",
 		focusable = false,
-		zindex = 150,
+		zindex = 50,
 	}
 
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
@@ -617,7 +548,7 @@ function M.update_title()
 	for li, line in ipairs(lines) do
 		if line:match("^─+$") then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
-		elseif line:match("^%[PIN%]") then
+		elseif line:match("^pinned:") then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, 0, -1)
 		elseif li == 1 then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgWinbarTitle", li - 1, 0, #title)
