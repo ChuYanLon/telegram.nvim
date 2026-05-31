@@ -228,7 +228,7 @@ local function render()
 
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		local h = vim.api.nvim_win_get_height(state.title_win)
-		for _ = 1, h + 1 do
+		for _ = 1, h do
 			table.insert(lines, 1, "")
 		end
 	end
@@ -474,7 +474,6 @@ function M.update_title()
 	local win_width = vim.api.nvim_win_get_width(state.win)
 	local text_width = win_width - 2
 
-	local sep = string.rep("─", text_width)
 	local has_pinned = state.pinned_message and #state.pinned_message > 0
 	local has_desc = state.description and #state.description > 0
 	local has_typing = typing ~= ""
@@ -505,8 +504,10 @@ function M.update_title()
 		lines[#lines + 1] = "desc: " .. truncate_text(state.description:gsub("\n", " "), text_width - 6)
 	end
 
-	-- Separator (always)
-	lines[#lines + 1] = sep
+	-- Separator
+	local label = " messages "
+	local side = string.rep("=", math.floor((text_width - #label) / 2))
+	lines[#lines + 1] = side .. label .. side
 
 	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
 		state.title_buf = vim.api.nvim_create_buf(false, true)
@@ -547,13 +548,16 @@ function M.update_title()
 
 	vim.api.nvim_buf_clear_namespace(state.title_buf, hl_ns, 0, -1)
 	for li, line in ipairs(lines) do
-		if line:match("^─+$") then
-			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
-		elseif line:match("^pinned:") then
-			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, 0, -1)
+		if line:match("^=") then
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgBorder", li - 1, 0, -1)
 		elseif li == 1 then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgWinbarTitle", li - 1, 0, #title)
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, #title, -1)
+		else
+			local colon = line:find(":")
+			if colon then
+				vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTitleKey", li - 1, 0, colon + 1)
+			end
 		end
 	end
 end
