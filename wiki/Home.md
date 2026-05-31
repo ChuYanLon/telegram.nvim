@@ -12,7 +12,7 @@ A Telegram chat client inside Neovim.
 ## Features
 
 - Chat UI with virtual scrolling, cursor position memory per chat
-- Real-time message push via WebSocket
+- Real-time message push via WebSocket (sync edits, deletions, group info changes from other clients)
 - Send, edit, delete/recall, forward messages
 - Reply with context preview, highlighted reply/edit/delete/forward targets
 - Message search within a chat

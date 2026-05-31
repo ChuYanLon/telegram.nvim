@@ -93,6 +93,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] **Group settings** — change title/description, set default permissions, leave group, delete history
 - [x] **Invite links** — create, view, and revoke invite links
 - [x] **Pin / unpin messages** — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
+- [x] **Real-time sync between devices** — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
+- [x] **Online status** — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
 
 ### What doesn't work yet
 

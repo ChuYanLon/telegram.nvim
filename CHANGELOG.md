@@ -2,15 +2,26 @@
 
 ## [Unreleased]
 
+### Added
+
+- **WebSocket sync for chat metadata** — user name changes, online/offline status, group description/member count, group kicked/banned now sync in real-time from other clients
+- **Online status** — user is marked as online after login with periodic heartbeat (30s), visible to other clients
+- **Device model** — session shows as `telegram.nvim` (with version and OS) in Telegram device list
+- **Defensive error guards** — `getChatInviteLinks` handles `getMe()` failure; `handleChatMemberUpdate` guards undefined user IDs; SIGTERM now does graceful shutdown
+
 ### Fixed
 
 - **Title float covering messages** — buffer padding now syncs with float height on every `update_title()` call, preventing overlap (#123)
 - **Cursor move freeze** — `msg_line_counts` cache eliminates `#fmt_msg()` re-render on every cursor movement
 - **WinScrolled storm** — debounced `update_title()` calls (100ms) reduce float recreation overhead on scroll
+- **User name not updating in rendered messages** — on `userUpdate`, sender names in existing messages are refreshed via `render()`
+- **`ChatPosition` event name mismatch** — migrated from `broadcastRaw` (uppercase) to explicit lowercase handler
+- **`truncate_text` negative width** — pinned message/description titles no longer break at narrow window widths
 
 ### Changed
 
 - **`request_async`** — restored to prefer `vim.net.request` with curl fallback (reverted experimental change)
+- **`set_groups`** — now stores `user_id` for private chat lookups
 
 ## [0.4.0] - 2026-05-28
 
