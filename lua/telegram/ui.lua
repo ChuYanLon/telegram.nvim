@@ -228,7 +228,7 @@ local function render()
 
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		local h = vim.api.nvim_win_get_height(state.title_win)
-		for _ = 1, h do
+		for _ = 1, h + 1 do
 			table.insert(lines, 1, "")
 		end
 	end
@@ -534,6 +534,7 @@ function M.update_title()
 		pcall(vim.api.nvim_win_set_buf, state.title_win, state.title_buf)
 	else
 		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
+		vim.wo[state.title_win].winhighlight = "Normal:TgNoBg"
 		vim.api.nvim_create_autocmd("WinEnter", {
 			buffer = state.title_buf,
 			callback = function()
