@@ -59,6 +59,19 @@ export class UpdateDispatcher {
         case 'updateChatPermissions':
           this.handleChatPermissions(update);
           break;
+        case 'updateUser':
+          this.handleUserUpdate(update);
+          break;
+        case 'updateUserStatus':
+          this.handleUserStatusUpdate(update);
+          break;
+        case 'updateSupergroupFullInfo':
+        case 'updateBasicGroupFullInfo':
+          this.handleGroupFullInfoUpdate(update);
+          break;
+        case 'updateChatPosition':
+          this.handleChatPositionUpdate(update);
+          break;
         case 'updateMessageIsPinned':
           this.handleMessageIsPinned(update);
           break;
@@ -237,6 +250,7 @@ export class UpdateDispatcher {
       event: 'chatPermissions',
       chat_id: update.chat_id,
       default_restricted: perms?.can_send_basic_messages === false,
+      can_send_messages: perms?.can_send_basic_messages !== false,
     });
   }
 
@@ -257,6 +271,66 @@ export class UpdateDispatcher {
       event: 'ChatPinnedMessage',
       chat_id: chatId,
       pinned_message_id: isPinned ? messageId : 0,
+    });
+  }
+
+  handleUserUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const user = update.user as { id: number; first_name?: string; last_name?: string } | undefined;
+    if (!user) return;
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${user.id}`;
+    this.resolver._users.set(user.id, name);
+    broadcast({
+      event: 'userUpdate',
+      user_id: user.id,
+      name,
+    });
+  }
+
+  handleUserStatusUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const userId = update.user_id as number | undefined;
+    const status = update.status as { _: string; was_online?: number; expires?: number } | undefined;
+    if (!userId || !status) return;
+    const isOnline = status._ === 'userStatusOnline';
+    broadcast({
+      event: 'userStatus',
+      user_id: userId,
+      status: status._,
+      was_online: status.was_online || 0,
+      expires: status.expires || 0,
+      is_online: isOnline,
+    });
+  }
+
+  handleGroupFullInfoUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const info = (update.supergroup_full_info || update.basic_group_full_info) as { description?: string; member_count?: number } | undefined;
+    if (!info) return;
+    const chatId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    if (!chatId) return;
+    broadcast({
+      event: 'chatGroupInfo',
+      chat_id: chatId,
+      description: info.description || '',
+      member_count: info.member_count || 0,
+    });
+  }
+
+  handleChatPositionUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const pos = update.position as { list?: { _: string }; order?: string; is_pinned?: boolean } | undefined;
+    if (!pos) return;
+    broadcast({
+      event: 'chatPosition',
+      chat_id: update.chat_id,
+      order: pos.order,
+      is_pinned: pos.is_pinned || false,
+      list: pos.list?._,
     });
   }
 

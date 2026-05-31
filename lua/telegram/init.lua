@@ -351,12 +351,81 @@ local function finish_init()
 			vim.schedule(function()
 				if msg.chat_id == ui.state.chat_id then
 					ui.state.default_restricted = msg.default_restricted or false
+					if msg.can_send_messages ~= nil then
+						ui.state.permissions.can_send_messages = msg.can_send_messages
+					end
 				end
 			end)
 		elseif msg.event == "ChatPinnedMessage" then
 			vim.schedule(function()
 				ui.refresh_pinned_message(msg.chat_id, msg.pinned_message_id)
 			end)
+		elseif msg.event == "userUpdate" then
+			local uid = msg.user_id
+			local name = msg.name or ""
+			if uid and name and #name > 0 then
+				vim.schedule(function()
+					for _, g in pairs(ui.state.groups) do
+						if g.user_id and g.user_id == uid then
+							g.title = name
+							if ui.state.chat_id == g.id then
+								ui.state.chat_title = name
+								ui.update_title()
+							end
+							break
+						end
+					end
+				end)
+			end
+		elseif msg.event == "userStatus" then
+			vim.schedule(function()
+				local uid = msg.user_id
+				if not uid or ui.state.chat_id ~= uid then
+					for _, g in pairs(ui.state.groups) do
+						if g.user_id == uid then
+							g.online_count = msg.is_online and 1 or 0
+							if g.id == ui.state.chat_id then
+								ui.set_online_count(g.online_count)
+							end
+							break
+						end
+					end
+					return
+				end
+				ui.set_online_count(msg.is_online and 1 or 0)
+			end)
+		elseif msg.event == "chatGroupInfo" then
+			vim.schedule(function()
+				local cid = msg.chat_id
+				if cid and ui.state.groups[cid] then
+					ui.state.groups[cid].description = msg.description or ""
+					ui.state.groups[cid].member_count = msg.member_count or 0
+					if cid == ui.state.chat_id then
+						ui.state.description = msg.description or ""
+						ui.update_title()
+					end
+				end
+			end)
+		elseif msg.event == "chatPosition" then
+			local order = msg.order
+			local cid = msg.chat_id
+			if not cid then return end
+			if order == "0" or order == 0 then
+				vim.schedule(function()
+					if ui.state.groups[cid] then
+						ui.state.groups[cid] = nil
+						for i, id in ipairs(ui.state.group_ids) do
+							if id == cid then
+								table.remove(ui.state.group_ids, i)
+								break
+							end
+						end
+					end
+					if ui.state.chat_id == cid then
+						ui.destroy_chat()
+					end
+				end)
+			end
 		elseif msg.event == "chatUnreadMentionCount" then
 			-- no UI for mention count yet
 		elseif msg.event == "NewChat" then
@@ -385,27 +454,6 @@ local function finish_init()
 				else
 					refresh_groups_list()
 				end
-			end
-		elseif msg.event == "ChatPosition" then
-			local pos = msg.position
-			local order = pos and pos.order
-			if pos and (order == 0 or order == "0") then
-				vim.schedule(function()
-					local cid = msg.chat_id
-					if not cid then return end
-					if ui.state.groups[cid] then
-						ui.state.groups[cid] = nil
-						for i, id in ipairs(ui.state.group_ids) do
-							if id == cid then
-								table.remove(ui.state.group_ids, i)
-								break
-							end
-						end
-					end
-					if ui.state.chat_id == cid then
-						ui.destroy_chat()
-					end
-				end)
 			end
 		end
 	end)

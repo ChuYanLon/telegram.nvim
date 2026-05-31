@@ -367,6 +367,7 @@ function M.set_groups(groups)
 			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
 			online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
+			user_id = g.userId,
 		}
 		table.insert(new_ids, g.id)
 	end
