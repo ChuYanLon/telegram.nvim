@@ -87,14 +87,14 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
 - [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
 - [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
-- [x] **Private chats** (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
-- [x] **Channel support** — view channels and their messages; admin tools (member list, change info) shown based on permissions
-- [x] **Group management** — view members, ban/unban, restrict/unrestrict, promote/demote admins, add members
-- [x] **Group settings** — change title/description, set default permissions, leave group, delete history
-- [x] **Invite links** — create, view, and revoke invite links
-- [x] **Pin / unpin messages** — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
-- [x] **Real-time sync between devices** — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
-- [x] **Online status** — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
+- [x] Private chats (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
+- [x] Channel support — view channels and their messages; admin tools (member list, change info) shown based on permissions
+- [x] Group management — view members, ban/unban, restrict/unrestrict, promote/demote admins, add members
+- [x] Group settings — change title/description, set default permissions, leave group, delete history
+- [x] Invite links — create, view, and revoke invite links
+- [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
+- [x] Real-time sync between devices — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
+- [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
 
 ### What doesn't work yet
 
