@@ -409,7 +409,7 @@ local function truncate_text(text, max_width)
 	local w = 0
 	for char in text:gmatch(".[\128-\191]*") do
 		local cw = vim.fn.strdisplaywidth(char)
-		if w + cw > max_width - 2 then
+		if w + cw > max_width - 1 then
 			return result .. "…"
 		end
 		result = result .. char
@@ -418,21 +418,61 @@ local function truncate_text(text, max_width)
 	return result
 end
 
+local function wrap_line(text, max_width)
+	local lines = {}
+	local cur = ""
+	local w = 0
+	for char in text:gmatch(".[\128-\191]*") do
+		local cw = vim.fn.strdisplaywidth(char)
+		if #lines >= 2 then
+			return lines, true
+		end
+		if w + cw > max_width then
+			lines[#lines + 1] = cur
+			cur = char
+			w = cw
+		else
+			cur = cur .. char
+			w = w + cw
+		end
+	end
+	if w > 0 and #lines < 2 then
+		lines[#lines + 1] = cur
+	end
+	return lines, false
+end
+
 local function format_desc_lines(text, max_width)
 	if not text or #text == 0 then
 		return {}
 	end
-	local raw_lines = vim.split(text, "\n")
-	local out = {}
-	for i = 1, math.min(#raw_lines, 2) do
-		local line = raw_lines[i]
-		local truncated = truncate_text(line, max_width)
-		if i == 2 and #raw_lines > 2 then
-			local t = truncate_text(truncated, max_width - 2)
-			out[#out + 1] = t .. "…"
-		else
-			out[#out + 1] = truncated
+	local paragraphs = vim.split(text, "\n")
+	local all = {}
+	local had_overflow = false
+	for _, para in ipairs(paragraphs) do
+		local wrapped, overflow = wrap_line(para, max_width)
+		for _, wl in ipairs(wrapped) do
+			all[#all + 1] = wl
 		end
+		if overflow then
+			had_overflow = true
+		end
+	end
+	if #all == 0 then
+		return {}
+	end
+	local out = { all[1] }
+	if #all >= 2 then
+		out[2] = all[2]
+	end
+	if had_overflow or #all > 2 then
+		local line = out[2] or ""
+		if vim.fn.strdisplaywidth(line) > max_width - 1 then
+			line = truncate_text(line, max_width - 1)
+		else
+			line = line .. "…"
+		end
+		out[2] = line
 	end
 	return out
 end
