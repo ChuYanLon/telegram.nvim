@@ -893,6 +893,7 @@ function M.show_help()
 		" send       send a message",
 		" search     search history",
 		" refreshmedia  re-download HD media",
+		" openlink    open URL or media file",
 		" newchat     start DM by @username",
 		"",
 		"-- Chat Picker --",
@@ -903,7 +904,7 @@ function M.show_help()
 		" ?          toggle this help",
 		" @          open tool picker",
 		" <Esc>      close this help",
-		" q / :Tg    close chat / quit",
+		" :Tg        close chat / quit",
 	}
 	help_popup:mount()
 	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)

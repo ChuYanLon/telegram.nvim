@@ -8,6 +8,9 @@
 | `e` | Edit own message (highlighted in blue) |
 | `d` | Delete / revoke message (highlighted in red) |
 | `f` | Forward message to another chat |
+| `p` | Pin / unpin message at cursor |
+| `c` | Open DM with message sender |
+| `B` | Ban message sender |
 | `G` | Refresh messages, jump to bottom |
 | `@` | Open tool picker |
 
@@ -15,12 +18,16 @@
 
 | Tool | Description |
 |------|-------------|
-| **groups** | Switch to another chat (Snacks picker, falls back to `vim.ui.select`) |
+| **chats** | Switch to another chat (Snacks picker, falls back to `vim.ui.select`) |
 | **refresh** | Refresh current chat messages |
 | **send** | Send a message to current chat |
 | **search** | Search messages in current chat |
 | **refreshmedia** | Refresh media for current messages |
 | **openlink** | Open URL or media file under cursor |
+| **newchat** | Start a new private chat by @username |
+| **members** | View and manage chat members |
+| **invitelinks** | Manage invite links |
+| **groupsettings** | Group / channel settings (title, description, permissions) |
 
 ## Input Editor
 

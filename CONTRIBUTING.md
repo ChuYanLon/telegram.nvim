@@ -22,6 +22,7 @@ pnpm install
 │   ├── config.lua         # Configuration, highlight groups
 │   ├── editor.lua         # Input editor component
 │   ├── tools.lua          # Extensible tool system (@ key)
+│   ├── github.lua         # GitHub PR and issue commands
 │   └── render/            # Message rendering pipeline
 │       ├── init.lua
 │       ├── text.lua
@@ -60,7 +61,7 @@ pnpm install
    - `pnpm start` to check the backend starts
 4. Commit and push
 5. Open a Pull Request targeting the `main` branch
-6. CI will run automatically on your PR (test + typecheck)
+6. CI will run automatically on your PR (test only — run `pnpm typecheck` locally before pushing)
 
 ## Commit Messages
 

@@ -92,6 +92,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] **Group management** — view members, ban/unban, restrict/unrestrict, promote/demote admins, add members
 - [x] **Group settings** — change title/description, set default permissions, leave group, delete history
 - [x] **Invite links** — create, view, and revoke invite links
+- [x] **Pin / unpin messages** — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
 
 ### What doesn't work yet
 
@@ -102,7 +103,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Emoji picker**
 - [ ] **React to messages** (like, heart, etc.)
 - [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
-- [ ] **Pin / unpin messages**
 - [ ] **Multi-select messages** for batch operations
 - [ ] **Chat folders**
 - [ ] **Pinned chats** section
@@ -246,6 +246,7 @@ Inside the chat window:
 | `e` | Edit own message at cursor |
 | `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
 | `f` | Forward message to another chat |
+| `p` | Pin / unpin message at cursor |
 | `c` | Open DM with the sender of the message at cursor |
 | `G` | Refresh messages and jump to bottom |
 | `B` | Ban the sender of the message at cursor |
@@ -276,6 +277,7 @@ Pass options via `setup()`:
 require("telegram").setup({
   -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
   -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
+  -- data_dir = "/path/to/data",            -- default: plugin root
   -- http_port = 8080,                      -- HTTP server port
   -- ws_port = 8081,                        -- WebSocket server port
 })
@@ -289,7 +291,7 @@ Environment variable overrides:
 | `TG_PROXY` | `proxy` |
 | `TG_PORT` | HTTP server port (default: `8080`) |
 | `TG_WS_PORT` | WebSocket server port (default: `8081`) |
-| `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` |
+| `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` (default: plugin root) |
 
 
 The server auto-detects `libtdjson` on startup via:

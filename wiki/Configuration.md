@@ -5,7 +5,7 @@ require("telegram").setup({
   -- tdlib_path = "/path/to/libtdjson.so",
   -- proxy = "socks5://127.0.0.1:7890",
 
-  -- data_dir = vim.fn.stdpath("data") .. "/telegram",  -- default
+  -- data_dir = "/path/to/data",  -- default: plugin root directory
   -- http_port = 8080,
   -- ws_port = 8081,
 })
@@ -14,7 +14,7 @@ require("telegram").setup({
 |--------|------|---------|-------------|
 | `tdlib_path` | `string?` | auto-detect | Path to `libtdjson.so`/`.dylib`/`.dll` |
 | `proxy` | `string?` | `nil` | Proxy URL (e.g. `socks5://127.0.0.1:7890`) |
-| `data_dir` | `string?` | stdpath data | Directory for TDLib database and files |
+| `data_dir` | `string?` | plugin root | Directory for TDLib database and files |
 | `http_port` | `number?` | `8080` | Backend HTTP server port |
 | `ws_port` | `number?` | `8081` | Backend WebSocket server port |
 

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Title float covering messages** — buffer padding now syncs with float height on every `update_title()` call, preventing overlap (#123)
+- **Cursor move freeze** — `msg_line_counts` cache eliminates `#fmt_msg()` re-render on every cursor movement
+- **WinScrolled storm** — debounced `update_title()` calls (100ms) reduce float recreation overhead on scroll
+
+### Changed
+
+- **`request_async`** — restored to prefer `vim.net.request` with curl fallback (reverted experimental change)
+
 ## [0.4.0] - 2026-05-28
 
 ### Added
