@@ -777,10 +777,16 @@ export class TelegramLSPClient {
 
   async getChatInviteLinks(chatId: number): Promise<any[]> {
     if (!this._ready) throw new Error('Client not ready yet');
+    let creatorUserId: number | undefined;
+    try {
+      const me = await this.client.invoke({ _: 'getMe' }) as { id: number };
+      creatorUserId = me.id;
+    } catch (e) { console.warn('getChatInviteLinks: getMe failed', (e as Error).message); }
+    if (!creatorUserId) return [];
     const result = await this.client.invoke({
       _: 'getChatInviteLinks',
       chat_id: chatId,
-      creator_user_id: (await this.client.invoke({ _: 'getMe' })).id,
+      creator_user_id: creatorUserId,
       is_revoked: false,
       limit: 50,
     }) as { invite_links?: any[] };

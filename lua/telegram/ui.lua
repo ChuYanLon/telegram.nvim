@@ -507,13 +507,14 @@ function M.update_title()
 
 	-- Line 3: Pinned message (only if present)
 	if has_pinned then
-		local w = text_width - 8
+		local w = math.max(text_width - 8, 1)
 		lines[#lines + 1] = "pinned: " .. truncate_text(state.pinned_message:gsub("\n", " "), w)
 	end
 
 	-- Line 4: Description (only if present)
 	if has_desc then
-		lines[#lines + 1] = "desc: " .. truncate_text(state.description:gsub("\n", " "), text_width - 6)
+		local w = math.max(text_width - 6, 1)
+		lines[#lines + 1] = "desc: " .. truncate_text(state.description:gsub("\n", " "), w)
 	end
 
 	-- Separator
@@ -853,7 +854,7 @@ local help_popup = nil
 
 local function close_help()
 	if help_popup then
-		help_popup:unmount()
+		pcall(help_popup.unmount, help_popup)
 		help_popup = nil
 	end
 end

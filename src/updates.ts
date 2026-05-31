@@ -138,17 +138,18 @@ export class UpdateDispatcher {
     const chat = this.chats.get(update.chat_id!);
     if (!chat) return;
     if (!update.member || update.actor_user_id == null) return;
-    const memberUserId = update.member.user_id;
+    const memberId = update.member.user_id || 0;
     const actorUserId = update.actor_user_id;
-    const memberName = await this.resolver.getUserName(memberUserId);
-    const actorName = actorUserId === memberUserId
+    if (!memberId) return;
+    const memberName = await this.resolver.getUserName(memberId);
+    const actorName = actorUserId === memberId
       ? memberName
       : await this.resolver.getUserName(actorUserId);
     broadcast({
       event: 'chatMember',
       chat_id: update.chat_id,
       chat_title: chat ? chat.title : 'Unknown',
-      member: { id: memberUserId, name: memberName },
+      member: { id: memberId, name: memberName },
       actor: { id: actorUserId, name: actorName },
       old_status: update.old_status,
       new_status: update.new_status,

@@ -500,6 +500,6 @@ async function shutdown() {
 }
 
 process.on('SIGINT', shutdown);
-process.on('SIGTERM', () => process.exit(0));
+process.on('SIGTERM', shutdown);
 
 tgClient.start().catch(console.error);
