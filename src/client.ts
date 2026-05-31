@@ -115,6 +115,13 @@ export class TelegramLSPClient {
       ]);
 
       this.updates.listen(this.client);
+      await this.client.invoke({ _: 'setOption', name: 'online', value: { _: 'optionValueBoolean', value: true } }).catch(() => {});
+      const keepOnline = () => {
+        if (!this._ready) return;
+        this.client.invoke({ _: 'setOption', name: 'online', value: { _: 'optionValueBoolean', value: true } }).catch(() => {});
+        setTimeout(keepOnline, 30000);
+      };
+      setTimeout(keepOnline, 30000);
       this._ready = true;
       this.auth.markReady();
       console.log('TDLib client ready');
