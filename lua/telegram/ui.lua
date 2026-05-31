@@ -47,6 +47,10 @@ local state = {
 
 	title_buf = nil,
 	title_win = nil,
+
+	msg_line_counts = {},
+	_title_update_timer = nil,
+	title_dirty = false,
 }
 
 M.state = state
@@ -148,11 +152,12 @@ end
 
 local function line_of(target_id)
 	local off = title_offset()
+	local line_counts = state.msg_line_counts
 	for i, m in ipairs(state.messages) do
 		if m.id == target_id then
 			local line = 1 + off
 			for j = 1, i - 1 do
-				line = line + #fmt_msg(state.messages[j])
+				line = line + (line_counts[j] or #fmt_msg(state.messages[j]))
 			end
 			return line
 		end
@@ -195,8 +200,9 @@ local function apply_highlights()
 		or mode == "delete" and "  \xE2\x97\x8F Deleting"
 		or "  \xE2\x97\x8F Forwarding"
 	local line = 1 + off
-	for _, m in ipairs(state.messages) do
-		local n = #fmt_msg(m)
+	local line_counts = state.msg_line_counts
+	for i, m in ipairs(state.messages) do
+		local n = line_counts[i] or #fmt_msg(m)
 		if m.id == target_id then
 			local start_line = line - 1
 			local end_line = line + n - 2
@@ -220,12 +226,16 @@ local function render()
 	local buf = state.buf
 
 	local lines = {}
-	for _, msg in ipairs(state.messages) do
+	local line_counts = {}
+	for i, msg in ipairs(state.messages) do
 		local msg_lines = fmt_msg(msg)
+		local n = #msg_lines
+		line_counts[i] = n
 		for _, l in ipairs(msg_lines) do
 			table.insert(lines, l)
 		end
 	end
+	state.msg_line_counts = line_counts
 
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		local h = vim.api.nvim_win_get_height(state.title_win)
@@ -511,6 +521,10 @@ function M.update_title()
 	local side = string.rep("=", math.floor((text_width - #label) / 2))
 	lines[#lines + 1] = side .. label .. side
 
+	local old_h = state.title_win and vim.api.nvim_win_is_valid(state.title_win)
+		and vim.api.nvim_win_get_height(state.title_win) or 0
+	local new_h = #lines
+
 	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
 		state.title_buf = vim.api.nvim_create_buf(false, true)
 	end
@@ -523,7 +537,7 @@ function M.update_title()
 	local float_opts = {
 		relative = "editor",
 		width = win_width,
-		height = #lines,
+		height = new_h,
 		row = win_pos[1],
 		col = win_pos[2],
 		style = "minimal",
@@ -535,6 +549,7 @@ function M.update_title()
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		pcall(vim.api.nvim_win_set_config, state.title_win, float_opts)
 		pcall(vim.api.nvim_win_set_buf, state.title_win, state.title_buf)
+		vim.wo[state.title_win].winhighlight = "Normal:TgNoBg"
 	else
 		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
 		vim.wo[state.title_win].winhighlight = "Normal:TgNoBg"
@@ -561,6 +576,10 @@ function M.update_title()
 				vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTitleKey", li - 1, 0, colon + 1)
 			end
 		end
+	end
+
+	if new_h ~= old_h and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		render()
 	end
 end
 
@@ -1040,9 +1059,10 @@ function M.open_chat(chat_id, chat_title)
 					return
 				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
+				local line_counts = state.msg_line_counts
 				local l = min_line
-				for _, msg in ipairs(state.messages) do
-					local n = #fmt_msg(msg)
+				for i, msg in ipairs(state.messages) do
+					local n = line_counts[i] or #fmt_msg(msg)
 					if cursor_line >= l and cursor_line < l + n then
 						state.saved_cursors = state.saved_cursors or {}
 						state.saved_cursors[state.chat_id] = msg.id
@@ -1053,20 +1073,36 @@ function M.open_chat(chat_id, chat_title)
 				if state.unread > 0 and cursor_line >= total_lines - 1 then
 					state.unread = 0
 				end
-				if cursor_line <= min_line and not state.exhausted then
+				if cursor_line == min_line and not state.exhausted and not state.loading then
 					M.load_older()
-				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
+				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward and not state.loading_newer then
 					M.load_newer()
 				end
 			end,
 		})
+
+		local function debounced_title_update()
+			if state._title_update_timer then
+				state.title_dirty = true
+				return
+			end
+			state.title_dirty = false
+			M.update_title()
+			state._title_update_timer = vim.defer_fn(function()
+				state._title_update_timer = nil
+				if state.title_dirty then
+					state.title_dirty = false
+					M.update_title()
+				end
+			end, 100)
+		end
 
 		vim.api.nvim_create_autocmd("VimResized", {
 			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
 					vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
-					M.update_title()
+					debounced_title_update()
 				end
 			end,
 		})
@@ -1075,7 +1111,7 @@ function M.open_chat(chat_id, chat_title)
 			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
-					M.update_title()
+					debounced_title_update()
 				end
 			end,
 		})
@@ -1220,6 +1256,7 @@ function M.destroy_chat()
 	state.buf = nil
 	state.editor = nil
 	state.messages = {}
+	state.msg_line_counts = {}
 	state.loading = false
 	state.exhausted = false
 	state.exhausted_forward = false
@@ -1228,6 +1265,10 @@ function M.destroy_chat()
 	state.chat_id = nil
 	state.chat_title = ""
 	state.win = nil
+	if state._title_update_timer then
+		state._title_update_timer = nil
+	end
+	state.title_dirty = false
 end
 
 function M.message_at_cursor()
@@ -1236,9 +1277,10 @@ function M.message_at_cursor()
 	end
 	local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
 	local off = title_offset()
+	local line_counts = state.msg_line_counts
 	local line = 1 + off
 	for idx, msg in ipairs(state.messages) do
-		local n = #fmt_msg(msg)
+		local n = line_counts[idx] or #fmt_msg(msg)
 		if cursor_line >= line and cursor_line < line + n then
 			return idx
 		end
