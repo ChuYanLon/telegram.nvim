@@ -37,11 +37,17 @@ export class TelegramLSPClient {
     } else {
       const lib = getResolvedTdlibPath();
       if (lib) tdl.configure({ tdjson: lib });
+      const osType = process.platform === 'darwin' ? 'macOS' : process.platform === 'win32' ? 'Windows' : 'Linux';
       this.client = tdl.createClient({
         apiId: TG_API_ID,
         apiHash: TG_API_HASH,
         databaseDirectory: path.join(dataDir, 'tdlib_db'),
         filesDirectory: path.join(dataDir, 'tdlib_files'),
+        tdlibParameters: {
+          device_model: 'telegram.nvim',
+          application_version: '0.4.1',
+          system_version: osType,
+        },
       });
     }
 
