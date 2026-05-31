@@ -65,6 +65,10 @@ export class UpdateDispatcher {
         case 'updateUserStatus':
           this.handleUserStatusUpdate(update);
           break;
+        case 'updateSupergroup':
+        case 'updateBasicGroup':
+          this.handleGroupUpdate(update);
+          break;
         case 'updateSupergroupFullInfo':
         case 'updateBasicGroupFullInfo':
           this.handleGroupFullInfoUpdate(update);
@@ -303,6 +307,19 @@ export class UpdateDispatcher {
       expires: status.expires || 0,
       is_online: isOnline,
     });
+  }
+
+  handleGroupUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const group = (update.supergroup || update.basic_group) as { status?: { _: string }; member_count?: number; is_active?: boolean } | undefined;
+    if (!group) return;
+    const chatId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    if (!chatId) return;
+    const status = group.status?._ || '';
+    if (status === 'chatMemberStatusLeft' || status === 'chatMemberStatusBanned') {
+      broadcast({ event: 'chatGroupRemoved', chat_id: chatId });
+    }
   }
 
   handleGroupFullInfoUpdate(update: TdUpdate) {

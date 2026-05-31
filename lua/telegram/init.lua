@@ -365,15 +365,28 @@ local function finish_init()
 			local name = msg.name or ""
 			if uid and name and #name > 0 then
 				vim.schedule(function()
+					local need_render = false
+					for _, m in ipairs(ui.state.messages) do
+						if m.sender and m.sender.id and tonumber(m.sender.id) == tonumber(uid) then
+							m.sender.name = name
+							need_render = true
+						end
+					end
+					local found_group = false
 					for _, g in pairs(ui.state.groups) do
 						if g.user_id and g.user_id == uid then
 							g.title = name
+							found_group = true
 							if ui.state.chat_id == g.id then
 								ui.state.chat_title = name
 								ui.update_title()
+								need_render = false
 							end
 							break
 						end
+					end
+					if found_group and need_render then
+						ui.render()
 					end
 				end)
 			end
@@ -411,6 +424,24 @@ local function finish_init()
 			local cid = msg.chat_id
 			if not cid then return end
 			if order == "0" or order == 0 then
+				vim.schedule(function()
+					if ui.state.groups[cid] then
+						ui.state.groups[cid] = nil
+						for i, id in ipairs(ui.state.group_ids) do
+							if id == cid then
+								table.remove(ui.state.group_ids, i)
+								break
+							end
+						end
+					end
+					if ui.state.chat_id == cid then
+						ui.destroy_chat()
+					end
+				end)
+			end
+		elseif msg.event == "chatGroupRemoved" then
+			local cid = msg.chat_id
+			if cid then
 				vim.schedule(function()
 					if ui.state.groups[cid] then
 						ui.state.groups[cid] = nil
