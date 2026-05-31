@@ -500,16 +500,7 @@ function M.list_groups()
 	end
 
 	if ui.state.win and vim.api.nvim_win_is_valid(ui.state.win) then
-		local wins = vim.api.nvim_list_wins()
-		if #wins > 1 then
-			vim.api.nvim_set_current_win(ui.state.win)
-			vim.cmd("hide")
-		else
-			vim.cmd("enew")
-		end
-		ui.state.win = nil
-		ui.state.mounted = false
-		ui.destroy_title_float()
+		ui.toggle_off()
 		return
 	end
 

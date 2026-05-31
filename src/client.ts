@@ -24,6 +24,7 @@ export class TelegramLSPClient {
   _ready = false;
   _chats: Map<number, RawTdChat> = new Map();
   _chatsLoaded = false;
+  _pinnedMessageIds: Map<number, number> = new Map();
 
   auth: AuthManager;
   resolver: Resolver;
@@ -54,6 +55,7 @@ export class TelegramLSPClient {
       this._chats,
       () => global.broadcast,
       (q) => this.client.invoke(q),
+      this._pinnedMessageIds,
     );
   }
 
@@ -385,6 +387,22 @@ export class TelegramLSPClient {
         description = info.description || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
+    let pinnedId = this._pinnedMessageIds.get(chatId) || 0;
+    if (!pinnedId) {
+      try {
+        const result = await this.client.invoke({
+          _: 'searchChatMessages',
+          chat_id: chatId,
+          query: '',
+          limit: 1,
+          filter: { _: 'searchMessagesFilterPinned' },
+        }) as { messages: { id: number }[] };
+        if (result.messages?.length > 0) {
+          pinnedId = result.messages[0].id;
+          this._pinnedMessageIds.set(chatId, pinnedId);
+        }
+      } catch (e) { /* no pinned messages found */ }
+    }
     return {
       id: chat.id,
       title: chat.title,
@@ -393,7 +411,7 @@ export class TelegramLSPClient {
       memberCount,
       description,
       defaultRestricted,
-      pinnedMessageId: chat.pinned_message_id,
+      pinnedMessageId: pinnedId,
     };
   }
 

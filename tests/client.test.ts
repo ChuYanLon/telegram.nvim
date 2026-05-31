@@ -320,6 +320,18 @@ describe('getChat', () => {
     expect(result.title).toBe('Unknown Group');
     expect(result.memberCount).toBe(0);
   });
+
+  it('returns pinnedMessageId from search when pinned message exists', async () => {
+    const fake = client.client as FakeTdClient;
+    fake.setPinnedMessage(-1001, 42);
+    const result = await client.getChat(-1001);
+    expect(result.pinnedMessageId).toBe(42);
+  });
+
+  it('returns 0 pinnedMessageId when no pinned message', async () => {
+    const result = await client.getChat(-1002);
+    expect(result.pinnedMessageId).toBe(0);
+  });
 });
 
 describe('handleNewMessage', () => {

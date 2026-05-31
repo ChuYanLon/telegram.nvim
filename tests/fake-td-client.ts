@@ -4,6 +4,11 @@ class FakeTdClient {
   _chats: Map<number, { id: number; title: string; type: { _: string; supergroup_id?: number; is_channel?: boolean }; last_message: null; unread_count: number }> = new Map();
   _nextUserId = 100;
   _nextChatId = -1000;
+  _pinnedMessages: Map<number, number> = new Map();
+
+  setPinnedMessage(chatId: number, messageId: number) {
+    this._pinnedMessages.set(chatId, messageId);
+  }
 
   addUser(overrides: { id?: number; first_name?: string; last_name?: string; username?: string } = {}) {
     const id = overrides.id || this._nextUserId++;
@@ -75,6 +80,17 @@ class FakeTdClient {
         return { ok: true };
       case 'forwardMessages':
         return { ok: true };
+      case 'searchChatMessages': {
+        const filter = query.filter as { _?: string } | undefined;
+        if (filter?._ === 'searchMessagesFilterPinned') {
+          const chatId = query.chat_id as number;
+          const pinnedId = this._pinnedMessages.get(chatId);
+          if (pinnedId) {
+            return { messages: [{ id: pinnedId, content: { _: 'messageText', text: { text: 'pinned message' } } }] };
+          }
+        }
+        return { messages: [] };
+      }
       case 'setChatMemberStatus':
         return { ok: true };
       default:

@@ -91,6 +91,25 @@ local function destroy_title_float()
 	state.title_buf = nil
 end
 
+function M.toggle_off()
+	if state.chat_id then
+		state.last_group = { id = state.chat_id, title = state.chat_title }
+	end
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		pcall(vim.api.nvim_set_current_win, state.win)
+		local wins = vim.api.nvim_list_wins()
+		if #wins > 1 then
+			vim.cmd("hide")
+		else
+			vim.cmd("enew")
+		end
+	end
+	state.win = nil
+	state.buf = nil
+	state.mounted = false
+	destroy_title_float()
+end
+
 local function hide_title_float()
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		pcall(vim.api.nvim_win_close, state.title_win, true)
@@ -392,7 +411,7 @@ function M.refresh_pinned_message(chat_id, pinned_message_id)
 	end
 	server.get_pinned_message_async(chat_id, pinned_message_id, function(msg)
 		if state.chat_id == chat_id and msg then
-			state.pinned_message = msg.text or ""
+			state.pinned_message = msg.text and #msg.text > 0 and msg.text or ("[" .. (msg.type or "media") .. "]")
 			M.update_title()
 		end
 	end)
@@ -477,6 +496,9 @@ local function format_desc_lines(text, max_width)
 	return out
 end
 
+-- fixed title float height (lines)
+local TITLE_HEIGHT = 5
+
 function M.update_title()
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
@@ -524,23 +546,35 @@ function M.update_title()
 
 	local lines = {}
 
-	if has_pinned then
-		lines[#lines + 1] = "\xE2\x9D\x96 " .. truncate_text(state.pinned_message:gsub("\n", " "), text_width - 2)
-	end
-
+	-- Line 1: Title + count (always)
 	lines[#lines + 1] = title .. "  (" .. count .. ")"
 
+	-- Line 2: Pinned message or blank
+	if has_pinned then
+		lines[#lines + 1] = "[PIN] " .. truncate_text(state.pinned_message:gsub("\n", " "), text_width - 6)
+	else
+		lines[#lines + 1] = ""
+	end
+
+	-- Line 3: Description line 1 or blank
 	if has_desc then
 		local dl = format_desc_lines(state.description, text_width)
-		for _, l in ipairs(dl) do
-			lines[#lines + 1] = l
-		end
+		lines[#lines + 1] = dl[1] or ""
+	else
+		lines[#lines + 1] = ""
 	end
 
-	if has_typing then
-		lines[#lines + 1] = "  " .. typing
+	-- Line 4: Description line 2 or typing or blank
+	if has_desc then
+		local dl = format_desc_lines(state.description, text_width)
+		lines[#lines + 1] = dl[2] or (has_typing and typing or "")
+	elseif has_typing then
+		lines[#lines + 1] = typing
+	else
+		lines[#lines + 1] = ""
 	end
 
+	-- Line 5: Separator (always)
 	lines[#lines + 1] = sep
 
 	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
@@ -555,7 +589,7 @@ function M.update_title()
 	local float_opts = {
 		relative = "editor",
 		width = win_width,
-		height = #lines,
+		height = TITLE_HEIGHT,
 		row = win_pos[1],
 		col = win_pos[2],
 		style = "minimal",
@@ -569,17 +603,23 @@ function M.update_title()
 		pcall(vim.api.nvim_win_set_buf, state.title_win, state.title_buf)
 	else
 		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
+		vim.api.nvim_create_autocmd("WinEnter", {
+			buffer = state.title_buf,
+			callback = function()
+				if state.win and vim.api.nvim_win_is_valid(state.win) then
+					vim.api.nvim_set_current_win(state.win)
+				end
+			end,
+		})
 	end
 
 	vim.api.nvim_buf_clear_namespace(state.title_buf, hl_ns, 0, -1)
 	for li, line in ipairs(lines) do
 		if line:match("^─+$") then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
-		elseif line:match("^\xE2\x9D\x96") then
+		elseif line:match("^%[PIN%]") then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, 0, -1)
-		elseif line:match("^  ") then
-			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
-		elseif line:sub(1, 1) ~= "─" and not line:match("^\xE2\x9D\x96") then
+		elseif li == 1 then
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgWinbarTitle", li - 1, 0, #title)
 			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, #title, -1)
 		end
@@ -983,12 +1023,15 @@ function M.open_chat(chat_id, chat_title)
 		vim.api.nvim_create_autocmd("WinClosed", {
 			group = vim.api.nvim_create_augroup("TgWinFix", { clear = true }),
 			callback = function()
-				if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-					return
-				end
-				local wins = vim.api.nvim_list_wins()
-				if #wins == 1 and vim.api.nvim_win_get_buf(state.win) == state.buf then
-					vim.schedule(function()
+				vim.schedule(function()
+					if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+						destroy_title_float()
+						state.win = nil
+						state.mounted = false
+						return
+					end
+					local wins = vim.api.nvim_list_wins()
+					if #wins == 1 and vim.api.nvim_win_get_buf(state.win) == state.buf then
 						if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 							return
 						end
@@ -1004,8 +1047,8 @@ function M.open_chat(chat_id, chat_title)
 						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 						vim.api.nvim_set_current_win(state.win)
 						M.update_title()
-					end)
-				end
+					end
+				end)
 			end,
 		})
 
@@ -1060,13 +1103,19 @@ function M.open_chat(chat_id, chat_title)
 			end,
 		})
 
+		vim.api.nvim_create_autocmd("WinScrolled", {
+			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
+			callback = function()
+				if state.win and vim.api.nvim_win_is_valid(state.win) then
+					M.update_title()
+				end
+			end,
+		})
+
 		vim.api.nvim_create_autocmd("BufUnload", {
 			buffer = state.buf,
 			callback = function()
-				if state.chat_id then
-					state.last_group = { id = state.chat_id, title = state.chat_title }
-				end
-				hide_chat()
+				M.toggle_off()
 			end,
 		})
 	else
@@ -1086,6 +1135,7 @@ function M.open_chat(chat_id, chat_title)
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	vim.keymap.set("n", "?", M.show_help, { buffer = state.buf })
 	state.mounted = true
+	state.pinned_message = nil
 	M.update_title()
 
 	server.open_chat(state.chat_id)
@@ -1095,7 +1145,6 @@ function M.open_chat(chat_id, chat_title)
 	state.online_count = (cached and cached.online_count) or 0
 	state.permissions = {}
 	state.description = ""
-	state.pinned_message = nil
 
 	local pending = 2
 	local function check_done()
@@ -1110,15 +1159,7 @@ function M.open_chat(chat_id, chat_title)
 			state.online_count = chat_info.onlineMemberCount or state.online_count
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
-			local pinned_id = chat_info.pinnedMessageId
-			if pinned_id then
-				server.get_pinned_message_async(cid, pinned_id, function(msg)
-					if state.chat_id == cid and msg then
-						state.pinned_message = msg.text or ""
-						M.update_title()
-					end
-				end)
-			end
+			M.refresh_pinned_message(cid, chat_info.pinnedMessageId)
 		end
 		check_done()
 	end)

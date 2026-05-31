@@ -10,6 +10,7 @@ export class UpdateDispatcher {
     private chats: Map<number, RawTdChat>,
     private getBroadcast: () => BroadcastFn | undefined,
     private invoke: (q: unknown) => Promise<unknown>,
+    private pinnedMessageIds: Map<number, number>,
   ) {}
 
   listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
@@ -57,6 +58,9 @@ export class UpdateDispatcher {
           break;
         case 'updateChatPermissions':
           this.handleChatPermissions(update);
+          break;
+        case 'updateMessageIsPinned':
+          this.handleMessageIsPinned(update);
           break;
         default:
           this.broadcastRaw(update);
@@ -232,6 +236,26 @@ export class UpdateDispatcher {
       event: 'chatPermissions',
       chat_id: update.chat_id,
       default_restricted: perms?.can_send_basic_messages === false,
+    });
+  }
+
+  handleMessageIsPinned(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const chatId = update.chat_id as number;
+    const messageId = update.message_id as number;
+    const isPinned = update.is_pinned as boolean;
+    if (chatId && messageId) {
+      if (isPinned) {
+        this.pinnedMessageIds.set(chatId, messageId);
+      } else if (this.pinnedMessageIds.get(chatId) === messageId) {
+        this.pinnedMessageIds.delete(chatId);
+      }
+    }
+    broadcast({
+      event: 'ChatPinnedMessage',
+      chat_id: chatId,
+      pinned_message_id: isPinned ? messageId : 0,
     });
   }
 
