@@ -543,6 +543,20 @@ function M.forward_messages(from_chat_id, message_ids, to_chat_id)
 	return http_post("/forwardMessages", { fromChatId = from_chat_id, messageIds = message_ids, toChatId = to_chat_id })
 end
 
+---@param chat_id any
+---@param message_id any
+---@return boolean
+function M.pin_message(chat_id, message_id)
+	return http_post("/pinMessage", { chatId = chat_id, messageId = message_id }) ~= nil
+end
+
+---@param chat_id any
+---@param message_id any
+---@return boolean
+function M.unpin_message(chat_id, message_id)
+	return http_post("/unpinMessage", { chatId = chat_id, messageId = message_id }) ~= nil
+end
+
 -- ─── Member Management ─────────────────────────────────────────────────
 
 ---@param chat_id any

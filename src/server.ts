@@ -284,6 +284,24 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
+app.post('/pinMessage', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.body;
+    if (!chatId || !messageId) { res.status(400).json({ error: 'chatId and messageId are required' }); return; }
+    const result = await tgClient.pinMessage(Number(chatId), Number(messageId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/unpinMessage', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.body;
+    if (!chatId || !messageId) { res.status(400).json({ error: 'chatId and messageId are required' }); return; }
+    const result = await tgClient.unpinMessage(Number(chatId), Number(messageId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 // ─── Member Management ────────────────────────────────────────────────
 
 app.post('/chat/ban', async (req, res) => {

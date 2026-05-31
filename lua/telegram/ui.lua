@@ -43,6 +43,7 @@ local state = {
 	default_restricted = false,
 
 	pinned_message = nil,
+	pinned_message_id = nil,
 
 	title_buf = nil,
 	title_win = nil,
@@ -401,6 +402,7 @@ end
 
 function M.refresh_pinned_message(chat_id, pinned_message_id)
 	if chat_id ~= state.chat_id then return end
+	state.pinned_message_id = pinned_message_id or 0
 	if not pinned_message_id or pinned_message_id == 0 then
 		state.pinned_message = nil
 		M.update_title()
@@ -759,6 +761,35 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end, { buffer = buf })
+	vim.keymap.set("n", "p", function()
+		local target = M.curr_msg()
+		if not target or not target.id then return end
+		if state.permissions.can_pin_messages ~= true then
+			vim.notify("No permission to pin messages", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local is_pinned = state.pinned_message_id and state.pinned_message_id == target.id
+		if is_pinned then
+			if server.unpin_message(state.chat_id, target.id) then
+				state.pinned_message = nil
+				state.pinned_message_id = nil
+				M.update_title()
+				vim.notify("Unpinned message", vim.log.levels.INFO, { title = "tg" })
+			end
+		else
+			if server.pin_message(state.chat_id, target.id) then
+				state.pinned_message_id = target.id
+				server.get_pinned_message_async(state.chat_id, target.id, function(msg)
+					if msg then
+						state.pinned_message = msg.text and #msg.text > 0 and msg.text or ("[" .. (msg.type or "media") .. "]")
+						M.update_title()
+					end
+				end)
+				M.update_title()
+				vim.notify("Pinned message", vim.log.levels.INFO, { title = "tg" })
+			end
+		end
+	end, { buffer = buf })
 	vim.keymap.set("n", "G", function()
 		M.refresh_messages(function()
 			M.jump_to_bottom()
@@ -829,6 +860,7 @@ function M.show_help()
 		" e          edit own message",
 		" d          delete / revoke",
 		" f          forward message",
+		" p          pin / unpin message",
 		" G          refresh + jump to bottom",
 		" B          ban message sender",
 		" c          open DM with message sender",
@@ -1072,6 +1104,7 @@ function M.open_chat(chat_id, chat_title)
 	vim.keymap.set("n", "?", M.show_help, { buffer = state.buf })
 	state.mounted = true
 	state.pinned_message = nil
+	state.pinned_message_id = nil
 	M.update_title()
 
 	server.open_chat(state.chat_id)

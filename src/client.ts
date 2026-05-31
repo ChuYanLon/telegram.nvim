@@ -361,6 +361,26 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
+  async pinMessage(chatId: number, messageId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'pinChatMessage',
+      chat_id: chatId,
+      message_id: messageId,
+    });
+    return { ok: true };
+  }
+
+  async unpinMessage(chatId: number, messageId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'unpinChatMessage',
+      chat_id: chatId,
+      message_id: messageId,
+    });
+    return { ok: true };
+  }
+
   async getRawChat(chatId: number) {
     if (!this._ready) throw new Error('Client not ready yet');
     return await this.client.invoke({ _: 'getChat', chat_id: chatId }) as RawTdChat;
