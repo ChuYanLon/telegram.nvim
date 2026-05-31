@@ -60,6 +60,7 @@ export interface RawTdChat {
   unread_count?: number;
   online_member_count?: number;
   last_message?: RawTdMessage | null;
+  pinned_message_id?: number;
   positions?: { list: { _: string }; order: string }[];
   permissions?: Record<string, unknown>;
 }

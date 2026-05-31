@@ -41,6 +41,11 @@ local state = {
 	permissions = {},
 	my_user_id = nil,
 	default_restricted = false,
+
+	pinned_message = nil,
+
+	title_buf = nil,
+	title_win = nil,
 }
 
 M.state = state
@@ -59,6 +64,7 @@ vim.api.nvim_create_autocmd("BufUnload", {
 
 local function hide_chat()
 	state.buf = nil
+	destroy_title_float()
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
 		pcall(vim.api.nvim_win_close, state.win, true)
 	end
@@ -72,6 +78,24 @@ local function open_split()
 	else
 		vim.cmd("topleft vsplit")
 	end
+end
+
+local function destroy_title_float()
+	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
+		pcall(vim.api.nvim_win_close, state.title_win, true)
+	end
+	state.title_win = nil
+	if state.title_buf and vim.api.nvim_buf_is_valid(state.title_buf) then
+		pcall(vim.api.nvim_buf_delete, state.title_buf, { force = true })
+	end
+	state.title_buf = nil
+end
+
+local function hide_title_float()
+	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
+		pcall(vim.api.nvim_win_close, state.title_win, true)
+	end
+	state.title_win = nil
 end
 
 local action_descriptions = {
@@ -95,10 +119,18 @@ local function fmt_msg(msg)
 	return render_msg(msg)
 end
 
+local function title_offset()
+	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
+		return vim.api.nvim_win_get_height(state.title_win)
+	end
+	return 0
+end
+
 local function line_of(target_id)
+	local off = title_offset()
 	for i, m in ipairs(state.messages) do
 		if m.id == target_id then
-			local line = 1
+			local line = 1 + off
 			for j = 1, i - 1 do
 				line = line + #fmt_msg(state.messages[j])
 			end
@@ -112,6 +144,7 @@ local function apply_highlights()
 		return
 	end
 	local buf = state.buf
+	local off = title_offset()
 	vim.api.nvim_buf_clear_namespace(buf, hl_ns, 0, -1)
 	vim.api.nvim_buf_clear_namespace(buf, target_ns, 0, -1)
 
@@ -141,7 +174,7 @@ local function apply_highlights()
 		or mode == "edit" and "  \xE2\x97\x8F Editing"
 		or mode == "delete" and "  \xE2\x97\x8F Deleting"
 		or "  \xE2\x97\x8F Forwarding"
-	local line = 1
+	local line = 1 + off
 	for _, m in ipairs(state.messages) do
 		local n = #fmt_msg(m)
 		if m.id == target_id then
@@ -171,6 +204,13 @@ local function render()
 		local msg_lines = fmt_msg(msg)
 		for _, l in ipairs(msg_lines) do
 			table.insert(lines, l)
+		end
+	end
+
+	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
+		local h = vim.api.nvim_win_get_height(state.title_win)
+		for _ = 1, h do
+			table.insert(lines, 1, "")
 		end
 	end
 
@@ -343,11 +383,66 @@ function M.update_group_online(chat_id, count)
 	end
 end
 
+function M.refresh_pinned_message(chat_id, pinned_message_id)
+	if chat_id ~= state.chat_id then return end
+	if not pinned_message_id or pinned_message_id == 0 then
+		state.pinned_message = nil
+		M.update_title()
+		return
+	end
+	server.get_pinned_message_async(chat_id, pinned_message_id, function(msg)
+		if state.chat_id == chat_id and msg then
+			state.pinned_message = msg.text or ""
+			M.update_title()
+		end
+	end)
+end
+
+local function truncate_text(text, max_width)
+	if not text or #text == 0 then
+		return text
+	end
+	if vim.fn.strdisplaywidth(text) <= max_width then
+		return text
+	end
+	local result = ""
+	local w = 0
+	for char in text:gmatch(".[\128-\191]*") do
+		local cw = vim.fn.strdisplaywidth(char)
+		if w + cw > max_width - 2 then
+			return result .. "…"
+		end
+		result = result .. char
+		w = w + cw
+	end
+	return result
+end
+
+local function format_desc_lines(text, max_width)
+	if not text or #text == 0 then
+		return {}
+	end
+	local raw_lines = vim.split(text, "\n")
+	local out = {}
+	for i = 1, math.min(#raw_lines, 2) do
+		local line = raw_lines[i]
+		local truncated = truncate_text(line, max_width)
+		if i == 2 and #raw_lines > 2 then
+			local t = truncate_text(truncated, max_width - 2)
+			out[#out + 1] = t .. "…"
+		else
+			out[#out + 1] = truncated
+		end
+	end
+	return out
+end
+
 function M.update_title()
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	end
 	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+		hide_title_float()
 		return
 	end
 	local title = state.chat_title or ""
@@ -378,11 +473,77 @@ function M.update_title()
 		end
 	end
 
-	local winbar = "%#TgWinbarHeader### %*%#TgWinbarTitle#" .. title .. "%*%#TgTimestamp# (" .. count .. ")%*"
-	if typing ~= "" then
-		winbar = winbar .. "  %#TgService#" .. typing .. "%*"
+	local win_pos = vim.api.nvim_win_get_position(state.win)
+	local win_width = vim.api.nvim_win_get_width(state.win)
+	local text_width = win_width - 2
+
+	local sep = string.rep("─", text_width)
+	local has_pinned = state.pinned_message and #state.pinned_message > 0
+	local has_desc = state.description and #state.description > 0
+	local has_typing = typing ~= ""
+
+	local lines = {}
+
+	if has_pinned then
+		lines[#lines + 1] = "\xE2\x9D\x96 " .. truncate_text(state.pinned_message:gsub("\n", " "), text_width - 2)
 	end
-	pcall(vim.api.nvim_set_option_value, "winbar", winbar, { win = state.win })
+
+	lines[#lines + 1] = title .. "  (" .. count .. ")"
+
+	if has_desc then
+		local dl = format_desc_lines(state.description, text_width)
+		for _, l in ipairs(dl) do
+			lines[#lines + 1] = l
+		end
+	end
+
+	if has_typing then
+		lines[#lines + 1] = "  " .. typing
+	end
+
+	lines[#lines + 1] = sep
+
+	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
+		state.title_buf = vim.api.nvim_create_buf(false, true)
+	end
+
+	vim.bo[state.title_buf].modifiable = true
+	vim.api.nvim_buf_set_lines(state.title_buf, 0, -1, false, lines)
+	vim.bo[state.title_buf].modifiable = false
+	vim.bo[state.title_buf].modified = false
+
+	local float_opts = {
+		relative = "editor",
+		width = win_width,
+		height = #lines,
+		row = win_pos[1],
+		col = win_pos[2],
+		style = "minimal",
+		border = "none",
+		focusable = false,
+		zindex = 150,
+	}
+
+	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
+		pcall(vim.api.nvim_win_set_config, state.title_win, float_opts)
+		pcall(vim.api.nvim_win_set_buf, state.title_win, state.title_buf)
+	else
+		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
+	end
+
+	vim.api.nvim_buf_clear_namespace(state.title_buf, hl_ns, 0, -1)
+	for li, line in ipairs(lines) do
+		if line:match("^─+$") then
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
+		elseif line:match("^\xE2\x9D\x96") then
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, 0, -1)
+		elseif line:match("^  ") then
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgService", li - 1, 0, -1)
+		elseif line:sub(1, 1) ~= "─" and not line:match("^\xE2\x9D\x96") then
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgWinbarTitle", li - 1, 0, #title)
+			vim.api.nvim_buf_add_highlight(state.title_buf, hl_ns, "TgTimestamp", li - 1, #title, -1)
+		end
+	end
 end
 
 local function show_group_selector()
@@ -802,6 +963,7 @@ function M.open_chat(chat_id, chat_title)
 						open_split()
 						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
 						vim.api.nvim_set_current_win(state.win)
+						M.update_title()
 					end)
 				end
 			end,
@@ -819,9 +981,15 @@ function M.open_chat(chat_id, chat_title)
 				if vim.api.nvim_get_current_win() ~= state.win then
 					return
 				end
+				local off = title_offset()
+				local min_line = 1 + off
 				local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+				if cursor_line <= off then
+					pcall(vim.api.nvim_win_set_cursor, state.win, { min_line, 0 })
+					return
+				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
-				local l = 1
+				local l = min_line
 				for _, msg in ipairs(state.messages) do
 					local n = #fmt_msg(msg)
 					if cursor_line >= l and cursor_line < l + n then
@@ -834,7 +1002,7 @@ function M.open_chat(chat_id, chat_title)
 				if state.unread > 0 and cursor_line >= total_lines - 1 then
 					state.unread = 0
 				end
-				if cursor_line <= 1 and not state.exhausted then
+				if cursor_line <= min_line and not state.exhausted then
 					M.load_older()
 				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward then
 					M.load_newer()
@@ -847,6 +1015,7 @@ function M.open_chat(chat_id, chat_title)
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
 					vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+					M.update_title()
 				end
 			end,
 		})
@@ -886,6 +1055,7 @@ function M.open_chat(chat_id, chat_title)
 	state.online_count = (cached and cached.online_count) or 0
 	state.permissions = {}
 	state.description = ""
+	state.pinned_message = nil
 
 	local pending = 2
 	local function check_done()
@@ -900,6 +1070,15 @@ function M.open_chat(chat_id, chat_title)
 			state.online_count = chat_info.onlineMemberCount or state.online_count
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
+			local pinned_id = chat_info.pinnedMessageId
+			if pinned_id then
+				server.get_pinned_message_async(cid, pinned_id, function(msg)
+					if state.chat_id == cid and msg then
+						state.pinned_message = msg.text or ""
+						M.update_title()
+					end
+				end)
+			end
 		end
 		check_done()
 	end)
@@ -962,6 +1141,7 @@ end
 
 function M.close_chat()
 	close_help()
+	destroy_title_float()
 	if state.chat_id then
 		state.last_chat = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
@@ -1005,7 +1185,8 @@ function M.message_at_cursor()
 		return nil
 	end
 	local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
-	local line = 1
+	local off = title_offset()
+	local line = 1 + off
 	for idx, msg in ipairs(state.messages) do
 		local n = #fmt_msg(msg)
 		if cursor_line >= line and cursor_line < line + n then
@@ -1525,5 +1706,7 @@ function M.ban_sender()
 		end
 	end)
 end
+
+M.destroy_title_float = destroy_title_float
 
 return M

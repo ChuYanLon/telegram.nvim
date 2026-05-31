@@ -353,6 +353,10 @@ local function finish_init()
 					ui.state.default_restricted = msg.default_restricted or false
 				end
 			end)
+		elseif msg.event == "ChatPinnedMessage" then
+			vim.schedule(function()
+				ui.refresh_pinned_message(msg.chat_id, msg.pinned_message_id)
+			end)
 		elseif msg.event == "chatUnreadMentionCount" then
 			-- no UI for mention count yet
 		elseif msg.event == "NewChat" then
@@ -505,6 +509,7 @@ function M.list_groups()
 		end
 		ui.state.win = nil
 		ui.state.mounted = false
+		ui.destroy_title_float()
 		return
 	end
 

@@ -393,6 +393,7 @@ export class TelegramLSPClient {
       memberCount,
       description,
       defaultRestricted,
+      pinnedMessageId: chat.pinned_message_id,
     };
   }
 

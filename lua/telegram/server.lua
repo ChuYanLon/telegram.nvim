@@ -390,6 +390,17 @@ function M.get_message(chat_id, message_id)
 end
 
 ---@param chat_id any
+---@param message_id any
+---@param on_ok fun(data: table)|nil
+function M.get_pinned_message_async(chat_id, message_id, on_ok)
+	request_async({ url = base_url() .. "/message?chatId=" .. chat_id .. "&messageId=" .. message_id }, function(data, err)
+		if not err and data and on_ok then
+			vim.schedule(function() on_ok(data) end)
+		end
+	end)
+end
+
+---@param chat_id any
 ---@param query string
 ---@return table|nil
 function M.search_messages(chat_id, query)
