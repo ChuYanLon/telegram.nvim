@@ -47,6 +47,7 @@ local state = {
 
 	title_buf = nil,
 	title_win = nil,
+	title_height = 0,
 
 	msg_line_counts = {},
 	_title_update_timer = nil,
@@ -147,7 +148,7 @@ local function title_offset()
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		return vim.api.nvim_win_get_height(state.title_win)
 	end
-	return 0
+	return state.title_height or 0
 end
 
 local function line_of(target_id)
@@ -238,10 +239,10 @@ local function render()
 	state.msg_line_counts = line_counts
 
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
-		local h = vim.api.nvim_win_get_height(state.title_win)
-		for _ = 1, h do
-			table.insert(lines, 1, "")
-		end
+		state.title_height = vim.api.nvim_win_get_height(state.title_win)
+	end
+	for _ = 1, state.title_height do
+		table.insert(lines, 1, "")
 	end
 
 	vim.bo[buf].modifiable = true
@@ -529,6 +530,8 @@ function M.update_title()
 	if not state.title_buf or not vim.api.nvim_buf_is_valid(state.title_buf) then
 		state.title_buf = vim.api.nvim_create_buf(false, true)
 	end
+
+	state.title_height = new_h
 
 	vim.bo[state.title_buf].modifiable = true
 	vim.api.nvim_buf_set_lines(state.title_buf, 0, -1, false, lines)
@@ -1453,6 +1456,10 @@ function M.refresh_messages(on_complete)
 			return
 		end
 		render()
+		M.update_title()
+		if state.win and vim.api.nvim_win_is_valid(state.win) and #state.messages > 0 then
+			pcall(vim.api.nvim_win_set_cursor, state.win, { title_offset() + 1, 0 })
+		end
 		if #state.messages > 0 then
 			local latest = state.messages[#state.messages]
 			local ts = os.date("%Y-%m-%d %H:%M", latest.date)
