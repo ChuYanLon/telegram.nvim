@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Granular default permissions editor** — interactive floating window with 14 permission toggles, toggle-all switch, color-coded highlights for enabled/disabled/unknown states
+- **Edit invite links** — frontend wrapper and UI entry for editing invite links (member limit + expiration)
+- **Expiration support for invite links** — create/edit invite links with optional expiry time
+- **@username search for adding members** — search by username instead of raw numeric user ID
+- **Invite link fallback** — when adding a member to a supergroup fails, the invite link is returned to the user instead of a generic error
+- **Member list includes admins and creator** — dual-filter search merges `chatMembersFilterAdministrators` and `chatMembersFilterMembers`
 - **WebSocket sync for chat metadata** — user name changes, online/offline status, group description/member count, group kicked/banned now sync in real-time from other clients
 - **Online status** — user is marked as online after login with periodic heartbeat (30s), visible to other clients
 - **Device model** — session shows as `telegram.nvim` (with version and OS) in Telegram device list
@@ -11,6 +17,10 @@
 
 ### Fixed
 
+- **Channel unsubscribe now actually leaves** — changed from `deleteChatHistory` to `leaveChat`
+- **`restrictChatMember`/`unrestrictChatMember` not working** — used wrong TDLib field `can_send_messages` instead of `can_send_basic_messages`
+- **Member actions shown regardless of status** — Ban/Unban/Restrict/Promote now dynamically shown based on member's current status
+- **promoteChatMember grants `can_promote_members`** — removed to prevent privilege escalation
 - **Title float covering messages** — buffer padding now syncs with float height on every `update_title()` call, preventing overlap (#123)
 - **Cursor move freeze** — `msg_line_counts` cache eliminates `#fmt_msg()` re-render on every cursor movement
 - **WinScrolled storm** — debounced `update_title()` calls (100ms) reduce float recreation overhead on scroll
@@ -20,6 +30,7 @@
 
 ### Changed
 
+- **Removed nui.nvim dependency** — help popup and input editor migrated from `nui.popup` to built-in `nvim_open_win`
 - **`request_async`** — restored to prefer `vim.net.request` with curl fallback (reverted experimental change)
 - **`set_groups`** — now stores `user_id` for private chat lookups
 

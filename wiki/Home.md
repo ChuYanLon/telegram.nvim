@@ -20,6 +20,9 @@ A Telegram chat client inside Neovim.
 - Typing indicators in title bar, online member count
 - Multi-line input editor with placeholder
 - Tool system (`@` key): group switcher, refresh, quick send, search, refresh media
+- Group management: view members (incl. admins), ban/unban, restrict/unrestrict, promote/demote, add members by @username
+- Granular default permissions editor with interactive floating window and toggle-all
+- Invite links: create (with expiry + member limit), view, edit, revoke
 - GitHub integration: PR creation (`:TgPr`), issue browser (`:TgIssue`)
 - Full auth flow (phone → code → 2FA), logout support
 - Proxy support (SOCKS5/HTTP) for restricted regions

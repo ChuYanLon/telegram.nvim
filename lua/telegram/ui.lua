@@ -853,29 +853,34 @@ local function setup_chat_keymaps()
 	vim.keymap.set("n", "?", M.show_help, { buffer = buf })
 end
 
-local help_popup = nil
+local help_win = nil
 
 local function close_help()
-	if help_popup then
-		pcall(help_popup.unmount, help_popup)
-		help_popup = nil
+	if help_win then
+		pcall(vim.api.nvim_win_close, help_win, true)
+		help_win = nil
 	end
 end
 
 function M.show_help()
 	close_help()
-	local NuiPopup = require("nui.popup")
-	help_popup = NuiPopup({
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.bo[buf].buftype = "nofile"
+	vim.bo[buf].bufhidden = "wipe"
+	local width, height = 42, 26
+	help_win = vim.api.nvim_open_win(buf, true, {
 		relative = "editor",
-		position = { row = "50%", col = "50%" },
-		size = { width = 42, height = 26 },
+		width = width,
+		height = height,
+		row = math.max(0, (vim.o.lines - height) / 2),
+		col = math.max(0, (vim.o.columns - width) / 2),
 		zindex = 200,
-		border = { style = "rounded", text = { top = " Help ", top_align = "center" } },
-		buf_options = { buftype = "nofile", bufhidden = "wipe" },
-		win_options = { winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder" },
-		enter = true,
-		focusable = true,
+		style = "minimal",
+		border = "rounded",
+		title = " Help ",
+		title_pos = "center",
 	})
+	vim.wo[help_win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
 	local lines = {
 		"-- Messages --",
 		" i          open input editor",
@@ -910,41 +915,47 @@ function M.show_help()
 		" <Esc>      close this help",
 		" :Tg        close chat / quit",
 	}
-	help_popup:mount()
-	vim.api.nvim_buf_set_lines(help_popup.bufnr, 0, -1, false, lines)
-	vim.keymap.set("n", "<Esc>", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "q", close_help, { buffer = help_popup.bufnr, nowait = true })
-	vim.keymap.set("n", "?", close_help, { buffer = help_popup.bufnr, nowait = true })
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+	vim.keymap.set("n", "<Esc>", close_help, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "q", close_help, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "?", close_help, { buffer = buf, nowait = true })
 end
 
 function M.open_editor(title, default_text, callback)
-	local NuiPopup = require("nui.popup")
-	local popup = NuiPopup({
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.bo[buf].buftype = "acwrite"
+	local width, height = 60, 8
+	local win = vim.api.nvim_open_win(buf, true, {
 		relative = "editor",
-		position = { row = "50%", col = "50%" },
-		size = { width = 60, height = 8 },
+		width = width,
+		height = height,
+		row = math.max(0, (vim.o.lines - height) / 2),
+		col = math.max(0, (vim.o.columns - width) / 2),
 		zindex = 150,
-		border = { style = "rounded", text = { top = " " .. title .. " ", top_align = "center" } },
-		buf_options = { buftype = "acwrite" },
-		enter = true,
-		focusable = true,
+		style = "minimal",
+		border = "rounded",
+		title = " " .. title .. " ",
+		title_pos = "center",
 	})
-	popup:mount()
+	local function close()
+		pcall(vim.api.nvim_win_close, win, true)
+		pcall(vim.api.nvim_buf_delete, buf, { force = true })
+	end
 	local lines = vim.split(default_text or "", "\n")
-	vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, #lines == 0 and { "" } or lines)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, #lines == 0 and { "" } or lines)
 	vim.cmd("startinsert!")
 	vim.keymap.set("n", "<CR>", function()
-		local text = table.concat(vim.api.nvim_buf_get_lines(popup.bufnr, 0, -1, false), "\n")
+		local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
 		text = text:gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
-		popup:unmount()
+		close()
 		if #text > 0 then
 			callback(text)
 		end
-	end, { buffer = popup.bufnr, nowait = true })
+	end, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "<Esc>", function()
-		popup:unmount()
+		close()
 		callback(nil)
-	end, { buffer = popup.bufnr, nowait = true })
+	end, { buffer = buf, nowait = true })
 end
 
 function M.open_chat(chat_id, chat_title)

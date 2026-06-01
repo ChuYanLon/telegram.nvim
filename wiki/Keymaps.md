@@ -27,7 +27,7 @@
 | **newchat** | Start a new private chat by @username |
 | **members** | View and manage chat members |
 | **invitelinks** | Manage invite links |
-| **groupsettings** | Group / channel settings (title, description, permissions) |
+| **groupsettings** | Group / channel settings (title, description, granular default permissions editor, add member, leave/unsubscribe) |
 
 ## Input Editor
 

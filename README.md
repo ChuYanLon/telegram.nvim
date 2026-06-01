@@ -89,9 +89,9 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
 - [x] Private chats (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
 - [x] Channel support — view channels and their messages; admin tools (member list, change info) shown based on permissions
-- [x] Group management — view members, ban/unban, restrict/unrestrict, promote/demote admins, add members
-- [x] Group settings — change title/description, set default permissions, leave group, delete history
-- [x] Invite links — create, view, and revoke invite links
+- [x] Group management — view members (including admins and creator), ban/unban, restrict/unrestrict, promote/demote admins, add members by @username
+- [x] Group settings — change title/description, granular default permissions editor (14 permission types with toggle-all), leave group, unsubscribe from channel, delete history
+- [x] Invite links — create (with optional member limit and expiration), view, edit, and revoke invite links
 - [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
 - [x] Real-time sync between devices — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
 - [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
@@ -159,7 +159,6 @@ Media messages are shown as thumbnails or tags:
 - **Node.js** (>= 18)
 - **curl**
 - **libtdjson** — TDLib shared library (minimum version **1.8.64**) — `libtdjson.so` (Linux), `libtdjson.dylib` (macOS), `tdjson.dll` (Windows)
-- **nui.nvim** — used for popups, layout, and input editor (automatically installed by lazy.nvim)
 - **snacks.nvim** — optional, used for the chat picker with fuzzy search (falls back to `vim.ui.select` if not installed)
 - **ImageMagick** — optional, required by snacks.nvim image module to display non-PNG images (e.g. JPEG photos). Install with `brew install imagemagick` on macOS
 - **gh** (GitHub CLI) — optional, required for `:TgPr` and `:TgIssue` commands
@@ -189,7 +188,6 @@ ldconfig 2>/dev/null || true
   build = "npm i",
   event = "VeryLazy",
   dependencies = {
-    "MunifTanjim/nui.nvim",
     -- "folke/snacks.nvim",   -- optional: enables fuzzy-find chat picker
   },
   keys = {
