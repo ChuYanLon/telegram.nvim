@@ -1,6 +1,6 @@
 {
   "name": "telegram-lsp-backend",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "scripts": {
     "start": "tsx src/server.ts",
     "pretest": "pgrep -f 'tsx src/server\\.ts' | xargs -r kill 2>/dev/null; true",

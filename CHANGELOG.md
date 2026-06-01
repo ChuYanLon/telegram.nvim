@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-01
+
 ### Added
 
 - **Customizable keymaps** — all 21 keymaps configurable via `setup({ keys = { ... } })`; set to `false` to disable
