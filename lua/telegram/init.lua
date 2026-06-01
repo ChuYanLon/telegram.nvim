@@ -127,7 +127,7 @@ local function flush_msg_queue()
 	if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
 		for _, msg in ipairs(current_msgs) do
 			local sender = msg.sender and msg.sender.name or "?"
-			queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
 		end
 		return
 	end
@@ -165,7 +165,7 @@ local function flush_msg_queue()
 		local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
 		if not is_focused then
 			local sender = msg.sender and msg.sender.name or "?"
-			queue_notify(sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+			queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
 		end
 
 			table.insert(st.messages, {
