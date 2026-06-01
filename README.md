@@ -13,44 +13,18 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ## Screenshots
 
-### Image Preview
+> Partial screenshots — see Feature Status below for the full list.
 
-| Feature | |
-|---------|-|
-| **Photo inline preview** | <img width="400" src="https://github.com/user-attachments/assets/3a1dc317-4a5d-40ab-b518-41d2014f87e3" /> |
-| **Photo inline preview 2** | <img width="400" src="https://github.com/user-attachments/assets/2f24ddb3-ad50-4410-84be-0999dc5aad44" /> |
-
-### Chat & Messages
-
-| Feature | |
-|---------|-|
-| **Group chat** | <img width="400" src="https://github.com/user-attachments/assets/a36cc7c0-58ff-4ea8-9a57-36176ca0a9c8" /> |
-| **Send message** | <img width="400" src="https://github.com/user-attachments/assets/cb891a1f-3b89-41eb-9c3e-c50662822722" /> |
-| **Reply to message** | <img width="400" src="https://github.com/user-attachments/assets/6db5af48-2de1-45a2-b11f-45b933fd045f" /> |
-| **Edit own message** | <img width="400" src="https://github.com/user-attachments/assets/677fca2b-ebb0-480f-8731-36c942f180c4" /> |
-| **Delete / revoke message** | <img width="400" src="https://github.com/user-attachments/assets/b0d6ef43-f704-48e1-b238-858cf447ce71" /> |
-
-### Private Chat
-
-| Feature | |
-|---------|-|
-| **Private chat (DM)** | <img width="400" src="https://github.com/user-attachments/assets/7f162d15-d9bd-454c-9c16-24a69c6e7e84" /> |
-| **Confirm before opening DM** | <img width="400" src="https://github.com/user-attachments/assets/d97585cb-4dd1-4619-ab6b-5cbdb476d2a2" /> |
-
-### Navigation & Search
-
-| Feature | |
-|---------|-|
-| **Chat list (picker)** | <img width="400" src="https://github.com/user-attachments/assets/3c95df1b-272c-41ce-ab2c-2578727300d3" /> |
-| **Search messages** | <img width="400" src="https://github.com/user-attachments/assets/79d0aad8-25fa-4ac8-956b-f4c13190e763" /> |
-| **Jump to search result** | <img width="400" src="https://github.com/user-attachments/assets/47866c45-84cd-48b3-920d-0d2f19ccf104" /> |
-
-### UI Elements
-
-| Feature | |
-|---------|-|
-| **Help popup** | <img width="400" src="https://github.com/user-attachments/assets/4a5b7376-e30e-4bd9-bb09-77808a823ef6" /> |
-| **Tool picker (@)** | <img width="400" src="https://github.com/user-attachments/assets/fd62c5b5-1029-4afc-b918-2b8738cac24f" /> |
+| | |
+|-|-|
+| <img width="400" src="https://github.com/user-attachments/assets/0ff29034-aaca-4d3a-8994-3418436f20d0" /> | <img width="400" src="https://github.com/user-attachments/assets/cb7b56cd-e498-47b2-9808-49af00b0d2c8" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/46ec08d6-a275-47e0-a196-7d0eab7a51d5" /> | <img width="400" src="https://github.com/user-attachments/assets/c53202ab-7f40-4adb-8e99-8b0ba16d2643" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/bb72b4a5-15e3-4cf5-89cb-c4673cea40db" /> | <img width="400" src="https://github.com/user-attachments/assets/2bedeb8e-ced1-4173-a7fd-5073344155b3" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/9efb7eac-0175-4b00-bf5c-ba48cee129c6" /> | <img width="400" src="https://github.com/user-attachments/assets/8e14abba-cbd2-44d7-add2-db16e08ca38e" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/20f1304d-7f6c-4fba-82f7-b7510d590481" /> | <img width="400" src="https://github.com/user-attachments/assets/abc5d65b-1799-4459-93f0-734b886cef07" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/a5f07ec6-bc8c-4a78-89cd-14d4c40520e9" /> | <img width="400" src="https://github.com/user-attachments/assets/8b50a9ae-8ca1-44c3-9ea1-4e3aa4631e56" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/89b745c1-e86f-4f78-b88f-117464bbee59" /> | <img width="400" src="https://github.com/user-attachments/assets/480cccf9-6b2b-420f-8a01-6553b78cc92e" /> |
+| <img width="400" src="https://github.com/user-attachments/assets/f6581d0f-fa3f-4d1f-9874-0648774ad506" /> | <img width="400" src="https://github.com/user-attachments/assets/f03d1de1-55e0-49ba-ac76-2117515d2db3" /> |
 
 ## Feature Status
 
