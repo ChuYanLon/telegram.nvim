@@ -935,6 +935,9 @@ function M.show_help()
 end
 
 function M.open_editor(title, default_text, callback)
+	if state.chat_id then
+		server.send_chat_action(state.chat_id, "chatActionTyping")
+	end
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[buf].buftype = "acwrite"
 	local width, height = 60, 8
@@ -951,6 +954,9 @@ function M.open_editor(title, default_text, callback)
 		title_pos = "center",
 	})
 	local function close()
+		if state.chat_id then
+			server.send_chat_action(state.chat_id, "chatActionCancel")
+		end
 		pcall(vim.api.nvim_win_close, win, true)
 		pcall(vim.api.nvim_buf_delete, buf, { force = true })
 	end
