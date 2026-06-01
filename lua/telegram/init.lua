@@ -26,21 +26,34 @@ local M = {}
 
 local initialized = false
 
-local notify_queue = {}
+local notify_groups = {}
 local notify_timer_id = nil
 
 local function flush_notify()
-	if #notify_queue == 0 then
+	if not next(notify_groups) then
 		return
 	end
-	local lines = table.concat(notify_queue, "\n")
-	notify_queue = {}
+	local lines = {}
+	for cid, g in pairs(notify_groups) do
+		if g.count > 1 then
+			table.insert(lines, string.format("[%s] %d new messages", g.title, g.count))
+		else
+			table.insert(lines, string.format("[%s] %s: %s", g.title, g.sender, g.preview))
+		end
+	end
+	notify_groups = {}
 	notify_timer_id = nil
-	vim.notify(lines, vim.log.levels.INFO, { title = "tg" })
+	vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "tg" })
 end
 
-local function queue_notify(preview)
-	table.insert(notify_queue, preview)
+local function queue_notify(chat_id, chat_title, sender, text)
+	local preview = (text or ""):gsub("\n", " "):sub(1, 50)
+	local g = notify_groups[chat_id]
+	if g then
+		g.count = g.count + 1
+	else
+		notify_groups[chat_id] = { title = chat_title, sender = sender, preview = preview, count = 1 }
+	end
 	if not notify_timer_id then
 		notify_timer_id = vim.fn.timer_start(500, function()
 			notify_timer_id = nil
@@ -89,7 +102,7 @@ local function flush_msg_queue()
 			if not is_current then
 				local sender = msg.sender and msg.sender.name or "?"
 				ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
-				queue_notify("[" .. (msg.chat and msg.chat.title or "?") .. "] " .. sender .. ": " .. (msg.text or ""):gsub("\n", " "):sub(1, 50))
+				queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
 			else
 				local exists = false
 				if mid then
