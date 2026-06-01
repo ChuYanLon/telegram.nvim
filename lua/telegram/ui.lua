@@ -937,9 +937,9 @@ end
 function M.open_editor(title, default_text, callback)
 	local typing_timer = nil
 	if state.chat_id then
-		server.send_chat_action(state.chat_id, "chatActionTyping")
+		server.send_chat_action_async(state.chat_id, "chatActionTyping")
 		typing_timer = vim.fn.timer_start(5000, function()
-			server.send_chat_action(state.chat_id, "chatActionTyping")
+			server.send_chat_action_async(state.chat_id, "chatActionTyping")
 		end, { ["repeat"] = -1 })
 	end
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -960,7 +960,7 @@ function M.open_editor(title, default_text, callback)
 	local function close()
 		if typing_timer then vim.fn.timer_stop(typing_timer) end
 		if state.chat_id then
-			server.send_chat_action(state.chat_id, "chatActionCancel")
+			server.send_chat_action_async(state.chat_id, "chatActionCancel")
 		end
 		pcall(vim.api.nvim_win_close, win, true)
 		pcall(vim.api.nvim_buf_delete, buf, { force = true })

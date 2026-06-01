@@ -349,6 +349,12 @@ function M.send_chat_action(chat_id, action)
 	return http_post("/chat/action", { chatId = chat_id, action = action }) ~= nil
 end
 
+---@param chat_id any
+---@param action string
+function M.send_chat_action_async(chat_id, action)
+	request_async({ url = base_url() .. "/chat/action", body = vim.json.encode({ chatId = chat_id, action = action }) }, function() end)
+end
+
 ---@type integer
 M.DEFAULT_LIMIT = 50
 
