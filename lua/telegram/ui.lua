@@ -1496,15 +1496,28 @@ end
 
 local function user_actions_menu(chat_id, user, on_done)
 	local actions = { "Open DM" }
+	local s = user.status
 	if can("can_restrict_members") then
-		table.insert(actions, "Ban")
-		table.insert(actions, "Unban")
-		table.insert(actions, "Restrict")
-		table.insert(actions, "Unrestrict")
+		if s ~= "banned" and s ~= "administrator" and s ~= "creator" then
+			table.insert(actions, "Ban")
+		end
+		if s == "banned" then
+			table.insert(actions, "Unban")
+		end
+		if s ~= "restricted" and s ~= "banned" and s ~= "administrator" and s ~= "creator" then
+			table.insert(actions, "Restrict")
+		end
+		if s == "restricted" then
+			table.insert(actions, "Unrestrict")
+		end
 	end
 	if can("can_promote_members") then
-		table.insert(actions, "Promote to admin")
-		table.insert(actions, "Demote")
+		if s == "member" or s == "restricted" then
+			table.insert(actions, "Promote to admin")
+		end
+		if s == "administrator" then
+			table.insert(actions, "Demote")
+		end
 	end
 	table.insert(actions, "Cancel")
 	vim.ui.select(actions, {
@@ -1575,6 +1588,7 @@ function M.show_invite_links(chat_id)
 	if can("can_invite_users") then
 		table.insert(actions, "Create new invite link")
 		table.insert(actions, "View existing links")
+		table.insert(actions, "Edit a link")
 		table.insert(actions, "Revoke a link")
 	end
 	table.insert(actions, "Cancel")
@@ -1606,6 +1620,35 @@ function M.show_invite_links(chat_id)
 					table.insert(lines, info)
 				end
 				vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Invite Links" })
+			end)
+		elseif choice == "Edit a link" then
+			vim.notify("Loading invite links...", vim.log.levels.INFO, { title = "tg" })
+			server.get_invite_links_async(chat_id, function(data)
+				if not data or not data.invite_links or #data.invite_links == 0 then
+					vim.notify("No invite links to edit", vim.log.levels.INFO, { title = "tg" })
+					return
+				end
+				local items = {}
+				for _, link in ipairs(data.invite_links) do
+					local label = link.invite_link
+					if link.member_limit and link.member_limit > 0 then
+						label = label .. " (limit: " .. link.member_limit .. ")"
+					end
+					table.insert(items, { link = link.invite_link, member_limit = link.member_limit, label = label })
+				end
+				vim.ui.select(items, {
+					prompt = "Select link to edit",
+					format_item = function(item) return item.label end,
+				}, function(choice)
+					if not choice then return end
+					vim.ui.input({ prompt = "New member limit (0 = unlimited): ", default = tostring(choice.member_limit or 0) }, function(limit)
+						local member_limit = limit and tonumber(limit) or nil
+						if member_limit and member_limit <= 0 then member_limit = nil end
+						if server.edit_invite_link(chat_id, choice.link, nil, member_limit) then
+							vim.notify("Link updated", vim.log.levels.INFO, { title = "tg" })
+						end
+					end)
+				end)
 			end)
 		elseif choice == "Revoke a link" then
 			vim.notify("Loading invite links...", vim.log.levels.INFO, { title = "tg" })
@@ -1685,19 +1728,24 @@ function M.show_group_settings(chat_id)
 				end
 			end)
 		elseif choice == "Add member" then
-			vim.ui.input({ prompt = "User ID to add: " }, function(user_id)
-				if user_id and #user_id > 0 then
-					local id = tonumber(user_id)
-					if not id then
-						vim.notify("Invalid user ID", vim.log.levels.ERROR, { title = "tg" })
-						return
-					end
-					local ok, err = server.add_member(chat_id, id)
-					if ok then
-						vim.notify("Member added", vim.log.levels.INFO, { title = "tg" })
-					else
-						vim.notify(err or "Failed to add member", vim.log.levels.ERROR, { title = "tg" })
-					end
+			vim.ui.input({ prompt = "Enter @username: " }, function(username)
+				if not username or #username == 0 then return end
+				local search = server.search_user(username)
+				if not search then
+					vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
+					return
+				end
+				if not search.userId then
+					vim.notify("Not a user: " .. (search.title or username), vim.log.levels.ERROR, { title = "tg" })
+					return
+				end
+				local res = server.add_member(chat_id, search.userId)
+				if res and res.ok then
+					vim.notify("Member added: " .. (search.title or username), vim.log.levels.INFO, { title = "tg" })
+				elseif res and res.inviteLink then
+					vim.notify("Share this invite link:\n" .. res.inviteLink, vim.log.levels.INFO, { title = "tg" })
+				else
+					vim.notify("Failed to add member", vim.log.levels.ERROR, { title = "tg" })
 				end
 			end)
 		elseif choice == "Set default permissions" then
@@ -1841,7 +1889,7 @@ function M.show_group_settings(chat_id)
 				prompt = "Unsubscribe from this channel?",
 			}, function(confirm)
 				if confirm == "Yes, unsubscribe" then
-					if server.delete_chat_history(chat_id) then
+					if server.leave_chat(chat_id) then
 						state.groups[chat_id] = nil
 						for i, id in ipairs(state.group_ids) do
 							if id == chat_id then

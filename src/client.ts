@@ -708,17 +708,15 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean }> {
+  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean; inviteLink?: string }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const chat = await this.getRawChat(chatId);
-    if (chat.type._ === 'chatTypeBasicGroup') {
+    try {
       await this.client.invoke({ _: 'addChatMember', chat_id: chatId, user_id: userId });
-    } else {
-      // For supergroups, share an invite link instead
+      return { ok: true };
+    } catch {
       const link = await this.createChatInviteLink(chatId);
-      throw new Error(`Cannot add member directly to a supergroup. Share this invite link: ${link.invite_link || 'failed to generate'}`);
+      return { ok: false, inviteLink: link.invite_link || 'failed to generate' };
     }
-    return { ok: true };
   }
 
   async searchChatMembers(chatId: number, query = '', limit = 200): Promise<any[]> {

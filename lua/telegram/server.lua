@@ -603,9 +603,9 @@ end
 
 ---@param chat_id any
 ---@param user_id any
----@return boolean
+---@return table|nil
 function M.add_member(chat_id, user_id)
-	return http_post("/chat/add-member", { chatId = chat_id, userId = user_id }) ~= nil
+	return http_post("/chat/add-member", { chatId = chat_id, userId = user_id })
 end
 
 ---@param chat_id any
@@ -699,6 +699,18 @@ function M.create_invite_link(chat_id, expire_date, member_limit)
 	if expire_date then body.expireDate = expire_date end
 	if member_limit then body.memberLimit = member_limit end
 	return http_post("/chat/create-invite-link", body) ~= nil
+end
+
+---@param chat_id any
+---@param invite_link string
+---@param expire_date integer|nil
+---@param member_limit integer|nil
+---@return boolean
+function M.edit_invite_link(chat_id, invite_link, expire_date, member_limit)
+	local body = { chatId = chat_id, inviteLink = invite_link }
+	if expire_date then body.expireDate = expire_date end
+	if member_limit then body.memberLimit = member_limit end
+	return http_post("/chat/edit-invite-link", body) ~= nil
 end
 
 ---@param chat_id any
