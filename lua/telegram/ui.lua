@@ -935,8 +935,12 @@ function M.show_help()
 end
 
 function M.open_editor(title, default_text, callback)
+	local typing_timer = nil
 	if state.chat_id then
 		server.send_chat_action(state.chat_id, "chatActionTyping")
+		typing_timer = vim.fn.timer_start(5000, function()
+			server.send_chat_action(state.chat_id, "chatActionTyping")
+		end, { ["repeat"] = -1 })
 	end
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[buf].buftype = "acwrite"
@@ -954,6 +958,7 @@ function M.open_editor(title, default_text, callback)
 		title_pos = "center",
 	})
 	local function close()
+		if typing_timer then vim.fn.timer_stop(typing_timer) end
 		if state.chat_id then
 			server.send_chat_action(state.chat_id, "chatActionCancel")
 		end
@@ -1586,6 +1591,8 @@ local function user_actions_menu(chat_id, user, on_done)
 		end
 		if ok then
 			vim.notify(choice .. ": " .. user.name, vim.log.levels.INFO, { title = "tg" })
+		elseif choice ~= "Open DM" then
+			vim.notify(choice .. " failed: " .. user.name, vim.log.levels.WARN, { title = "tg" })
 		end
 		if on_done then on_done() end
 	end)
@@ -1804,6 +1811,8 @@ function M.show_group_settings(chat_id)
 					vim.notify("Member added: " .. (search.title or username), vim.log.levels.INFO, { title = "tg" })
 				elseif res and res.inviteLink then
 					vim.notify("Share this invite link:\n" .. res.inviteLink, vim.log.levels.INFO, { title = "tg" })
+				elseif res and res.error then
+					vim.notify("Failed to add member: " .. res.error, vim.log.levels.ERROR, { title = "tg" })
 				else
 					vim.notify("Failed to add member", vim.log.levels.ERROR, { title = "tg" })
 				end
@@ -1941,9 +1950,14 @@ function M.show_group_settings(chat_id)
 					if k then vim.keymap.set("n", k, on_enter, { buffer = buf, nowait = true }) end end
 				do local k = config.key("perms_discard")
 					if k then vim.keymap.set("n", k, on_esc, { buffer = buf, nowait = true }) end end
-				vim.schedule(function()
-					set_cursor()
-				end)
+			vim.api.nvim_create_autocmd("WinClosed", {
+				buffer = buf,
+				once = true,
+				callback = close_win,
+			})
+			vim.schedule(function()
+				set_cursor()
+			end)
 				render()
 			end)
 		elseif choice == "Unsubscribe from channel" then

@@ -405,6 +405,7 @@ export class TelegramLSPClient {
     const chat = await this.getRawChat(chatId);
     let memberCount = 0;
     let description = '';
+    let inviteLink = '';
     const chatObj = chat as any;
     const chatPerms = chatObj.permissions as Record<string, unknown> | undefined;
     const defaultRestricted = chatPerms?.can_send_basic_messages === false;
@@ -430,11 +431,13 @@ export class TelegramLSPClient {
         memberCount = sg.member_count;
         const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
         description = info.description || '';
+        inviteLink = info.invite_link?.invite_link || '';
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
         const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as any;
         description = info.description || '';
+        inviteLink = info.invite_link?.invite_link || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     let pinnedId = this._pinnedMessageIds.get(chatId) || 0;
@@ -460,6 +463,7 @@ export class TelegramLSPClient {
       onlineMemberCount: chat.online_member_count || 0,
       memberCount,
       description,
+      inviteLink,
       defaultRestricted,
       defaultPermissions,
       pinnedMessageId: pinnedId,
@@ -708,14 +712,18 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean; inviteLink?: string }> {
+  async addChatMember(chatId: number, userId: number): Promise<{ ok: boolean; inviteLink?: string; error?: string }> {
     if (!this._ready) throw new Error('Client not ready yet');
     try {
       await this.client.invoke({ _: 'addChatMember', chat_id: chatId, user_id: userId });
       return { ok: true };
-    } catch {
-      const link = await this.createChatInviteLink(chatId);
-      return { ok: false, inviteLink: link.invite_link || 'failed to generate' };
+    } catch (e) {
+      try {
+        const link = await this.createChatInviteLink(chatId);
+        return { ok: false, inviteLink: link.invite_link || 'failed to generate' };
+      } catch {
+        return { ok: false, error: (e as Error).message };
+      }
     }
   }
 
