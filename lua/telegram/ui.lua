@@ -464,10 +464,13 @@ function M.update_title()
 			table.insert(typing_items, info)
 		end
 	end
+	local is_private = state.chat_id and state.groups[state.chat_id] and state.groups[state.chat_id].type == "private"
 	local typing = ""
 	if #typing_items > 0 then
-		if #typing_items == 1 then
+		if #typing_items == 1 and not is_private then
 			typing = typing_items[1].name .. " " .. typing_items[1].action_desc
+		elseif #typing_items == 1 then
+			typing = typing_items[1].action_desc
 		else
 			typing = typing_items[1].name .. " +" .. (#typing_items - 1) .. " " .. typing_items[1].action_desc
 		end
@@ -488,7 +491,6 @@ function M.update_title()
 
 	-- Line 2: Status (always)
 	local online = state.online_count or 0
-	local is_private = state.chat_id and state.groups[state.chat_id] and state.groups[state.chat_id].type == "private"
 	if has_typing then
 		lines[#lines + 1] = "status: " .. typing
 	elseif is_private then
