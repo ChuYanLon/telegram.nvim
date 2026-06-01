@@ -148,10 +148,10 @@ local function flush_msg_queue()
 					m.sender = msg.sender
 					m.text = msg.text
 					m.replyTo = msg.replyTo
-				m.filePath = msg.filePath
-				m.mediaPath = msg.mediaPath
-				m.mimeType = msg.mimeType
-				skip_insert = true
+					m.filePath = msg.filePath
+					m.mediaPath = msg.mediaPath
+					m.mimeType = msg.mimeType
+					skip_insert = true
 					break
 				end
 			end
@@ -162,12 +162,11 @@ local function flush_msg_queue()
 			if st.groups[st.chat_id] then
 				st.groups[st.chat_id].unread_count = st.unread
 			end
-		local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
-		if not is_focused then
-			local sender = msg.sender and msg.sender.name or "?"
-			queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
-		end
-
+			local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
+			if not is_focused then
+				local sender = msg.sender and msg.sender.name or "?"
+				queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
+			end
 			table.insert(st.messages, {
 				id = mid,
 				type = msg.type,
