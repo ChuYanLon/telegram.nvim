@@ -275,24 +275,6 @@ vim.keymap.set("n", "<leader>tp", "<cmd>TgPr<Cr>", { desc = "Create PR" })
 vim.keymap.set("n", "<leader>ti", "<cmd>TgIssue<Cr>", { desc = "Manage Issues" })
 ```
 
-### Keymaps
-
-Inside the chat window:
-
-| Key | Action |
-|-----|--------|
-| `?` | Toggle help popup |
-| `i` | Open input editor to send a message (only if user has permission — hidden for channel subscribers) |
-| `<CR>` | Reply to message / jump to original (if cursor is on a quote line) |
-| `e` | Edit own message at cursor |
-| `d` | Delete message — prompts Revoke (for everyone) / Delete (for me) |
-| `f` | Forward message to another chat |
-| `p` | Pin / unpin message at cursor |
-| `c` | Open DM with the sender of the message at cursor |
-| `G` | Refresh messages and jump to bottom |
-| `B` | Ban the sender of the message at cursor |
-| `@` | Open context-aware tool picker |
-
 In the chat picker (`@` → chats):
 - Built-in fuzzy search (Snacks picker when available, `vim.ui.select` fallback)
 - `<CR>` — select chat
