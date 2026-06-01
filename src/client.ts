@@ -18,6 +18,7 @@ const TG_API_ID = Number(process.env.TG_API_ID) || 1025907;
 const TG_API_HASH = process.env.TG_API_HASH || '452b0359b988148995f22ff0f4229750';
 const TG_PROXY = process.env.TG_PROXY;
 const dataDir = process.env.TG_DATA_DIR || process.cwd();
+const pkg = require(path.join(process.cwd(), 'package.json')) as { version: string };
 
 export class TelegramLSPClient {
   client: any;
@@ -45,7 +46,7 @@ export class TelegramLSPClient {
         filesDirectory: path.join(dataDir, 'tdlib_files'),
         tdlibParameters: {
           device_model: 'telegram.nvim',
-          application_version: '0.4.1',
+          application_version: pkg.version,
           system_version: osType,
         },
       });
