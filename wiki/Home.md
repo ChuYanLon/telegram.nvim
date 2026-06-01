@@ -26,6 +26,7 @@ A Telegram chat client inside Neovim.
 - GitHub integration: PR creation (`:TgPr`), issue browser (`:TgIssue`)
 - Full auth flow (phone → code → 2FA), logout support
 - Proxy support (SOCKS5/HTTP) for restricted regions
+- Theme-adaptive colors — all highlights derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
 ## Project Structure
 

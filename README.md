@@ -78,7 +78,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Single-panel chat layout with floating input popup
 - [x] Adjustable panel position — respects `splitright`; width via `g:telegram_width`
 - [x] `?` opens a help popup with all keybindings
-- [x] Different highlight colors for reply / edit / delete / forward targets
+- [x] Target line highlighting (reply/edit/delete/forward) using theme's `Diff*` colors
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
 - [x] `:TgIssue` — list, create branch, close, assign, open in browser
 - [x] Proxy support (SOCKS5 / HTTP) for restricted regions
@@ -113,7 +113,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Inline bots** / bot commands
 - [ ] **Message threads** / topic view
 - [ ] **Customizable keymaps** — all hardcoded for now
-- [ ] **Dark/light theme adaptation** — colors are hardcoded
+- [x] **Theme adaptation** — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
 ### Service messages
 

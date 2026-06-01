@@ -11,30 +11,37 @@ M.config = {
 	ws_port = 8081,
 }
 
+local function hl_fg(name)
+	local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name })
+	return ok and hl and hl.fg
+end
+
+local function hl_bg(name)
+	local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name })
+	return ok and hl and hl.bg
+end
+
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-	local ok, comment_hl = pcall(vim.api.nvim_get_hl, 0, { name = "Comment" })
-	if ok and comment_hl then
-		vim.api.nvim_set_hl(0, "TgTimestamp", { fg = comment_hl.fg, italic = false, default = true })
-	else
-		vim.api.nvim_set_hl(0, "TgTimestamp", { link = "Comment", default = true })
-	end
+	local comment_fg = hl_fg("Comment")
+	vim.api.nvim_set_hl(0, "TgTimestamp", { fg = comment_fg, italic = false, default = true })
 	vim.api.nvim_set_hl(0, "TgPlaceholder", { link = "Comment", default = true })
-	vim.api.nvim_set_hl(0, "TgReplyTarget", { bg = "#2d4a3e", default = true })
-	vim.api.nvim_set_hl(0, "TgEditTarget", { bg = "#4a3e2d", default = true })
-	vim.api.nvim_set_hl(0, "TgDeleteTarget", { bg = "#4e2d2d", default = true })
-	vim.api.nvim_set_hl(0, "TgForwardTarget", { bg = "#3d2d4e", default = true })
+	vim.api.nvim_set_hl(0, "TgReplyTarget", { bg = hl_bg("DiffAdd"), default = true })
+	vim.api.nvim_set_hl(0, "TgEditTarget", { bg = hl_bg("DiffChange"), default = true })
+	vim.api.nvim_set_hl(0, "TgDeleteTarget", { bg = hl_bg("DiffDelete"), default = true })
+	vim.api.nvim_set_hl(0, "TgForwardTarget", { bg = hl_bg("DiffText"), default = true })
 	vim.api.nvim_set_hl(0, "TgNoBg", { fg = "NONE", bg = "NONE", default = true })
 	vim.api.nvim_set_hl(0, "TgService", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarHeader", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgWinbarTitle", { bold = true, default = true })
 	vim.api.nvim_set_hl(0, "TgDescription", { link = "Comment", default = true })
 	vim.api.nvim_set_hl(0, "TgTitleKey", { bold = true, default = true })
-	local bfg = "#6c6c6c"
-	pcall(function()
-		bfg = (vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name("FloatBorder") }) or {}).fg or bfg
-	end)
-	vim.api.nvim_set_hl(0, "TgBorder", { fg = bfg, bg = "NONE", default = true })
+	vim.api.nvim_set_hl(0, "TgPermOn", { link = "DiagnosticOk", default = true })
+	vim.api.nvim_set_hl(0, "TgPermOff", { link = "Comment", default = true })
+	vim.api.nvim_set_hl(0, "TgPermUnknown", { link = "DiagnosticWarn", default = true })
+	vim.api.nvim_set_hl(0, "TgPermToggle", { fg = hl_fg("DiagnosticInfo"), bold = true, default = true })
+	local border_fg = hl_fg("FloatBorder")
+	vim.api.nvim_set_hl(0, "TgBorder", { fg = border_fg, bg = "NONE", default = true })
 end
 
 M.plugin_root = plugin_root

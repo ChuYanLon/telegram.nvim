@@ -1819,10 +1819,6 @@ function M.show_group_settings(chat_id)
 					return true
 				end
 
-				vim.api.nvim_set_hl(0, "TgPermOn", { fg = "#4CAF50", default = true })
-				vim.api.nvim_set_hl(0, "TgPermOff", { fg = "#6B7280", default = true })
-				vim.api.nvim_set_hl(0, "TgPermUnknown", { fg = "#FFC107", default = true })
-				vim.api.nvim_set_hl(0, "TgPermToggle", { fg = "#42A5F5", bold = true, default = true })
 				local ns = vim.api.nvim_create_namespace("tg_perms")
 
 				local function render()
