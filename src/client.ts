@@ -407,6 +407,22 @@ export class TelegramLSPClient {
     const chatObj = chat as any;
     const chatPerms = chatObj.permissions as Record<string, unknown> | undefined;
     const defaultRestricted = chatPerms?.can_send_basic_messages === false;
+    const defaultPermissions = chatPerms ? {
+      can_send_messages: chatPerms.can_send_basic_messages !== false,
+      can_send_audios: chatPerms.can_send_audios !== false,
+      can_send_documents: chatPerms.can_send_documents !== false,
+      can_send_photos: chatPerms.can_send_photos !== false,
+      can_send_videos: chatPerms.can_send_videos !== false,
+      can_send_video_notes: chatPerms.can_send_video_notes !== false,
+      can_send_voice_notes: chatPerms.can_send_voice_notes !== false,
+      can_send_polls: chatPerms.can_send_polls !== false,
+      can_send_other_messages: chatPerms.can_send_other_messages !== false,
+      can_add_web_page_previews: chatPerms.can_add_link_previews !== false,
+      can_change_info: chatPerms.can_change_info === true,
+      can_invite_users: chatPerms.can_invite_users === true,
+      can_pin_messages: chatPerms.can_pin_messages === true,
+      can_manage_topics: chatPerms.can_manage_topics === true,
+    } : undefined;
     try {
       if (chat.type._ === 'chatTypeSupergroup') {
         const sg = await this.client.invoke({ _: 'getSupergroup', supergroup_id: chat.type.supergroup_id }) as { member_count: number };
@@ -444,6 +460,7 @@ export class TelegramLSPClient {
       memberCount,
       description,
       defaultRestricted,
+      defaultPermissions,
       pinnedMessageId: pinnedId,
     };
   }
@@ -718,31 +735,21 @@ export class TelegramLSPClient {
 
   async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const allow = permissions.can_send_messages;
     const perms: Record<string, unknown> = { _: 'chatPermissions' };
-    if (allow) {
-      perms.can_send_basic_messages = true;
-      perms.can_send_audios = true;
-      perms.can_send_documents = true;
-      perms.can_send_photos = true;
-      perms.can_send_videos = true;
-      perms.can_send_video_notes = true;
-      perms.can_send_voice_notes = true;
-      perms.can_send_polls = true;
-      perms.can_send_other_messages = true;
-      perms.can_add_link_previews = true;
-    } else {
-      perms.can_send_basic_messages = false;
-      perms.can_send_audios = false;
-      perms.can_send_documents = false;
-      perms.can_send_photos = false;
-      perms.can_send_videos = false;
-      perms.can_send_video_notes = false;
-      perms.can_send_voice_notes = false;
-      perms.can_send_polls = false;
-      perms.can_send_other_messages = false;
-      perms.can_add_link_previews = false;
-    }
+    perms.can_send_basic_messages = permissions.can_send_messages !== false;
+    perms.can_send_audios = permissions.can_send_audios !== false;
+    perms.can_send_documents = permissions.can_send_documents !== false;
+    perms.can_send_photos = permissions.can_send_photos !== false;
+    perms.can_send_videos = permissions.can_send_videos !== false;
+    perms.can_send_video_notes = permissions.can_send_video_notes !== false;
+    perms.can_send_voice_notes = permissions.can_send_voice_notes !== false;
+    perms.can_send_polls = permissions.can_send_polls !== false;
+    perms.can_send_other_messages = permissions.can_send_other_messages !== false;
+    perms.can_add_link_previews = permissions.can_add_web_page_previews !== false;
+    perms.can_change_info = permissions.can_change_info === true;
+    perms.can_invite_users = permissions.can_invite_users === true;
+    perms.can_pin_messages = permissions.can_pin_messages === true;
+    perms.can_manage_topics = permissions.can_manage_topics === true;
     await this.client.invoke({ _: 'setChatPermissions', chat_id: chatId, permissions: perms });
     return { ok: true };
   }

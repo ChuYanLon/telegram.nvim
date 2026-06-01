@@ -641,23 +641,7 @@ end
 ---@param chat_id any
 ---@param restrict_all boolean
 ---@return boolean
-function M.set_default_permissions(chat_id, restrict_all)
-	local perms = {
-		can_send_messages = not restrict_all,
-		can_send_audios = not restrict_all,
-		can_send_documents = not restrict_all,
-		can_send_photos = not restrict_all,
-		can_send_videos = not restrict_all,
-		can_send_video_notes = not restrict_all,
-		can_send_voice_notes = not restrict_all,
-		can_send_polls = not restrict_all,
-		can_send_other_messages = not restrict_all,
-		can_add_web_page_previews = not restrict_all,
-		can_change_info = false,
-		can_invite_users = false,
-		can_pin_messages = false,
-		can_manage_topics = false,
-	}
+function M.set_default_permissions(chat_id, perms)
 	return http_post("/chat/set-permissions", { chatId = chat_id, permissions = perms }) ~= nil
 end
 

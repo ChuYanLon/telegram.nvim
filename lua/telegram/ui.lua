@@ -1701,27 +1701,140 @@ function M.show_group_settings(chat_id)
 				end
 			end)
 		elseif choice == "Set default permissions" then
+			local perm_keys = {
+				{ label = "Send messages", key = "can_send_messages" },
+				{ label = "Send audios", key = "can_send_audios" },
+				{ label = "Send documents", key = "can_send_documents" },
+				{ label = "Send photos", key = "can_send_photos" },
+				{ label = "Send videos", key = "can_send_videos" },
+				{ label = "Send video notes", key = "can_send_video_notes" },
+				{ label = "Send voice notes", key = "can_send_voice_notes" },
+				{ label = "Send polls", key = "can_send_polls" },
+				{ label = "Send other messages", key = "can_send_other_messages" },
+				{ label = "Add link previews", key = "can_add_web_page_previews" },
+				{ label = "Change info", key = "can_change_info" },
+				{ label = "Invite users", key = "can_invite_users" },
+				{ label = "Pin messages", key = "can_pin_messages" },
+				{ label = "Manage topics", key = "can_manage_topics" },
+			}
+			local current = {}
 			server.get_chat_async(chat_id, function(chat_info)
-				if chat_info then
-					state.default_restricted = chat_info.defaultRestricted or false
+				if chat_info and chat_info.defaultPermissions then
+					current = chat_info.defaultPermissions
 				end
-			end)
-			local restrict_options = { "Normal (send)", "Restrict all (read only)" }
-			for i, v in ipairs(restrict_options) do
-				local is_restrict = v:find("^Restrict") ~= nil
-				local on = is_restrict == state.default_restricted
-				restrict_options[i] = on and v .. " (current)" or v
-			end
-			table.insert(restrict_options, "Cancel")
-			vim.ui.select(restrict_options, {
-				prompt = "Default permissions for new members",
-			}, function(perm_choice)
-				if not perm_choice or perm_choice == "Cancel" then return end
-				local restrict = perm_choice:find("^Restrict") ~= nil
-				if server.set_default_permissions(chat_id, restrict) then
-					state.default_restricted = restrict
-					vim.notify("Permissions " .. (restrict and "restricted" or "allowed"), vim.log.levels.INFO, { title = "tg" })
+				local buf = vim.api.nvim_create_buf(false, true)
+				local num_perms = #perm_keys
+				local max_idx = num_perms + 1
+				local win_w = 56
+				local win_h = max_idx + 1
+				local win = vim.api.nvim_open_win(buf, true, {
+					relative = "editor", width = win_w, height = win_h,
+					row = math.max(0, vim.o.lines / 2 - win_h / 2 - 2),
+					col = math.max(0, vim.o.columns / 2 - win_w / 2),
+					style = "minimal", border = "single",
+				})
+				vim.wo[win].cursorline = true
+				local idx = 1
+
+				local function all_enabled()
+					for _, pk in ipairs(perm_keys) do
+						if current[pk.key] ~= true then return false end
+					end
+					return true
 				end
+
+				vim.api.nvim_set_hl(0, "TgPermOn", { fg = "#4CAF50", default = true })
+				vim.api.nvim_set_hl(0, "TgPermOff", { fg = "#6B7280", default = true })
+				vim.api.nvim_set_hl(0, "TgPermUnknown", { fg = "#FFC107", default = true })
+				vim.api.nvim_set_hl(0, "TgPermToggle", { fg = "#42A5F5", bold = true, default = true })
+				local ns = vim.api.nvim_create_namespace("tg_perms")
+
+				local function render()
+					local lines = {}
+					table.insert(lines, " [j/k] navigate [Tab] toggle [Enter] save [Esc] discard")
+					table.insert(lines, (all_enabled() and "[x]" or "[ ]") .. " Toggle all")
+					for _, pk in ipairs(perm_keys) do
+						local val = current[pk.key]
+						local icon = val == true and "[x]" or val == false and "[ ]" or "[?]"
+						table.insert(lines, icon .. " " .. pk.label)
+					end
+					vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+					vim.bo[buf].modified = false
+					vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+					vim.api.nvim_buf_add_highlight(buf, ns, "TgPermToggle", 1, 0, -1)
+					vim.api.nvim_buf_add_highlight(buf, ns, all_enabled() and "TgPermOn" or "TgPermOff", 1, 0, 3)
+					vim.api.nvim_buf_add_highlight(buf, ns, "Comment", 1, 3, -1)
+					for i, pk in ipairs(perm_keys) do
+						local line = i + 1
+						local val = current[pk.key]
+						local hl = val == true and "TgPermOn" or val == false and "TgPermOff" or "TgPermUnknown"
+						vim.api.nvim_buf_add_highlight(buf, ns, hl, line, 0, 3)
+						if val ~= true then
+							vim.api.nvim_buf_add_highlight(buf, ns, "Comment", line, 3, -1)
+						end
+					end
+				end
+
+				local function toggle()
+					if idx == 1 then
+						local new_val = not all_enabled()
+						for _, pk in ipairs(perm_keys) do current[pk.key] = new_val end
+						render()
+					else
+						local pk = perm_keys[idx - 1]
+						current[pk.key] = current[pk.key] == nil and false or not current[pk.key]
+						local icon = current[pk.key] == true and "[x]" or "[ ]"
+						local hl = current[pk.key] == true and "TgPermOn" or "TgPermOff"
+						vim.api.nvim_buf_set_lines(buf, idx, idx + 1, false, { icon .. " " .. pk.label })
+						vim.api.nvim_buf_clear_namespace(buf, ns, idx, idx + 1)
+						vim.api.nvim_buf_add_highlight(buf, ns, hl, idx, 0, 3)
+						if current[pk.key] ~= true then
+							vim.api.nvim_buf_add_highlight(buf, ns, "Comment", idx, 3, -1)
+						end
+						local ta_icon = all_enabled() and "[x]" or "[ ]"
+						vim.api.nvim_buf_set_lines(buf, 1, 2, false, { ta_icon .. " Toggle all" })
+						vim.api.nvim_buf_clear_namespace(buf, ns, 1, 2)
+						vim.api.nvim_buf_add_highlight(buf, ns, "TgPermToggle", 1, 0, -1)
+						vim.api.nvim_buf_add_highlight(buf, ns, all_enabled() and "TgPermOn" or "TgPermOff", 1, 0, 3)
+						vim.api.nvim_buf_add_highlight(buf, ns, "Comment", 1, 3, -1)
+					end
+				end
+
+				local function close_win()
+					pcall(vim.api.nvim_win_close, win, true)
+					pcall(vim.api.nvim_buf_delete, buf, { force = true })
+				end
+
+				local function on_enter()
+					close_win()
+					vim.ui.select({ "Save", "Discard" }, {
+						prompt = "Save permission changes?",
+					}, function(choice)
+						if choice == "Save" then
+							if server.set_default_permissions(chat_id, current) then
+								vim.notify("Permissions saved", vim.log.levels.INFO, { title = "tg" })
+							end
+						end
+					end)
+				end
+
+				local function on_esc()
+					close_win()
+				end
+
+				local function set_cursor()
+					vim.api.nvim_win_set_cursor(win, { idx + 1, 0 })
+				end
+				vim.api.nvim_buf_set_keymap(buf, "n", "j", "", { callback = function() idx = math.min(idx + 1, max_idx) set_cursor() end, nowait = true })
+				vim.api.nvim_buf_set_keymap(buf, "n", "k", "", { callback = function() idx = math.max(idx - 1, 1) set_cursor() end, nowait = true })
+				vim.api.nvim_buf_set_keymap(buf, "n", "<Tab>", "", { callback = toggle, nowait = true })
+				vim.api.nvim_buf_set_keymap(buf, "n", "<S-Tab>", "", { callback = function() idx = math.max(idx - 1, 1) set_cursor() end, nowait = true })
+				vim.api.nvim_buf_set_keymap(buf, "n", "<CR>", "", { callback = on_enter, nowait = true })
+				vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", "", { callback = on_esc, nowait = true })
+				vim.schedule(function()
+					set_cursor()
+				end)
+				render()
 			end)
 		elseif choice == "Unsubscribe from channel" then
 			vim.ui.select({ "Yes, unsubscribe", "Cancel" }, {
