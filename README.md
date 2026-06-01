@@ -95,8 +95,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
 - [x] Real-time sync between devices — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
 - [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
-- [x] **Customizable keymaps** — all keys configurable via `setup({ keys = { ... } })`
-- [x] **Theme adaptation** — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
+- [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
+- [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
 ### What doesn't work yet
 
