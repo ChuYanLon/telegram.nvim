@@ -1458,12 +1458,11 @@ function M.refresh_messages(on_complete)
 		render()
 		M.update_title()
 		if state.win and vim.api.nvim_win_is_valid(state.win) and #state.messages > 0 then
-			local off = title_offset()
-			local head = off + 1
-			for i = 1, #state.messages - 1 do
-				head = head + (state.msg_line_counts[i] or 1)
+			local last = state.messages[#state.messages]
+			local head = line_of(last.id)
+			if head then
+				pcall(vim.api.nvim_win_set_cursor, state.win, { head - 1, 0 })
 			end
-			pcall(vim.api.nvim_win_set_cursor, state.win, { head, 0 })
 		end
 		if #state.messages > 0 then
 			local latest = state.messages[#state.messages]
