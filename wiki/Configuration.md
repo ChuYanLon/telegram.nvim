@@ -8,7 +8,16 @@ require("telegram").setup({
   -- data_dir = "/path/to/data",  -- default: plugin root directory
   -- http_port = 8080,
   -- ws_port = 8081,
+
+  -- Custom keymaps (nil/false to disable a key)
+  -- keys = {
+  --   tool_picker = "@",
+  --   input_editor = "i",
+  --   reply = "<CR>",
+  --   edit = "e",
+  -- },
 })
+```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -17,6 +26,47 @@ require("telegram").setup({
 | `data_dir` | `string?` | plugin root | Directory for TDLib database and files |
 | `http_port` | `number?` | `8080` | Backend HTTP server port |
 | `ws_port` | `number?` | `8081` | Backend WebSocket server port |
+| `keys` | `table?` | all defaults | Custom keymaps — see [Keymaps](#keymaps) below |
+
+## Keymaps
+
+All keymaps are configurable via `setup({ keys = { ... } })`. Set a key to `nil` or `false` to disable it.
+
+| Key name | Default | Action |
+|----------|---------|--------|
+| `tool_picker` | `@` | Open tool picker |
+| `input_editor` | `i` | Open message input editor |
+| `reply` | `<CR>` | Reply to / jump to message |
+| `edit` | `e` | Edit own message |
+| `delete` | `d` | Delete / revoke message |
+| `forward` | `f` | Forward message |
+| `pin` | `p` | Pin / unpin message |
+| `refresh` | `G` | Refresh messages, jump to bottom |
+| `ban` | `B` | Ban message sender |
+| `open_dm` | `c` | Open DM with message sender |
+| `help` | `?` | Toggle help popup |
+| `editor_submit` | `<CR>` | Submit message in editor |
+| `editor_cancel` | `<Esc>` | Cancel editing |
+| `help_close` | `<Esc>` | Close help popup |
+| `help_close_q` | `q` | Close help popup (alt) |
+| `perms_down` | `j` | Permission editor: move down |
+| `perms_up` | `k` | Permission editor: move up |
+| `perms_toggle` | `<Tab>` | Permission editor: toggle item |
+| `perms_up_alt` | `<S-Tab>` | Permission editor: move up (alt) |
+| `perms_save` | `<CR>` | Permission editor: save |
+| `perms_discard` | `<Esc>` | Permission editor: discard |
+
+```lua
+-- Example: rebind keys
+require("telegram").setup({
+  keys = {
+    input_editor = "I",
+    refresh = "<F5>",
+    help = "<F1>",
+    ban = nil,  -- disable ban key
+  },
+})
+```
 
 ## Environment Variables
 

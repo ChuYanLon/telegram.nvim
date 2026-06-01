@@ -3,12 +3,37 @@ local plugin_root = vim.fn.fnamemodify(info.source:match("@(.+)"), ":h:h:h")
 
 local M = {}
 
+M.default_keys = {
+	tool_picker = "@",
+	input_editor = "i",
+	reply = "<CR>",
+	edit = "e",
+	delete = "d",
+	forward = "f",
+	pin = "p",
+	refresh = "G",
+	ban = "B",
+	open_dm = "c",
+	help = "?",
+	editor_submit = "<CR>",
+	editor_cancel = "<Esc>",
+	help_close = "<Esc>",
+	help_close_q = "q",
+	perms_down = "j",
+	perms_up = "k",
+	perms_toggle = "<Tab>",
+	perms_up_alt = "<S-Tab>",
+	perms_save = "<CR>",
+	perms_discard = "<Esc>",
+}
+
 M.config = {
 	data_dir = plugin_root,
 	tdlib_path = nil,
 	proxy = nil,
 	http_port = 8080,
 	ws_port = 8081,
+	keys = {},
 }
 
 local function hl_fg(name)
@@ -21,8 +46,17 @@ local function hl_bg(name)
 	return ok and hl and hl.bg
 end
 
+---@param name string
+---@return string|nil
+function M.key(name)
+	local k = M.config.keys[name]
+	if k == nil or k == false then return nil end
+	return k
+end
+
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+	M.config.keys = vim.tbl_deep_extend("force", vim.deepcopy(M.default_keys), M.config.keys or {})
 	local comment_fg = hl_fg("Comment")
 	vim.api.nvim_set_hl(0, "TgTimestamp", { fg = comment_fg, italic = false, default = true })
 	vim.api.nvim_set_hl(0, "TgPlaceholder", { link = "Comment", default = true })

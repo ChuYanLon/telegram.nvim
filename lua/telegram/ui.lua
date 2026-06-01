@@ -1,10 +1,9 @@
 local Editor = require("telegram.editor")
 local server = require("telegram.server")
+local config = require("telegram.config")
 local render_msg = require("telegram.render").render
 
 local M = {}
-
-
 
 local state = {
 	buf = nil,
@@ -667,8 +666,15 @@ local function setup_chat_keymaps()
 	local buf = state.buf
 	local tools = require("telegram.tools")
 
-	vim.keymap.set("n", "@", tools.pick, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "i", function()
+	local function set(key, cb, opts)
+		local k = config.key(key)
+		if k then
+			vim.keymap.set("n", k, cb, vim.tbl_deep_extend("force", { buffer = buf, nowait = true }, opts or {}))
+		end
+	end
+
+	set("tool_picker", tools.pick)
+	set("input_editor", function()
 		if state.permissions.can_send_messages ~= true then
 			vim.notify("No permission to send messages", vim.log.levels.WARN, { title = "tg" })
 			return
@@ -683,8 +689,8 @@ local function setup_chat_keymaps()
 				render()
 			end
 		end)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<CR>", function()
+	end)
+	set("reply", function()
 		local target = M.curr_msg()
 		if not target then
 			return
@@ -709,8 +715,8 @@ local function setup_chat_keymaps()
 				render()
 			end
 		end)
-	end, { buffer = buf })
-	vim.keymap.set("n", "e", function()
+	end, { nowait = false })
+	set("edit", function()
 		local target = M.curr_msg()
 		if not target or not target.id then
 			return
@@ -732,8 +738,8 @@ local function setup_chat_keymaps()
 				render()
 			end
 		end)
-	end, { buffer = buf })
-	vim.keymap.set("n", "d", function()
+	end)
+	set("delete", function()
 		local target = M.curr_msg()
 		if not target or not target.id then
 			return
@@ -760,8 +766,8 @@ local function setup_chat_keymaps()
 				vim.notify("Message " .. (revoke and "revoked" or "deleted"), vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
-	end, { buffer = buf })
-	vim.keymap.set("n", "f", function()
+	end)
+	set("forward", function()
 		local target = M.curr_msg()
 		if not target or not target.id then
 			return
@@ -783,8 +789,8 @@ local function setup_chat_keymaps()
 				vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
 			end
 		end)
-	end, { buffer = buf })
-	vim.keymap.set("n", "p", function()
+	end)
+	set("pin", function()
 		local target = M.curr_msg()
 		if not target or not target.id then return end
 		if state.permissions.can_pin_messages ~= true then
@@ -812,16 +818,16 @@ local function setup_chat_keymaps()
 				vim.notify("Pinned message", vim.log.levels.INFO, { title = "tg" })
 			end
 		end
-	end, { buffer = buf })
-	vim.keymap.set("n", "G", function()
+	end)
+	set("refresh", function()
 		M.refresh_messages(function()
 			M.jump_to_bottom()
 		end)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "B", function()
+	end)
+	set("ban", function()
 		M.ban_sender()
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "c", function()
+	end)
+	set("open_dm", function()
 		local target = M.curr_msg()
 		if not target or not target.sender or not target.sender.id then
 			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
@@ -849,8 +855,8 @@ local function setup_chat_keymaps()
 				vim.notify("Failed to open private chat", vim.log.levels.ERROR, { title = "tg" })
 			end
 		end)
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "?", M.show_help, { buffer = buf })
+	end)
+	set("help", M.show_help)
 end
 
 local help_win = nil
@@ -916,9 +922,14 @@ function M.show_help()
 		" :Tg        close chat / quit",
 	}
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	vim.keymap.set("n", "<Esc>", close_help, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "q", close_help, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "?", close_help, { buffer = buf, nowait = true })
+	do
+		local k = config.key("help_close")
+		if k then vim.keymap.set("n", k, close_help, { buffer = buf, nowait = true }) end
+	end
+	do
+		local k = config.key("help_close_q")
+		if k then vim.keymap.set("n", k, close_help, { buffer = buf, nowait = true }) end
+	end
 end
 
 function M.open_editor(title, default_text, callback)
@@ -944,18 +955,28 @@ function M.open_editor(title, default_text, callback)
 	local lines = vim.split(default_text or "", "\n")
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, #lines == 0 and { "" } or lines)
 	vim.cmd("startinsert!")
-	vim.keymap.set("n", "<CR>", function()
-		local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
-		text = text:gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
-		close()
-		if #text > 0 then
-			callback(text)
+	do
+		local k = config.key("editor_submit")
+		if k then
+			vim.keymap.set("n", k, function()
+				local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+				text = text:gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
+				close()
+				if #text > 0 then
+					callback(text)
+				end
+			end, { buffer = buf, nowait = true })
 		end
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "<Esc>", function()
-		close()
-		callback(nil)
-	end, { buffer = buf, nowait = true })
+	end
+	do
+		local k = config.key("editor_cancel")
+		if k then
+			vim.keymap.set("n", k, function()
+				close()
+				callback(nil)
+			end, { buffer = buf, nowait = true })
+		end
+	end
 end
 
 function M.open_chat(chat_id, chat_title)
@@ -1153,7 +1174,10 @@ function M.open_chat(chat_id, chat_title)
 	end
 
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
-	vim.keymap.set("n", "?", M.show_help, { buffer = state.buf })
+	do
+		local k = config.key("help")
+		if k then vim.keymap.set("n", k, M.show_help, { buffer = state.buf }) end
+	end
 	state.mounted = true
 	state.pinned_message = nil
 	state.pinned_message_id = nil
@@ -1897,12 +1921,18 @@ function M.show_group_settings(chat_id)
 				local function set_cursor()
 					vim.api.nvim_win_set_cursor(win, { idx + 1, 0 })
 				end
-				vim.api.nvim_buf_set_keymap(buf, "n", "j", "", { callback = function() idx = math.min(idx + 1, max_idx) set_cursor() end, nowait = true })
-				vim.api.nvim_buf_set_keymap(buf, "n", "k", "", { callback = function() idx = math.max(idx - 1, 1) set_cursor() end, nowait = true })
-				vim.api.nvim_buf_set_keymap(buf, "n", "<Tab>", "", { callback = toggle, nowait = true })
-				vim.api.nvim_buf_set_keymap(buf, "n", "<S-Tab>", "", { callback = function() idx = math.max(idx - 1, 1) set_cursor() end, nowait = true })
-				vim.api.nvim_buf_set_keymap(buf, "n", "<CR>", "", { callback = on_enter, nowait = true })
-				vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", "", { callback = on_esc, nowait = true })
+				do local k = config.key("perms_down")
+					if k then vim.keymap.set("n", k, function() idx = math.min(idx + 1, max_idx) set_cursor() end, { buffer = buf, nowait = true }) end end
+				do local k = config.key("perms_up")
+					if k then vim.keymap.set("n", k, function() idx = math.max(idx - 1, 1) set_cursor() end, { buffer = buf, nowait = true }) end end
+				do local k = config.key("perms_toggle")
+					if k then vim.keymap.set("n", k, toggle, { buffer = buf, nowait = true }) end end
+				do local k = config.key("perms_up_alt")
+					if k then vim.keymap.set("n", k, function() idx = math.max(idx - 1, 1) set_cursor() end, { buffer = buf, nowait = true }) end end
+				do local k = config.key("perms_save")
+					if k then vim.keymap.set("n", k, on_enter, { buffer = buf, nowait = true }) end end
+				do local k = config.key("perms_discard")
+					if k then vim.keymap.set("n", k, on_esc, { buffer = buf, nowait = true }) end end
 				vim.schedule(function()
 					set_cursor()
 				end)

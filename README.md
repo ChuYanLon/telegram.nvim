@@ -95,6 +95,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
 - [x] Real-time sync between devices — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
 - [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
+- [x] **Customizable keymaps** — all keys configurable via `setup({ keys = { ... } })`
+- [x] **Theme adaptation** — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
 ### What doesn't work yet
 
@@ -112,8 +114,47 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Voice message** recording and sending
 - [ ] **Inline bots** / bot commands
 - [ ] **Message threads** / topic view
-- [ ] **Customizable keymaps** — all hardcoded for now
-- [x] **Theme adaptation** — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
+
+### Customizing keys
+
+```lua
+require("telegram").setup({
+  keys = {
+    input_editor = "I",  -- rebind i → I
+    refresh = "<F5>",
+    help = "<F1>",
+    ban = false,  -- disable ban key
+  },
+})
+```
+
+All available keys and their defaults:
+
+| Key name | Default | Action |
+|----------|---------|--------|
+| `tool_picker` | `@` | Open tool picker |
+| `input_editor` | `i` | Open message input editor |
+| `reply` | `<CR>` | Reply to / jump to message |
+| `edit` | `e` | Edit own message |
+| `delete` | `d` | Delete / revoke message |
+| `forward` | `f` | Forward message |
+| `pin` | `p` | Pin / unpin message |
+| `refresh` | `G` | Refresh messages, jump to bottom |
+| `ban` | `B` | Ban message sender |
+| `open_dm` | `c` | Open DM with message sender |
+| `help` | `?` | Toggle help popup |
+| `editor_submit` | `<CR>` | Submit message in editor |
+| `editor_cancel` | `<Esc>` | Cancel editing |
+| `help_close` | `<Esc>` | Close help popup |
+| `help_close_q` | `q` | Close help popup (alt) |
+| `perms_down` | `j` | Permission editor: move down |
+| `perms_up` | `k` | Permission editor: move up |
+| `perms_toggle` | `<Tab>` | Permission editor: toggle item |
+| `perms_up_alt` | `<S-Tab>` | Permission editor: move up (alt) |
+| `perms_save` | `<CR>` | Permission editor: save |
+| `perms_discard` | `<Esc>` | Permission editor: discard |
+
+Set any key to `false` to disable it.
 
 ### Service messages
 

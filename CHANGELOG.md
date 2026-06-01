@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Customizable keymaps** — all 21 keymaps configurable via `setup({ keys = { ... } })`; set to `false` to disable
+- **Theme-adaptive highlights** — all highlight groups derive from Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.) with no hardcoded colors
 - **Granular default permissions editor** — interactive floating window with 14 permission toggles, toggle-all switch, color-coded highlights for enabled/disabled/unknown states
 - **Edit invite links** — frontend wrapper and UI entry for editing invite links (member limit + expiration)
 - **Expiration support for invite links** — create/edit invite links with optional expiry time
