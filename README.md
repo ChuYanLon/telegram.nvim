@@ -107,13 +107,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Emoji picker**
 - [ ] **React to messages** (like, heart, etc.)
 - [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
-- [ ] **Multi-select messages** for batch operations
-- [ ] **Chat folders**
-- [ ] **Pinned chats** section
-- [ ] **Change group photo**
-- [ ] **Voice message** recording and sending
 - [ ] **Inline bots** / bot commands
-- [ ] **Message threads** / topic view
 
 ### Customizing keys
 
