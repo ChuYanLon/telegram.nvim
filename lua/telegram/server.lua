@@ -693,12 +693,12 @@ end
 ---@param chat_id any
 ---@param expire_date integer|nil
 ---@param member_limit integer|nil
----@return boolean
+---@return table|nil
 function M.create_invite_link(chat_id, expire_date, member_limit)
 	local body = { chatId = chat_id }
 	if expire_date then body.expireDate = expire_date end
 	if member_limit then body.memberLimit = member_limit end
-	return http_post("/chat/create-invite-link", body) ~= nil
+	return http_post("/chat/create-invite-link", body)
 end
 
 ---@param chat_id any

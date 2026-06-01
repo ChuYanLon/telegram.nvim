@@ -1600,9 +1600,18 @@ function M.show_invite_links(chat_id)
 			vim.ui.input({ prompt = "Member limit (0 = unlimited): " }, function(limit)
 				local member_limit = limit and tonumber(limit) or nil
 				if member_limit and member_limit <= 0 then member_limit = nil end
-				if server.create_invite_link(chat_id, nil, member_limit) then
-					vim.notify("Invite link created!", vim.log.levels.INFO, { title = "tg" })
-				end
+				vim.ui.input({ prompt = "Expire after hours (0 = never): " }, function(hours)
+					local expire_date = hours and tonumber(hours) or nil
+					if expire_date and expire_date > 0 then
+						expire_date = math.floor(os.time() + expire_date * 3600)
+					else
+						expire_date = nil
+					end
+					local res = server.create_invite_link(chat_id, expire_date, member_limit)
+					if res and res.invite_link then
+						vim.notify(res.invite_link, vim.log.levels.INFO, { title = "Invite Link" })
+					end
+				end)
 			end)
 		elseif choice == "View existing links" then
 			vim.notify("Loading invite links...", vim.log.levels.INFO, { title = "tg" })
@@ -1644,9 +1653,17 @@ function M.show_invite_links(chat_id)
 					vim.ui.input({ prompt = "New member limit (0 = unlimited): ", default = tostring(choice.member_limit or 0) }, function(limit)
 						local member_limit = limit and tonumber(limit) or nil
 						if member_limit and member_limit <= 0 then member_limit = nil end
-						if server.edit_invite_link(chat_id, choice.link, nil, member_limit) then
-							vim.notify("Link updated", vim.log.levels.INFO, { title = "tg" })
-						end
+						vim.ui.input({ prompt = "Expire after hours (0 = never): " }, function(hours)
+							local expire_date = hours and tonumber(hours) or nil
+							if expire_date and expire_date > 0 then
+								expire_date = math.floor(os.time() + expire_date * 3600)
+							else
+								expire_date = nil
+							end
+							if server.edit_invite_link(chat_id, choice.link, expire_date, member_limit) then
+								vim.notify("Link updated", vim.log.levels.INFO, { title = "tg" })
+							end
+						end)
 					end)
 				end)
 			end)

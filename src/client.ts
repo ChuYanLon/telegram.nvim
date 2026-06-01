@@ -623,7 +623,6 @@ export class TelegramLSPClient {
         can_restrict_members: true,
         can_pin_messages: true,
         can_manage_topics: true,
-        can_promote_members: true,
         can_manage_video_chats: true,
         can_post_stories: true,
         can_edit_stories: true,
@@ -655,7 +654,7 @@ export class TelegramLSPClient {
         is_member: true,
         permissions: {
           _: 'chatPermissions',
-          can_send_messages: false,
+          can_send_basic_messages: false,
           can_send_audios: false,
           can_send_documents: false,
           can_send_photos: false,
@@ -687,7 +686,7 @@ export class TelegramLSPClient {
         is_member: true,
         permissions: {
           _: 'chatPermissions',
-          can_send_messages: true,
+          can_send_basic_messages: true,
           can_send_audios: true,
           can_send_documents: true,
           can_send_photos: true,
@@ -721,14 +720,31 @@ export class TelegramLSPClient {
 
   async searchChatMembers(chatId: number, query = '', limit = 200): Promise<any[]> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const result = await this.client.invoke({
-      _: 'searchChatMembers',
-      chat_id: chatId,
-      query,
-      limit,
-      filter: { _: 'chatMembersFilterMembers' },
-    }) as { members?: any[] };
-    return this._resolveChatMembers(result.members || []);
+    const [admins, members] = await Promise.all([
+      this.client.invoke({
+        _: 'searchChatMembers',
+        chat_id: chatId,
+        query,
+        limit,
+        filter: { _: 'chatMembersFilterAdministrators' },
+      }) as Promise<{ members?: any[] }>,
+      this.client.invoke({
+        _: 'searchChatMembers',
+        chat_id: chatId,
+        query,
+        limit,
+        filter: { _: 'chatMembersFilterMembers' },
+      }) as Promise<{ members?: any[] }>,
+    ]);
+    const seen = new Set<number>();
+    const all = [...(admins.members || []), ...(members.members || [])];
+    const deduped = all.filter((m: any) => {
+      const id = m.member_id?.user_id || m.member_id?.chat_id || 0;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    return this._resolveChatMembers(deduped);
   }
 
   async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
