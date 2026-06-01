@@ -1,3 +1,6 @@
+All keymaps are configurable via `setup({ keys = { ... } })`.  
+See [Configuration](Configuration.md#keymaps) for details and the full list of key names.
+
 ## Chat Window
 
 | Key | Action |
