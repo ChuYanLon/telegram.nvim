@@ -945,7 +945,7 @@ export class TelegramLSPClient {
     let target: FormattedMessage | null = null;
     try {
       target = await this.getMessage(chatId, messageId);
-    } catch (e) { console.warn('getMessage around failed:', e); }
+    } catch {} // saved cursor may point to a deleted message
 
     const [olderResult, newerResult] = await Promise.all([
       this.client.invoke({

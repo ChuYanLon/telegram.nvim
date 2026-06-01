@@ -249,7 +249,7 @@ local function finish_init()
 			end
 		elseif msg.event == "chatOnlineMemberCount" then
 			vim.schedule(function()
-				if ui.state.chat_id and msg.chat_id == ui.state.chat_id then
+				if ui.state.chat_id and msg.chat_id == ui.state.chat_id and msg.online_member_count > 0 then
 					ui.set_online_count(msg.online_member_count)
 				end
 				ui.update_group_online(msg.chat_id, msg.online_member_count)

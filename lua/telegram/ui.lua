@@ -360,13 +360,14 @@ function M.set_groups(groups)
 	local new_ids = {}
 	for _, g in ipairs(groups or {}) do
 		local existing = state.groups[g.id]
+		local existing_online = existing and existing.online_count
 		new_groups[g.id] = {
 			id = g.id,
 			title = g.title,
 			type = g.type or "group",
 			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
-			online_count = (existing and existing.online_count) or g.onlineMemberCount or 0,
+			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,
 		}
 		table.insert(new_ids, g.id)
@@ -456,17 +457,6 @@ function M.update_title()
 		return
 	end
 	local title = state.chat_title or ""
-	local online = state.online_count or 0
-	local count = tostring(online)
-	if state.chat_id and state.groups[state.chat_id] then
-		local total = state.groups[state.chat_id].member_count or 0
-		if total > 0 then
-			count = online .. "/" .. total
-		end
-	end
-	if state.unread > 0 then
-		count = count .. "  \xE2\x97\x8F+" .. state.unread
-	end
 
 	local typing_items = {}
 	if state.chat_id and state.typing_users[state.chat_id] then
@@ -497,12 +487,21 @@ function M.update_title()
 	lines[#lines + 1] = title
 
 	-- Line 2: Status (always)
+	local online = state.online_count or 0
 	local is_private = state.chat_id and state.groups[state.chat_id] and state.groups[state.chat_id].type == "private"
 	if has_typing then
 		lines[#lines + 1] = "status: " .. typing
 	elseif is_private then
-		lines[#lines + 1] = "status: " .. (state.online_count and state.online_count > 0 and "online" or "offline")
+		lines[#lines + 1] = "status: " .. (online > 0 and "online" or "offline")
 	else
+		local count = tostring(online)
+		local total = state.chat_id and state.groups[state.chat_id] and state.groups[state.chat_id].member_count
+		if total and total > 0 then
+			count = online .. "/" .. total
+		end
+		if state.unread > 0 then
+			count = count .. "  \xE2\x97\x8F+" .. state.unread
+		end
 		lines[#lines + 1] = "status: " .. count
 	end
 
@@ -1164,7 +1163,9 @@ function M.open_chat(chat_id, chat_title)
 	server.get_chat_async(cid, function(chat_info)
 		if state.chat_id ~= cid then return end
 		if chat_info then
-			state.online_count = chat_info.onlineMemberCount or state.online_count
+			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
+				state.online_count = chat_info.onlineMemberCount
+			end
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
 			M.refresh_pinned_message(cid, chat_info.pinnedMessageId)
