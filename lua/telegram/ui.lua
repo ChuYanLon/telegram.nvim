@@ -852,7 +852,7 @@ local function setup_chat_keymaps()
 			end
 			local chat = server.open_private_chat(user_id)
 			if chat then
-				M.open_chat(chat.id, chat.title)
+				M.open_chat(chat.id, chat.title, chat.type)
 			else
 				vim.notify("Failed to open private chat", vim.log.levels.ERROR, { title = "tg" })
 			end
@@ -992,7 +992,7 @@ function M.open_editor(title, default_text, callback)
 	end
 end
 
-function M.open_chat(chat_id, chat_title)
+function M.open_chat(chat_id, chat_title, chat_type)
 	chat_title = chat_title or "Chat"
 
 	if
@@ -1029,6 +1029,15 @@ function M.open_chat(chat_id, chat_title)
 	state.last_group = { id = chat_id, title = chat_title }
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
+	else
+		state.groups[chat_id] = {
+			id = chat_id,
+			title = chat_title,
+			type = chat_type or "private",
+			unread_count = 0,
+			online_count = 0,
+		}
+		table.insert(state.group_ids, 1, chat_id)
 	end
 
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
@@ -1579,7 +1588,7 @@ local function user_actions_menu(chat_id, user, on_done)
 		if choice == "Open DM" then
 			local chat = server.open_private_chat(user.user_id)
 			if chat then
-				M.open_chat(chat.id, chat.title)
+				M.open_chat(chat.id, chat.title, chat.type)
 			end
 			ok = true
 		elseif choice == "Ban" then ok = server.ban_member(chat_id, user.user_id)

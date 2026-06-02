@@ -59,7 +59,7 @@ M.register("newchat", {
 			vim.notify("Searching for @" .. username .. "...", vim.log.levels.INFO, { title = "tg" })
 			local chat = require("telegram.server").search_user(username)
 			if chat then
-				require("telegram").open_chat(chat.id, chat.title)
+				require("telegram").open_chat(chat.id, chat.title, chat.type)
 			else
 				vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
 			end
