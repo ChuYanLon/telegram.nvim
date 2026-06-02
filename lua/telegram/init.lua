@@ -115,17 +115,6 @@ local function flush_msg_queue()
 						end
 					end
 				end
-				if not exists and msg.own and mid and msg.text then
-					for _, m in ipairs(st.messages) do
-						if m.own and tostring(m.text) == tostring(msg.text) then
-							exists = true
-							if not m.id or m.id == 0 then
-								m.id = mid
-							end
-							break
-						end
-					end
-				end
 				if not exists then
 					table.insert(current_msgs, msg)
 				end
@@ -217,8 +206,9 @@ local function flush_msg_queue()
 
 	local t = last and last.type or ""
 	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
-			local media_chat_id = st.chat_id
-			local media_msg_id = last.id
+		local media_chat_id = st.chat_id
+		local media_msg_id = last.id
+		if media_msg_id and type(media_msg_id) == "number" then
 			server.get_media_async(media_chat_id, media_msg_id, function(res)
 				if media_chat_id ~= st.chat_id then return end
 				if res and res.path and #res.path > 0 then
@@ -234,6 +224,7 @@ local function flush_msg_queue()
 					end
 				end
 			end)
+		end
 	end
 end
 

@@ -70,6 +70,7 @@ function M.auth_poll(on_done)
 				wait_ack()
 			else
 				vim.notify("Auth cancelled", vim.log.levels.INFO, { title = "tg" })
+				on_done(false)
 			end
 		end)
 			return

@@ -582,6 +582,7 @@ function M.update_title()
 		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
 		vim.wo[state.title_win].winhighlight = "Normal:TgNoBg"
 		vim.api.nvim_create_autocmd("WinEnter", {
+			group = vim.api.nvim_create_augroup("TgTitleWinEnter", { clear = true }),
 			buffer = state.title_buf,
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
@@ -1576,7 +1577,7 @@ local function user_actions_menu(chat_id, user, on_done)
 		elseif choice ~= "Open DM" then
 			vim.notify(choice .. " failed: " .. user.name, vim.log.levels.WARN, { title = "tg" })
 		end
-		if chat_id == ui.state.chat_id then
+		if chat_id == state.chat_id then
 			M.update_title()
 		end
 		if on_done then on_done() end
@@ -1831,10 +1832,14 @@ function M.show_group_settings(chat_id)
 				local max_idx = num_perms + 1
 				local win_w = 56
 				local win_h = max_idx + 1
+				local editor_win = vim.api.nvim_get_current_win()
+				local editor_pos = vim.api.nvim_win_get_position(editor_win)
+				local editor_width = vim.api.nvim_win_get_width(editor_win)
+				local editor_height = vim.api.nvim_win_get_height(editor_win)
 				local win = vim.api.nvim_open_win(buf, true, {
 					relative = "editor", width = win_w, height = win_h,
-					row = math.max(0, vim.o.lines / 2 - win_h / 2 - 2),
-					col = math.max(0, vim.o.columns / 2 - win_w / 2),
+					row = math.max(0, editor_pos[1] + editor_height / 2 - win_h / 2 - 2),
+					col = math.max(0, editor_pos[2] + editor_width / 2 - win_w / 2),
 					style = "minimal", border = "single",
 				})
 				vim.wo[win].cursorline = true

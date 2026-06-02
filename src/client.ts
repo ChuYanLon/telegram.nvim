@@ -573,7 +573,7 @@ export class TelegramLSPClient {
     if (before && beforeDate) {
       msgs = msgs.filter(m => m.date < beforeDate || (m.date === beforeDate && m.id < before));
     }
-    msgs.sort((a, b) => b.date - a.date);
+    msgs.sort((a, b) => a.date - b.date);
     const fmtMs = Date.now() - t1;
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },
@@ -1039,22 +1039,23 @@ export class TelegramLSPClient {
       const allIds: number[] = [];
       let targetId = 0;
 
+      const getFileId = (obj: Record<string, unknown>): number | undefined => {
+        if (typeof obj.id === 'number' && obj.id > 0) return obj.id;
+        for (const field of ['photo', 'sticker', 'video', 'document', 'animation', 'voice', 'audio']) {
+          const sub = obj[field] as Record<string, unknown> | undefined;
+          if (sub && typeof sub.id === 'number' && sub.id > 0) return sub.id;
+        }
+        return undefined;
+      };
+
       const collect = (obj: Record<string, unknown>, ...keys: string[]) => {
         for (const key of keys) {
           const val = obj[key];
           if (!val) continue;
           const arr = Array.isArray(val) ? val : [val];
           for (const item of arr) {
-            const f = (item as Record<string, unknown>)?.['photo']
-              || (item as Record<string, unknown>)?.['sticker']
-              || (item as Record<string, unknown>)?.['video']
-              || (item as Record<string, unknown>)?.['document']
-              || (item as Record<string, unknown>)?.['animation']
-              || (item as Record<string, unknown>)?.['voice']
-              || (item as Record<string, unknown>)?.['audio']
-              || item;
-            const fileId = (f as Record<string, unknown> | undefined)?.['id'] as number | undefined;
-            if (fileId && fileId > 0) allIds.push(fileId);
+            const fileId = getFileId(item as Record<string, unknown>);
+            if (fileId) allIds.push(fileId);
           }
         }
       };
