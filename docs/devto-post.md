@@ -10,7 +10,7 @@ Outline:
 
 1. **Why a Telegram client in Neovim?**
    - Stay in the terminal, context switching costs
-   - telegra.el inspired, but for Neovim users
+   - telega.el inspired, but for Neovim users
    - Vim keybindings for chat navigation
 
 2. **Architecture overview**

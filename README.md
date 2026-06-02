@@ -5,7 +5,7 @@
 [![CI](https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml)
 [![Neovim](https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet)](https://neovim.io)
 
-A Telegram chat tool for neovim, similar to telegra.el
+A Telegram chat tool for neovim, similar to telega.el
 
 Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP + WebSocket communication.
 
