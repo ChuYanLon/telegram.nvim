@@ -1261,7 +1261,7 @@ function M.destroy_chat()
 		end
 	end
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
-		vim.api.nvim_buf_delete(state.buf, { force = true })
+		pcall(vim.api.nvim_buf_delete, state.buf, { force = true })
 	end
 	state.buf = nil
 	state.messages = {}
