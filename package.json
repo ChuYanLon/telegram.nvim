@@ -1,6 +1,8 @@
 {
   "name": "telegram-lsp-backend",
   "version": "0.5.1",
+  "description": "Backend server for telegram.nvim — a Telegram TUI client for Neovim",
+  "keywords": ["telegram", "neovim", "neovim-plugin", "tdlib", "tdjson", "tui", "chat", "messaging", "telegram-client"],
   "scripts": {
     "start": "tsx src/server.ts",
     "pretest": "pgrep -f 'tsx src/server\\.ts' | xargs -r kill 2>/dev/null; true",

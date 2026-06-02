@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="telegram.nvim — A Telegram chat client inside Neovim. Powered by TDLib + TypeScript backend + Lua frontend. Real-time messaging, group management, media preview, and more.">
+  <meta name="keywords" content="telegram, neovim, neovim-plugin, tdlib, telegram-client, tui, lua, typescript, chat, messaging">
+  <meta name="author" content="ChuYanLon">
+  <meta property="og:title" content="telegram.nvim — Telegram Client for Neovim">
+  <meta property="og:description" content="A full-featured Telegram chat client that runs inside Neovim. Real-time messaging, group management, media preview, and more.">
+  <meta property="og:url" content="https://chuyanlon.github.io/telegram.nvim">
+  <meta property="og:type" content="software">
+  <meta property="og:image" content="https://github.com/user-attachments/assets/0ff29034-aaca-4d3a-8994-3418436f20d0">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="telegram.nvim — Telegram Client for Neovim">
+  <meta name="twitter:description" content="A full-featured Telegram chat client that runs inside Neovim.">
+  <link rel="canonical" href="https://chuyanlon.github.io/telegram.nvim">
+  <title>telegram.nvim — Telegram Client for Neovim</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --fg: #c9d1d9;
+      --accent: #58a6ff;
+      --border: #30363d;
+      --code-bg: #161b22;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    h1 { font-size: 2.2em; margin-bottom: 0.2em; color: #fff; }
+    h2 { font-size: 1.4em; margin-top: 2em; margin-bottom: 0.8em; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+    p { margin-bottom: 1em; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 0.5em 0 1.5em; }
+    .badges img { height: 22px; }
+    .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1.5em 0; }
+    .screenshots img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+    .features { columns: 2; column-gap: 24px; margin: 1em 0; }
+    .features li { break-inside: avoid; margin-bottom: 0.4em; list-style: none; }
+    .features li::before { content: "✓ "; color: #3fb950; }
+    code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: var(--code-bg); padding: 16px; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); margin: 1em 0; }
+    pre code { background: none; padding: 0; }
+    .footer { margin-top: 4em; padding-top: 1em; border-top: 1px solid var(--border); font-size: 0.9em; color: #8b949e; }
+    @media (max-width: 600px) { .screenshots { grid-template-columns: 1fr; } .features { columns: 1; } }
+  </style>
+</head>
+<body>
+  <h1>telegram.nvim</h1>
+  <p>A full-featured <strong>Telegram chat client</strong> that runs inside <strong>Neovim</strong>.</p>
+
+  <div class="badges">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+    <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >=18"></a>
+    <a href="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml"><img src="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
+  </div>
+
+  <p>
+    <a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a> &middot;
+    <a href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a> &middot;
+    <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Documentation</a> &middot;
+    <a href="https://t.me/+h4aEOaABJJ1mMzhl">Telegram Group</a>
+  </p>
+
+  <h2>Screenshots</h2>
+  <div class="screenshots">
+    <img src="https://github.com/user-attachments/assets/0ff29034-aaca-4d3a-8994-3418436f20d0" alt="telegram.nvim chat view">
+    <img src="https://github.com/user-attachments/assets/cb7b56cd-e498-47b2-9808-49af00b0d2c8" alt="telegram.nvim group list">
+    <img src="https://github.com/user-attachments/assets/46ec08d6-a275-47e0-a196-7d0eab7a51d5" alt="telegram.nvim message input">
+    <img src="https://github.com/user-attachments/assets/c53202ab-7f40-4adb-8e99-8b0ba16d2643" alt="telegram.nvim media preview">
+  </div>
+
+  <h2>Features</h2>
+  <ul class="features">
+    <li>Real-time messaging via WebSocket</li>
+    <li>Group & channel management</li>
+    <li>Send formatted text (markdown)</li>
+    <li>Edit & delete messages</li>
+    <li>Forward & reply with quote</li>
+    <li>Pin & unpin messages</li>
+    <li>Photo, video, file previews</li>
+    <li>HD media download</li>
+    <li>Inline fuzzy-find chat picker</li>
+    <li>Typing indicators</li>
+    <li>Online member count</li>
+    <li>Proxy support (SOCKS5/HTTP)</li>
+    <li>Session persistence</li>
+    <li>Customizable keymaps</li>
+    <li>Theme adaptation</li>
+    <li>GitHub PR & Issue integration</li>
+  </ul>
+
+  <h2>Quick Start</h2>
+  <p>Add to your Neovim config (lazy.nvim):</p>
+  <pre><code>{
+  "ChuYanLon/telegram.nvim",
+  build = "npm i",
+  event = "VeryLazy",
+  keys = {
+    { "&lt;leader&gt;tt", "&lt;cmd&gt;Tg&lt;Cr&gt;", desc = "Toggle Telegram" },
+  },
+  opts = {},
+}</code></pre>
+
+  <h2>How It Works</h2>
+  <p><strong>Backend:</strong> TypeScript (Express + WebSocket) running TDLib on ports 8080/8081.</p>
+  <p><strong>Frontend:</strong> Pure Lua plugin communicating via HTTP and WebSocket.</p>
+  <p><strong>Auth:</strong> Phone number → verification code → 2FA (optional). Session persists across restarts.</p>
+
+  <h2>Requirements</h2>
+  <ul>
+    <li>Node.js ≥ 18</li>
+    <li><code>libtdjson</code> (TDLib shared library, v1.8.64+)</li>
+    <li>curl</li>
+  </ul>
+
+  <div class="footer">
+    <p>Maintained by <a href="https://github.com/ChuYanLon">ChuYanLon</a> &middot; MIT License</p>
+  </div>
+</body>
+</html>

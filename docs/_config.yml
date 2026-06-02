@@ -1,0 +1,3 @@
+title: telegram.nvim
+description: A Telegram chat client inside Neovim, powered by TDLib + TypeScript + Lua
+theme: jekyll-theme-cayman
