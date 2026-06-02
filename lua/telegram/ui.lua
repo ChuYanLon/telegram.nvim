@@ -46,6 +46,7 @@ local state = {
 	title_buf = nil,
 	title_win = nil,
 	title_height = 0,
+	_typing_timer = nil,
 
 	msg_line_counts = {},
 	_title_update_timer = nil,
@@ -403,6 +404,7 @@ function M.update_group_last_msg(chat_id, sender_name, text)
 	if chat_id ~= state.chat_id then
 		state.groups[chat_id].unread_count = (state.groups[chat_id].unread_count or 0) + 1
 	end
+	state.groups[chat_id].last_msg = ("[%s] %s: %s"):format(os.date("%H:%M"), sender_name, (text or ""):gsub("\n", " "):sub(1, 40))
 end
 
 function M.update_group_online(chat_id, count)
@@ -864,11 +866,20 @@ function M.show_help()
 end
 
 function M.open_editor(title, default_text, callback)
-	local typing_timer = nil
+	if state._typing_timer then
+		vim.fn.timer_stop(state._typing_timer)
+	end
+	state._typing_timer = nil
+	local typing_ticks = 0
 	local typing_chat_id = state.chat_id
 	if typing_chat_id then
 		server.send_chat_action_async(typing_chat_id, "chatActionTyping")
-		typing_timer = vim.fn.timer_start(5000, function()
+		state._typing_timer = vim.fn.timer_start(5000, function()
+			typing_ticks = typing_ticks + 1
+			if typing_ticks >= 12 then
+				state._typing_timer = nil
+				return
+			end
 			server.send_chat_action_async(typing_chat_id, "chatActionTyping")
 		end, { ["repeat"] = -1 })
 	end
@@ -888,9 +899,12 @@ function M.open_editor(title, default_text, callback)
 		title_pos = "center",
 	})
 	local function close()
-		if typing_timer then vim.fn.timer_stop(typing_timer) end
-		if state.chat_id then
-			server.send_chat_action_async(state.chat_id, "chatActionCancel")
+		if state._typing_timer then
+			vim.fn.timer_stop(state._typing_timer)
+			state._typing_timer = nil
+		end
+		if typing_chat_id then
+			server.send_chat_action_async(typing_chat_id, "chatActionCancel")
 		end
 		pcall(vim.api.nvim_win_close, win, true)
 		pcall(vim.api.nvim_buf_delete, buf, { force = true })
@@ -1234,6 +1248,11 @@ function M.close_chat()
 end
 
 function M.destroy_chat()
+	if state._title_update_timer then
+		vim.fn.timer_stop(state._title_update_timer)
+		state._title_update_timer = nil
+	end
+	state.title_dirty = false
 	M.close_chat()
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
 		local curbuf = vim.api.nvim_win_get_buf(state.win)
@@ -1725,6 +1744,8 @@ function M.show_group_settings(chat_id)
 			vim.ui.input({ prompt = "New description: ", default = state.description }, function(desc)
 				if desc then
 					if server.set_chat_description(chat_id, desc) then
+						state.description = desc
+						M.update_title()
 						vim.notify("Description updated", vim.log.levels.INFO, { title = "tg" })
 					end
 				end
@@ -1935,12 +1956,18 @@ function M.show_group_settings(chat_id)
 					end
 				end
 			end)
-		elseif choice == "Delete history" then
+			elseif choice == "Delete history" then
 			vim.ui.select({ "Yes, delete history", "Cancel" }, {
 				prompt = "Delete chat history permanently?",
 			}, function(confirm)
 				if confirm == "Yes, delete history" then
 					if server.delete_chat_history(chat_id) then
+						state.messages = {}
+						state.msg_line_counts = {}
+						state.exhausted = false
+						state.exhausted_forward = false
+						M.update_title()
+						render()
 						vim.notify("History deleted", vim.log.levels.INFO, { title = "tg" })
 					end
 				end

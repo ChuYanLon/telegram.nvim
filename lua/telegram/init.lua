@@ -83,6 +83,7 @@ local function flush_msg_queue()
 	end
 
 	local st = ui.state
+	local cur_chat_id = st.chat_id
 	local current_msgs = {}
 	local seen = {}
 
@@ -99,7 +100,7 @@ local function flush_msg_queue()
 		end
 
 		if not skip then
-			local is_current = st.chat_id and msg.chat and msg.chat.id == st.chat_id
+			local is_current = cur_chat_id and msg.chat and msg.chat.id == cur_chat_id
 			if not is_current then
 				local sender = msg.sender and msg.sender.name or "?"
 				ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
@@ -253,27 +254,32 @@ local function finish_init()
 		if msg.event == "newMessage" then
 			queue_msg(msg)
 		elseif msg.event == "userAction" then
-			local state = ui.state
-			if state.chat_id and msg.chat_id == state.chat_id then
+			local action_chat_id = msg.chat_id
+			if ui.state.chat_id and action_chat_id == ui.state.chat_id then
 				vim.schedule(function()
+					if ui.state.chat_id ~= action_chat_id then return end
 					if msg.action._ == "chatActionCancel" then
-						ui.set_typing(msg.chat_id, msg.user_id, nil, nil, false)
+						ui.set_typing(action_chat_id, msg.user_id, nil, nil, false)
 					else
-						ui.set_typing(msg.chat_id, msg.user_id, msg.user_name, msg.action._, true)
+						ui.set_typing(action_chat_id, msg.user_id, msg.user_name, msg.action._, true)
 					end
 				end)
 			end
 		elseif msg.event == "chatOnlineMemberCount" then
+			local om_chat_id = msg.chat_id
+			local om_count = msg.online_member_count
 			vim.schedule(function()
-				if ui.state.chat_id and msg.chat_id == ui.state.chat_id and msg.online_member_count > 0 then
-					ui.set_online_count(msg.online_member_count)
+				if ui.state.chat_id and om_chat_id == ui.state.chat_id and om_count and om_count > 0 then
+					ui.set_online_count(om_count)
 				end
-				ui.update_group_online(msg.chat_id, msg.online_member_count)
+				ui.update_group_online(om_chat_id, om_count)
 			end)
 		elseif msg.event == "messageSendSucceeded" then
 			local old_id = msg.old_message_id
+			local snd_chat_id = msg.chat and msg.chat.id
 			if old_id then
 				vim.schedule(function()
+					if snd_chat_id and ui.state.chat_id ~= snd_chat_id then return end
 					for i, m in ipairs(ui.state.messages) do
 						if tonumber(m.id) == tonumber(old_id) then
 							ui.state.messages[i] = {
@@ -294,42 +300,59 @@ local function finish_init()
 					end
 				end)
 			end
-		elseif msg.event == "messageContentUpdated" then
-			if msg.chat_id == ui.state.chat_id then
+		elseif msg.event == "messageSendFailed" then
+			local old_id = msg.old_message_id
+			local fail_chat_id = msg.chat_id
+			if old_id then
 				vim.schedule(function()
-					local mid = tostring(msg.message_id)
-					for _, m in ipairs(ui.state.messages) do
-						if tostring(m.id) == mid then
-							m.text = msg.text or ""
-							m.type = msg.type or m.type
+					if fail_chat_id and ui.state.chat_id ~= fail_chat_id then return end
+					for i, m in ipairs(ui.state.messages) do
+						if tonumber(m.id) == tonumber(old_id) then
+							table.remove(ui.state.messages, i)
 							ui.render()
 							break
 						end
 					end
+					vim.notify("Message send failed: " .. (msg.error_message or "Unknown error"), vim.log.levels.WARN, { title = "tg" })
 				end)
 			end
-		elseif msg.event == "messagesDeleted" then
-			if msg.chat_id == ui.state.chat_id then
-				vim.schedule(function()
-					local ids = {}
-					for _, id in ipairs(msg.message_ids) do
-						ids[tostring(id)] = true
-					end
-					local i = 1
-					while i <= #ui.state.messages do
-						if ids[tostring(ui.state.messages[i].id)] then
-							table.remove(ui.state.messages, i)
-						else
-							i = i + 1
-						end
-					end
-					ui.render()
-				end)
-			end
-		elseif msg.event == "chatLastMessageUpdated" then
+		elseif msg.event == "messageContentUpdated" then
+			local mcu_chat_id = msg.chat_id
 			vim.schedule(function()
-				if msg.chat_id and ui.state.groups[msg.chat_id] then
-					local g = ui.state.groups[msg.chat_id]
+				if mcu_chat_id ~= ui.state.chat_id then return end
+				local mid = tostring(msg.message_id)
+				for _, m in ipairs(ui.state.messages) do
+					if tostring(m.id) == mid then
+						m.text = msg.text or ""
+						m.type = msg.type or m.type
+						ui.render()
+						break
+					end
+				end
+			end)
+		elseif msg.event == "messagesDeleted" then
+			local del_chat_id = msg.chat_id
+			vim.schedule(function()
+				if del_chat_id ~= ui.state.chat_id then return end
+				local ids = {}
+				for _, id in ipairs(msg.message_ids) do
+					ids[tostring(id)] = true
+				end
+				local i = 1
+				while i <= #ui.state.messages do
+					if ids[tostring(ui.state.messages[i].id)] then
+						table.remove(ui.state.messages, i)
+					else
+						i = i + 1
+					end
+				end
+				ui.render()
+			end)
+		elseif msg.event == "chatLastMessageUpdated" then
+			local clm_chat_id = msg.chat_id
+			vim.schedule(function()
+				if clm_chat_id and ui.state.groups[clm_chat_id] then
+					local g = ui.state.groups[clm_chat_id]
 					if type(msg.last_message) == "table" then
 						local lm = msg.last_message
 						local sender = type(lm.sender) == "table" and lm.sender.name or "?"
@@ -371,6 +394,7 @@ local function finish_init()
 					if msg.can_send_messages ~= nil then
 						ui.state.permissions.can_send_messages = msg.can_send_messages
 					end
+					ui.update_title()
 				end
 			end)
 		elseif msg.event == "ChatPinnedMessage" then
@@ -405,7 +429,7 @@ local function finish_init()
 							break
 						end
 					end
-					if found_group and need_render then
+					if need_render then
 						ui.render()
 					end
 				end)

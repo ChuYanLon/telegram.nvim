@@ -230,7 +230,7 @@ describe('handleChatAction', () => {
     expect(broadcastData).toEqual({
       event: 'userAction',
       chat_id: -1001,
-      user_id: null,
+      user_id: 0,
       user_name: 'unknown',
       action: { _: 'chatActionCancel' },
     });

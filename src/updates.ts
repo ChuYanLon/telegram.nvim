@@ -77,6 +77,9 @@ export class UpdateDispatcher {
         case 'updateChatPosition':
           this.handleChatPositionUpdate(update);
           break;
+        case 'updateMessageSendFailed':
+          this.handleMessageSendFailed(update);
+          break;
         case 'updateMessageIsPinned':
           this.handleMessageIsPinned(update);
           break;
@@ -119,7 +122,7 @@ export class UpdateDispatcher {
     broadcast({
       event: 'userAction',
       chat_id: update.chat_id,
-      user_id: sender ? sender.id : null,
+      user_id: sender ? sender.id : 0,
       user_name: sender ? sender.name : 'unknown',
       action: update.action,
     });
@@ -128,6 +131,8 @@ export class UpdateDispatcher {
   handleChatOnlineMemberCount(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
+    const chat = update.chat_id && this.chats.get(update.chat_id);
+    if (chat) chat.online_member_count = update.online_member_count;
     broadcast({
       event: 'chatOnlineMemberCount',
       chat_id: update.chat_id,
@@ -148,6 +153,22 @@ export class UpdateDispatcher {
       old_message_id: update.old_message_id,
       chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
       ...formatted,
+    });
+  }
+
+  handleMessageSendFailed(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const msg = update.message as RawTdMessage | undefined;
+    if (!msg) return;
+    const old_id = update.old_message_id;
+    const chat = this.chats.get(msg.chat_id);
+    broadcast({
+      event: 'messageSendFailed',
+      old_message_id: old_id,
+      chat_id: msg.chat_id,
+      chat_title: chat ? chat.title : 'Unknown',
+      error_message: update.error_message as string || 'Unknown error',
     });
   }
 
@@ -242,6 +263,8 @@ export class UpdateDispatcher {
   handleChatTitle(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
+    const chat = update.chat_id && this.chats.get(update.chat_id);
+    if (chat) chat.title = update.title as string;
     broadcast({
       event: 'chatTitle',
       chat_id: update.chat_id,
@@ -330,6 +353,9 @@ export class UpdateDispatcher {
     const status = group.status?._ || '';
     if (status === 'chatMemberStatusLeft' || status === 'chatMemberStatusBanned') {
       broadcast({ event: 'chatGroupRemoved', chat_id: chatId });
+    }
+    if (group.member_count !== undefined) {
+      broadcast({ event: 'chatGroupInfo', chat_id: chatId, description: '', member_count: group.member_count });
     }
   }
 
