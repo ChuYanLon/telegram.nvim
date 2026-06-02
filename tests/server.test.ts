@@ -113,8 +113,8 @@ beforeAll(async () => {
     try {
       const { chatId, messageId, text } = req.body;
       if (!chatId || !messageId || !text) { res.status(400).json({ error: 'chatId, messageId and text are required' }); return; }
-      const result = await instance.editMessage(Number(chatId), Number(messageId), text);
-      res.json(result);
+      const msg = await instance.editMessage(Number(chatId), Number(messageId), text);
+      res.json({ ok: true, message: msg });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
