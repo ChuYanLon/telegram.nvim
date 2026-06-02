@@ -216,6 +216,7 @@ export class TelegramLSPClient {
         }
         const info: any = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id });
         group.description = info.description;
+        if (!group.onlineMemberCount && info.online_member_count) group.onlineMemberCount = info.online_member_count;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
         if (bg.status._ === 'chatMemberStatusLeft' || bg.status._ === 'chatMemberStatusBanned' || !bg.is_active) return null;
@@ -225,6 +226,7 @@ export class TelegramLSPClient {
         }
         const info: any = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id });
         group.description = info.description;
+        if (!group.onlineMemberCount && info.online_member_count) group.onlineMemberCount = info.online_member_count;
       }
     } catch (e) { console.warn('_enrichChatGroup failed:', (e as Error).message); }
 
@@ -462,12 +464,14 @@ export class TelegramLSPClient {
         const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
         description = info.description || '';
         inviteLink = typeof info.invite_link === 'string' ? info.invite_link : info.invite_link?.invite_link || '';
+        if (!chat.online_member_count && info.online_member_count) chat.online_member_count = info.online_member_count;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
         const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as any;
         description = info.description || '';
         inviteLink = typeof info.invite_link === 'string' ? info.invite_link : info.invite_link?.invite_link || '';
+        if (!chat.online_member_count && info.online_member_count) chat.online_member_count = info.online_member_count;
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     let pinnedId = this._pinnedMessageIds.get(chatId) || 0;

@@ -396,6 +396,13 @@ function M.set_groups(groups)
 	end
 	state.groups = new_groups
 	state.group_ids = new_ids
+	if state.chat_id and new_groups[state.chat_id] then
+		local oc = new_groups[state.chat_id].online_count
+		if oc and oc > 0 then
+			state.online_count = oc
+			M.update_title()
+		end
+	end
 end
 
 function M.set_typing(chat_id, user_id, user_name, action_type, active)
