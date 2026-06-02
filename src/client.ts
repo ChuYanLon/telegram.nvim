@@ -325,30 +325,48 @@ export class TelegramLSPClient {
     return enriched.filter(Boolean) as GroupInfo[];
   }
 
+  private async _parseMD(text: string): Promise<{ _: string; text: string; entities: unknown[] }> {
+    try {
+      const parsed = await this.client.invoke({
+        _: 'parseTextEntities',
+        text,
+        parse_mode: { _: 'textParseModeMarkdown' },
+      }) as { text: string; entities: unknown[] };
+      if (parsed && parsed.entities) return { _: 'formattedText', text: parsed.text, entities: parsed.entities };
+    } catch (e) {
+      console.warn('Markdown parse failed:', (e as Error).message);
+    }
+    return { _: 'formattedText', text, entities: [] };
+  }
+
   async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
+    const formatted = await this._parseMD(text);
     const params: Record<string, unknown> = {
       _: 'sendMessage',
       chat_id: chatId,
       input_message_content: {
         _: 'inputMessageText',
-        text: { _: 'formattedText', text, entities: [] },
+        text: formatted,
       },
     };
     if (replyTo) params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
     const result = await this.client.invoke(params) as RawTdMessage;
-    return this.formatter.format(result);
+    const msg = await this.formatter.format(result);
+    if (msg && text !== msg.text) msg.text = text;
+    return msg;
   }
 
   async editMessage(chatId: number, messageId: number, text: string): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
+    const formatted = await this._parseMD(text);
     await this.client.invoke({
       _: 'editMessageText',
       chat_id: chatId,
       message_id: messageId,
       input_message_content: {
         _: 'inputMessageText',
-        text: { _: 'formattedText', text, entities: [] },
+        text: formatted,
       },
     });
     return { ok: true };

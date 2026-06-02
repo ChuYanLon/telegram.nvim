@@ -266,7 +266,7 @@ local function render()
 
 	apply_highlights()
 
-	if cursor_msg_id then
+	if cursor_msg_id and not state.loading and not state.loading_newer then
 		local l = line_of(cursor_msg_id)
 		if l then
 			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })

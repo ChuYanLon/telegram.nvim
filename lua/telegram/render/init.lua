@@ -95,11 +95,9 @@ function M.render(msg)
 		local is_code = msg.type == "messageText" and text:find("```")
 
 		if is_code then
-			table.insert(out, "```")
 			for _, l in ipairs(content) do
 				table.insert(out, l)
 			end
-			table.insert(out, "```")
 		else
 			for _, l in ipairs(content) do
 				table.insert(out, l)

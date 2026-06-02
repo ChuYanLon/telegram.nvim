@@ -115,6 +115,17 @@ local function flush_msg_queue()
 						end
 					end
 				end
+				if not exists and msg.own and mid and msg.text then
+					for _, m in ipairs(st.messages) do
+						if m.own and tostring(m.text) == tostring(msg.text) then
+							exists = true
+							if not m.id or m.id == 0 then
+								m.id = mid
+							end
+							break
+						end
+					end
+				end
 				if not exists then
 					table.insert(current_msgs, msg)
 				end

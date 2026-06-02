@@ -1,11 +1,51 @@
 import type { RawTdMessage, FormattedMessage, SenderInfo } from './types';
 import type { Resolver } from './resolve';
 
+interface Entity { offset: number; length: number; type: { _: string; url?: string; language?: string } }
+
+function getEntities(src: { text?: string; entities?: unknown[] }): Entity[] {
+  const raw = src.entities;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((e): e is Entity => {
+    if (!e || typeof e !== 'object') return false;
+    const ent = e as Record<string, unknown>;
+    return typeof ent.offset === 'number' && typeof ent.length === 'number' && ent.type && typeof ent.type === 'object';
+  });
+}
+
 export function extractText(content: { _: string; text?: { text: string }; caption?: { text: string }; [key: string]: unknown } | null | undefined): string {
   if (!content) return '';
-  if (content._ === 'messageText') return content.text?.text ?? '';
-  if (content.caption?.text) return content.caption.text;
-  return '';
+  const src = content._ === 'messageText' ? content.text : content.caption;
+  if (!src) return '';
+  const plain = src.text ?? '';
+
+  const entities = getEntities(src as { text?: string; entities?: unknown[] });
+  if (entities.length === 0) return plain;
+
+  const markup: { offset: number; length: number; before: string; after: string }[] = [];
+  for (const e of entities) {
+    let before = '', after = '';
+    switch (e.type._) {
+      case 'textEntityTypeBold':        before = '**'; after = '**'; break;
+      case 'textEntityTypeItalic':      before = '*'; after = '*'; break;
+      case 'textEntityTypeCode':        before = '`'; after = '`'; break;
+      case 'textEntityTypePre':
+      case 'textEntityTypePreCode':     before = '```' + (e.type.language || '') + '\n'; after = '\n```'; break;
+      case 'textEntityTypeStrikethrough': before = '~~'; after = '~~'; break;
+      case 'textEntityTypeTextUrl':     before = '['; after = '](' + (e.type.url || '') + ')'; break;
+      default: continue;
+    }
+    markup.push({ offset: e.offset, length: e.length, before, after });
+  }
+  if (markup.length === 0) return plain;
+
+  markup.sort((a, b) => b.offset - a.offset);
+  let text = plain;
+  for (const m of markup) {
+    text = text.slice(0, m.offset) + m.before + text.slice(m.offset);
+    text = text.slice(0, m.offset + m.before.length + m.length) + m.after + text.slice(m.offset + m.before.length + m.length);
+  }
+  return text;
 }
 
 export class MessageFormatter {

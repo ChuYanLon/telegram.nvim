@@ -509,7 +509,7 @@ async function shutdown() {
   try {
     await tgClient.shutdown();
   } catch {}
-  process.exit(0);
+  setTimeout(() => process.exit(0), 5000).unref();
 }
 
 process.on('SIGINT', shutdown);

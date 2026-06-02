@@ -63,12 +63,16 @@ class FakeTdClient {
         return { status: { _: 'chatMemberStatusMember' }, member_count: 10, is_active: true };
       case 'getBasicGroupFullInfo':
         return { description: 'A basic test group' };
+      case 'parseTextEntities':
+        return { text: (query.text as string) || '', entities: [] };
       case 'getGroups':
         return { chat_ids: Array.from(this._chats.keys()) };
       case 'sendMessage':
+        const inputText = (query.input_message_content as Record<string, unknown>).text as Record<string, unknown>;
+        const msgText = typeof inputText === 'string' ? inputText : (inputText.text as string) || '';
         return {
           id: Date.now(),
-          content: { _: 'messageText', text: { text: (query.input_message_content as Record<string, unknown>).text } },
+          content: { _: 'messageText', text: { text: msgText } },
           sender_id: { _: 'messageSenderUser', user_id: 1 },
           date: Math.floor(Date.now() / 1000),
           is_outgoing: true,

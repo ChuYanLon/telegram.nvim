@@ -294,13 +294,12 @@ function M.stop_server()
 		return
 	end
 	if server_pid then
-		vim.fn.system({ "sh", "-c", "kill " .. server_pid .. " 2>/dev/null; true" })
+		vim.fn.system({ "kill", tostring(server_pid) })
 		server_pid = nil
 	end
 	if server_job then
 		vim.fn.jobstop(server_job)
 		server_job = nil
-		vim.notify("Stopped", vim.log.levels.INFO, { title = "tg" })
 	end
 	server_owner = false
 end
@@ -515,7 +514,7 @@ function M.send_message(chat_id, text, replyTo)
 		body.replyTo = replyTo
 	end
 	local data = http_post("/sendMessage", body)
-	if data and data.message then
+	if type(data) == "table" and data.message then
 		return data.message
 	end
 	return nil
