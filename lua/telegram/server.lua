@@ -6,7 +6,6 @@ local function http_port()
 	return tonumber(vim.env.TG_PORT) or config.config.http_port or 8080
 end
 M.get_http_port = http_port
-M.get_ws_port = ws_port
 local function ws_port()
 	return tonumber(vim.env.TG_WS_PORT) or config.config.ws_port or 8081
 end
@@ -233,9 +232,6 @@ function M.start_server()
 	local status = check_port()
 	if status == "ready" then
 		return true
-	end
-	if status ~= "ours" then
-		status = check_port()
 	end
 	if status == "ours" then
 		return server_wait_reachable()

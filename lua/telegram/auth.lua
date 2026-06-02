@@ -52,7 +52,14 @@ function M.auth_poll(on_done)
 			vim.ui.input({ prompt = prompt .. ": " }, function(val)
 			if val and #val > 0 then
 				server.post_auth_input(val)
+				local ack_retries = 30
 				local function wait_ack()
+					if ack_retries <= 0 then
+						vim.notify("Auth ack timed out", vim.log.levels.WARN, { title = "tg" })
+						vim.defer_fn(poll, 500)
+						return
+					end
+					ack_retries = ack_retries - 1
 					local h = server.server_health()
 					if h and h.auth and h.auth.canInput == false then
 						vim.defer_fn(poll, 500)

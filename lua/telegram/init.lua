@@ -25,6 +25,7 @@ require("telegram.github")
 local M = {}
 
 local initialized = false
+local starting = false
 
 local notify_groups = {}
 local notify_timer_id = nil
@@ -559,12 +560,16 @@ function M.list_groups()
 	end
 
 	if not initialized then
+		if starting then return end
+		starting = true
 		vim.notify("Starting server...", vim.log.levels.INFO, { title = "tg" })
 		vim.defer_fn(function()
 			if not config.ensure_deps() then
+				starting = false
 				return
 			end
 			if not server.start_server() then
+				starting = false
 				return
 			end
 			local health = server.server_health()
@@ -574,6 +579,7 @@ function M.list_groups()
 			else
 				vim.notify("Waiting for auth...", vim.log.levels.INFO, { title = "tg" })
 				auth.auth_poll(function(success)
+					starting = false
 					if success then
 						finish_init()
 						show_groups()

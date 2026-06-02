@@ -431,13 +431,13 @@ export class TelegramLSPClient {
         memberCount = sg.member_count;
         const info = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id }) as any;
         description = info.description || '';
-        inviteLink = info.invite_link?.invite_link || '';
+        inviteLink = typeof info.invite_link === 'string' ? info.invite_link : info.invite_link?.invite_link || '';
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id }) as { member_count: number };
         memberCount = bg.member_count;
         const info = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id }) as any;
         description = info.description || '';
-        inviteLink = info.invite_link?.invite_link || '';
+        inviteLink = typeof info.invite_link === 'string' ? info.invite_link : info.invite_link?.invite_link || '';
       }
     } catch (e) { console.warn('getChatInfo member count failed:', (e as Error).message); }
     let pinnedId = this._pinnedMessageIds.get(chatId) || 0;

@@ -6,7 +6,16 @@ const PORT = Number(process.env.TG_PORT) || 8080;
 const WS_PORT = Number(process.env.TG_WS_PORT) || PORT + 1;
 
 const app = express();
-const wss = new WebSocketServer({ port: WS_PORT });
+let wss: WebSocketServer;
+try {
+  wss = new WebSocketServer({ port: WS_PORT });
+  wss.on('error', (err) => {
+    console.error('WebSocket server error:', err.message);
+  });
+} catch (err) {
+  console.error('Failed to start WebSocket server on port', WS_PORT, (err as Error).message);
+  process.exit(1);
+}
 
 const tgClient = new TelegramLSPClient();
 
@@ -487,6 +496,10 @@ app.get('/messageMedia', async (req, res) => {
 const server = app.listen(PORT, () => {
   console.log('HTTP server: http://localhost:' + PORT);
   console.log('WebSocket server: ws://localhost:' + WS_PORT);
+});
+server.on('error', (err: Error) => {
+  console.error('Failed to start HTTP server on port', PORT, err.message);
+  process.exit(1);
 });
 
 async function shutdown() {
