@@ -1,4 +1,3 @@
-local Editor = require("telegram.editor")
 local server = require("telegram.server")
 local config = require("telegram.config")
 local render_msg = require("telegram.render").render
@@ -594,76 +593,6 @@ local function show_group_selector()
 	end)
 end
 
-local function input_send()
-	if not state.editor or state.sending then
-		return
-	end
-	state.sending = true
-	local text = state.editor:get_text()
-	if #text == 0 then
-		state.sending = false
-		return
-	end
-	if state.input_mode == "edit" and state.edit_target then
-		local target = state.edit_target
-		local ok = server.edit_message(state.chat_id, target.id, text)
-		if ok then
-			target.text = text
-		end
-		state.editor:clear()
-		state.input_mode = "send"
-		state.reply_to = nil
-		state.edit_target = nil
-		state.sending = false
-		render()
-		return
-	end
-	local function insert_msg(msg)
-		if not msg then
-			return
-		end
-		local id = msg.id
-		if id ~= nil then
-			id = tostring(id)
-			for _, m in ipairs(state.messages) do
-				if m.id ~= nil and tostring(m.id) == id then
-					return
-				end
-			end
-		end
-		table.insert(state.messages, msg)
-	end
-	if state.input_mode == "reply" and state.reply_to then
-		local msg = server.send_message(state.chat_id, text, state.reply_to)
-		insert_msg(msg)
-		render()
-	else
-		local msg = server.send_message(state.chat_id, text)
-		insert_msg(msg)
-		render()
-	end
-	state.editor:clear()
-	state.input_mode = "send"
-	state.reply_to = nil
-	state.edit_target = nil
-	state.sending = false
-	apply_highlights()
-end
-
-local function focus_input()
-	if state.editor then
-		state.editor:focus()
-	end
-end
-
-local function cur_area()
-	local win = vim.api.nvim_get_current_win()
-	if state.win and win == state.win then
-		return "msg"
-	end
-	return "msg"
-end
-
 local function setup_chat_keymaps()
 	local buf = state.buf
 	local tools = require("telegram.tools")
@@ -936,10 +865,11 @@ end
 
 function M.open_editor(title, default_text, callback)
 	local typing_timer = nil
-	if state.chat_id then
-		server.send_chat_action_async(state.chat_id, "chatActionTyping")
+	local typing_chat_id = state.chat_id
+	if typing_chat_id then
+		server.send_chat_action_async(typing_chat_id, "chatActionTyping")
 		typing_timer = vim.fn.timer_start(5000, function()
-			server.send_chat_action_async(state.chat_id, "chatActionTyping")
+			server.send_chat_action_async(typing_chat_id, "chatActionTyping")
 		end, { ["repeat"] = -1 })
 	end
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -1262,7 +1192,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				local l = line_of(saved_id)
 				if l then
-					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+					pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
 				else
 					M.jump_to_bottom()
 				end
@@ -1293,15 +1223,12 @@ function M.close_chat()
 	close_help()
 	destroy_title_float()
 	if state.chat_id then
-		state.last_chat = { id = state.chat_id, title = state.chat_title }
+		state.last_group = { id = state.chat_id, title = state.chat_title }
 		server.close_chat(state.chat_id)
 	end
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		local safe = (state.chat_title or "chat"):gsub("[^%w%p]", "_"):sub(1, 30)
 		pcall(vim.api.nvim_buf_set_name, state.buf, "/tmp/tg-" .. safe .. "-cached")
-	end
-	if state.editor then
-		state.editor:set_winid(nil)
 	end
 	state.mounted = false
 end
@@ -1318,7 +1245,6 @@ function M.destroy_chat()
 		vim.api.nvim_buf_delete(state.buf, { force = true })
 	end
 	state.buf = nil
-	state.editor = nil
 	state.messages = {}
 	state.msg_line_counts = {}
 	state.loading = false
@@ -1361,7 +1287,7 @@ end
 function M.jump_to_message(target_id, callback)
 	local l = line_of(target_id)
 	if l then
-		pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+		pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
 		M.update_title()
 		if callback then
 			callback(true)
@@ -1380,7 +1306,7 @@ function M.jump_to_message(target_id, callback)
 		M.update_title()
 		local l = line_of(target_id)
 		if l then
-			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+			pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
 		end
 		if callback then
 			callback(true)
@@ -1945,7 +1871,7 @@ function M.show_group_settings(chat_id)
 				end
 
 				local function set_cursor()
-					vim.api.nvim_win_set_cursor(win, { idx + 1, 0 })
+					pcall(vim.api.nvim_win_set_cursor, win, { idx + 1, 0 })
 				end
 				do local k = config.key("perms_down")
 					if k then vim.keymap.set("n", k, function() idx = math.min(idx + 1, max_idx) set_cursor() end, { buffer = buf, nowait = true }) end end

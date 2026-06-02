@@ -507,7 +507,7 @@ async function shutdown() {
   wss.close();
   server.close();
   try {
-    await tgClient.client.close();
+    await tgClient.shutdown();
   } catch {}
   process.exit(0);
 }

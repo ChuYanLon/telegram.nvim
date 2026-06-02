@@ -160,6 +160,8 @@ M.register("openlink", {
 	description = "Open URL or media file under cursor",
 	condition = function()
 		if is_service() then return false end
+		if not ui.state.win or not vim.api.nvim_win_is_valid(ui.state.win) then return false end
+		if not ui.state.buf or not vim.api.nvim_buf_is_valid(ui.state.buf) then return false end
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
 		if not text then return false end
@@ -167,6 +169,8 @@ M.register("openlink", {
 			or text:match("!%[%w+%]%((.-)%)")
 	end,
 	callback = function()
+		if not ui.state.win or not vim.api.nvim_win_is_valid(ui.state.win) then return end
+		if not ui.state.buf or not vim.api.nvim_buf_is_valid(ui.state.buf) then return end
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
 		if not text then return end

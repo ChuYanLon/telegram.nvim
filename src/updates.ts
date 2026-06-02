@@ -15,6 +15,7 @@ export class UpdateDispatcher {
 
   listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
     tdClient.on('update', async (update: TdUpdate) => {
+      try {
       switch (update._) {
         case 'updateNewChat':
           this.chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
@@ -82,6 +83,7 @@ export class UpdateDispatcher {
         default:
           this.broadcastRaw(update);
       }
+      } catch (e) { console.error('Update handler error:', (e as Error).message); }
     });
   }
 
@@ -152,7 +154,8 @@ export class UpdateDispatcher {
   async handleChatMemberUpdate(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const chat = this.chats.get(update.chat_id!);
+    if (!update.chat_id) return;
+    const chat = this.chats.get(update.chat_id);
     if (!chat) return;
     if (!update.member || update.actor_user_id == null) return;
     const memberId = update.member.user_id || 0;
@@ -164,7 +167,7 @@ export class UpdateDispatcher {
       : await this.resolver.getUserName(actorUserId);
     broadcast({
       event: 'chatMember',
-      chat_id: update.chat_id,
+      chat_id: update.chat_id!,
       chat_title: chat ? chat.title : 'Unknown',
       member: { id: memberId, name: memberName },
       actor: { id: actorUserId, name: actorName },
@@ -176,8 +179,8 @@ export class UpdateDispatcher {
   async handleMessageContentUpdate(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const chatId = update.chat_id!;
-    const messageId = update.message_id as number;
+    const chatId = update.chat_id;
+    const messageId = update.message_id;
     if (!chatId || !messageId) return;
     const newContent = update.new_content as { _: string; text?: { text: string }; caption?: { text: string } } | undefined;
     if (!newContent) return;
@@ -195,8 +198,8 @@ export class UpdateDispatcher {
   async handleDeleteMessages(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const chatId = update.chat_id!;
-    const messageIds = update.message_ids as number[];
+    const chatId = update.chat_id;
+    const messageIds = update.message_ids as number[] | undefined;
     if (!chatId || !messageIds) return;
     broadcast({
       event: 'messagesDeleted',
@@ -209,7 +212,7 @@ export class UpdateDispatcher {
   async handleChatLastMessage(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const chatId = update.chat_id!;
+    const chatId = update.chat_id;
     if (!chatId) return;
     const rawMsg = update.last_message as RawTdMessage | null;
     const chat = this.chats.get(chatId);
@@ -314,7 +317,15 @@ export class UpdateDispatcher {
     if (typeof broadcast !== 'function') return;
     const group = (update.supergroup || update.basic_group) as { status?: { _: string }; member_count?: number; is_active?: boolean } | undefined;
     if (!group) return;
-    const chatId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    const groupId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    if (!groupId) return;
+    let chatId: number | undefined;
+    for (const [id, chat] of this.chats) {
+      if (chat.type.supergroup_id === groupId || chat.type.basic_group_id === groupId) {
+        chatId = id;
+        break;
+      }
+    }
     if (!chatId) return;
     const status = group.status?._ || '';
     if (status === 'chatMemberStatusLeft' || status === 'chatMemberStatusBanned') {
@@ -327,7 +338,15 @@ export class UpdateDispatcher {
     if (typeof broadcast !== 'function') return;
     const info = (update.supergroup_full_info || update.basic_group_full_info) as { description?: string; member_count?: number } | undefined;
     if (!info) return;
-    const chatId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    const groupId = (update.supergroup_id || update.basic_group_id) as number | undefined;
+    if (!groupId) return;
+    let chatId: number | undefined;
+    for (const [id, chat] of this.chats) {
+      if (chat.type.supergroup_id === groupId || chat.type.basic_group_id === groupId) {
+        chatId = id;
+        break;
+      }
+    }
     if (!chatId) return;
     broadcast({
       event: 'chatGroupInfo',

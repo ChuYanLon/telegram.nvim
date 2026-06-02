@@ -205,10 +205,13 @@ local function flush_msg_queue()
 
 	local t = last and last.type or ""
 	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
-			server.get_media_async(st.chat_id, last.id, function(res)
+			local media_chat_id = st.chat_id
+			local media_msg_id = last.id
+			server.get_media_async(media_chat_id, media_msg_id, function(res)
+				if media_chat_id ~= st.chat_id then return end
 				if res and res.path and #res.path > 0 then
 					for _, m in ipairs(st.messages) do
-						if tostring(m.id) == tostring(last.id) then
+						if tostring(m.id) == tostring(media_msg_id) then
 							if res.mediaPath and #res.mediaPath > 0 then
 								m.mediaPath = res.mediaPath
 							end
@@ -294,8 +297,9 @@ local function finish_init()
 		elseif msg.event == "messageContentUpdated" then
 			if msg.chat_id == ui.state.chat_id then
 				vim.schedule(function()
+					local mid = tostring(msg.message_id)
 					for _, m in ipairs(ui.state.messages) do
-						if m.id == msg.message_id then
+						if tostring(m.id) == mid then
 							m.text = msg.text or ""
 							m.type = msg.type or m.type
 							ui.render()
@@ -376,13 +380,16 @@ local function finish_init()
 		elseif msg.event == "userUpdate" then
 			local uid = msg.user_id
 			local name = msg.name or ""
+			local orig_chat_id = ui.state.chat_id
 			if uid and name and #name > 0 then
 				vim.schedule(function()
 					local need_render = false
-					for _, m in ipairs(ui.state.messages) do
-						if m.sender and m.sender.id and tonumber(m.sender.id) == tonumber(uid) then
-							m.sender.name = name
-							need_render = true
+					if ui.state.chat_id == orig_chat_id then
+						for _, m in ipairs(ui.state.messages) do
+							if m.sender and m.sender.id and tonumber(m.sender.id) == tonumber(uid) then
+								m.sender.name = name
+								need_render = true
+							end
 						end
 					end
 					local found_group = false
@@ -518,6 +525,7 @@ local function finish_open(chats)
 	end
 end
 
+local poll_cancelled = false
 local function poll_chats(remaining, chats)
 	if remaining <= 0 then
 		finish_open(chats or {})
@@ -529,6 +537,7 @@ local function poll_chats(remaining, chats)
 		return
 	end
 	vim.defer_fn(function()
+		if poll_cancelled then return end
 		poll_chats(remaining - 1, chats)
 	end, 1000)
 end
@@ -617,7 +626,8 @@ end
 function M.logout()
 	vim.notify("Logging out and clearing auth data...", vim.log.levels.INFO, { title = "tg" })
 	ui.destroy_chat()
-	ui.state.last_chat = nil
+	ui.state.last_group = nil
+	poll_cancelled = true
 	server.stop_server()
 	local db_dir = config.config.data_dir .. "/tdlib_db"
 	local files_dir = config.config.data_dir .. "/tdlib_files"

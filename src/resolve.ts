@@ -53,7 +53,8 @@ export class Resolver {
     }
     const cache = new Map<string, SenderInfo>();
     await Promise.all([...unique].map(async ([key, id]) => {
-      cache.set(key, await this.resolveSender(id));
+      const sender = await this.resolveSender(id);
+      if (sender) cache.set(key, sender);
     }));
     return cache;
   }

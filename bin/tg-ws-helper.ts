@@ -1,3 +1,4 @@
+#!/usr/bin/env tsx
 import { WebSocket } from 'ws';
 const url = process.argv[2] || 'ws://localhost:8081';
 const ws = new WebSocket(url);

@@ -23,6 +23,7 @@ const pkg = require(path.join(process.cwd(), 'package.json')) as { version: stri
 export class TelegramLSPClient {
   client: any;
   _ready = false;
+  _keepOnlineTimer: ReturnType<typeof setTimeout> | undefined;
   _chats: Map<number, RawTdChat> = new Map();
   _chatsLoaded = false;
   _pinnedMessageIds: Map<number, number> = new Map();
@@ -126,9 +127,9 @@ export class TelegramLSPClient {
       const keepOnline = () => {
         if (!this._ready) return;
         this.client.invoke({ _: 'setOption', name: 'online', value: { _: 'optionValueBoolean', value: true } }).catch(() => {});
-        setTimeout(keepOnline, 30000);
+        this._keepOnlineTimer = setTimeout(keepOnline, 30000);
       };
-      setTimeout(keepOnline, 30000);
+      this._keepOnlineTimer = setTimeout(keepOnline, 30000);
       this._ready = true;
       this.auth.markReady();
       console.log('TDLib client ready');
@@ -1095,6 +1096,20 @@ export class TelegramLSPClient {
       }
       return { path: '' };
     } catch (e) { console.warn('getMessageMedia failed:', (e as Error).message); return null; }
+  }
+
+  async shutdown() {
+    if (this._keepOnlineTimer) {
+      clearTimeout(this._keepOnlineTimer);
+      this._keepOnlineTimer = undefined;
+    }
+    if (!this._ready) return;
+    try {
+      await this.client.invoke({ _: 'setOption', name: 'online', value: { _: 'optionValueBoolean', value: false } });
+    } catch {}
+    try {
+      await this.client.invoke({ _: 'close' });
+    } catch {}
   }
 }
 

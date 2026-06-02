@@ -6,4 +6,7 @@ if not ok then
   vim.notify('Failed to load plugin', vim.log.levels.ERROR, { title = 'tg' })
   return
 end
-tg.setup()
+local setup_ok, setup_err = pcall(tg.setup)
+if not setup_ok then
+  vim.notify('telegram.nvim setup failed: ' .. tostring(setup_err), vim.log.levels.ERROR, { title = 'tg' })
+end

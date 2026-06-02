@@ -1,5 +1,4 @@
 local text = require("telegram.render.text")
-local code = require("telegram.render.code")
 local link = require("telegram.render.link")
 local media = require("telegram.render.media")
 local other = require("telegram.render.other")
@@ -10,9 +9,6 @@ local function get_renderer(msg)
 	local t = msg.type or "messageText"
 	if t == "messageText" then
 		local txt = msg.text or ""
-		if txt:find("```") then
-			return code
-		end
 		if txt:find("https?://") or txt:find("www%.[%w_-]+%.") then
 			return link
 		end
@@ -99,17 +95,11 @@ function M.render(msg)
 		local is_code = msg.type == "messageText" and text:find("```")
 
 		if is_code then
-			if text:find("^```") then
-				for _, l in ipairs(content) do
-					table.insert(out, l)
-				end
-			else
-				table.insert(out, "```")
-				for _, l in ipairs(content) do
-					table.insert(out, l)
-				end
-				table.insert(out, "```")
+			table.insert(out, "```")
+			for _, l in ipairs(content) do
+				table.insert(out, l)
 			end
+			table.insert(out, "```")
 		else
 			for _, l in ipairs(content) do
 				table.insert(out, l)
