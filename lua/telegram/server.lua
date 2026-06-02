@@ -525,7 +525,11 @@ end
 ---@param text string
 ---@return boolean
 function M.edit_message(chat_id, message_id, text)
-	return http_post("/editMessage", { chatId = chat_id, messageId = message_id, text = text })
+	local data = http_post("/editMessage", { chatId = chat_id, messageId = message_id, text = text })
+	if type(data) == "table" and data.message then
+		return data.message
+	end
+	return nil
 end
 
 ---@param chat_id any

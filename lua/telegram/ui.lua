@@ -689,8 +689,11 @@ local function setup_chat_keymaps()
 			if not input then
 				return
 			end
-			if server.edit_message(state.chat_id, target.id, input) then
-				target.text = input
+			local edited = server.edit_message(state.chat_id, target.id, input)
+			if edited then
+				target.text = edited.text or input
+				state._edit_ts = state._edit_ts or {}
+				state._edit_ts[tostring(target.id)] = os.time() + 3
 				render()
 			else
 				vim.notify("Failed to edit message", vim.log.levels.WARN, { title = "tg" })

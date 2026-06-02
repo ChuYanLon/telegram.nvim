@@ -323,9 +323,12 @@ local function finish_init()
 			vim.schedule(function()
 				if not mcu_chat_id or mcu_chat_id ~= ui.state.chat_id then return end
 				local mid = tostring(msg.message_id)
+				local edit_ts = ui.state._edit_ts and ui.state._edit_ts[mid]
 				for _, m in ipairs(ui.state.messages) do
 					if tostring(m.id) == mid then
-						m.text = msg.text or ""
+						if not edit_ts or edit_ts < os.time() then
+							m.text = msg.text or ""
+						end
 						m.type = msg.type or m.type
 						ui.render()
 						break

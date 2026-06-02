@@ -357,7 +357,7 @@ export class TelegramLSPClient {
     return msg;
   }
 
-  async editMessage(chatId: number, messageId: number, text: string): Promise<{ ok: boolean }> {
+  async editMessage(chatId: number, messageId: number, text: string): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const formatted = await this._parseMD(text);
     await this.client.invoke({
@@ -369,7 +369,18 @@ export class TelegramLSPClient {
         text: formatted,
       },
     });
-    return { ok: true };
+    try {
+      const updated = await this.client.invoke({
+        _: 'getMessage',
+        chat_id: chatId,
+        message_id: messageId,
+      }) as RawTdMessage;
+      const msg = await this.formatter.format(updated);
+      if (msg && text !== msg.text) msg.text = text;
+      return msg;
+    } catch {
+      return null;
+    }
   }
 
   async deleteMessage(chatId: number, messageId: number, revoke = true): Promise<{ ok: boolean }> {
