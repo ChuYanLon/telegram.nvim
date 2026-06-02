@@ -319,7 +319,7 @@ local function finish_init()
 		elseif msg.event == "messageContentUpdated" then
 			local mcu_chat_id = msg.chat_id
 			vim.schedule(function()
-				if mcu_chat_id ~= ui.state.chat_id then return end
+				if not mcu_chat_id or mcu_chat_id ~= ui.state.chat_id then return end
 				local mid = tostring(msg.message_id)
 				for _, m in ipairs(ui.state.messages) do
 					if tostring(m.id) == mid then
@@ -333,7 +333,7 @@ local function finish_init()
 		elseif msg.event == "messagesDeleted" then
 			local del_chat_id = msg.chat_id
 			vim.schedule(function()
-				if del_chat_id ~= ui.state.chat_id then return end
+				if not del_chat_id or del_chat_id ~= ui.state.chat_id then return end
 				local ids = {}
 				for _, id in ipairs(msg.message_ids) do
 					ids[tostring(id)] = true
@@ -436,10 +436,11 @@ local function finish_init()
 			end
 		elseif msg.event == "userStatus" then
 			vim.schedule(function()
-				local uid = msg.user_id
-				if not uid or ui.state.chat_id ~= uid then
-					for _, g in pairs(ui.state.groups) do
-						if g.user_id == uid then
+	local uid = msg.user_id
+	if not uid then return end
+	if ui.state.chat_id ~= uid then
+		for _, g in pairs(ui.state.groups) do
+			if g.user_id == uid then
 							g.online_count = msg.is_online and 1 or 0
 							if g.id == ui.state.chat_id then
 								ui.set_online_count(g.online_count)
