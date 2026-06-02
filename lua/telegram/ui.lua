@@ -225,6 +225,21 @@ local function render()
 	end
 	local buf = state.buf
 
+	local cursor_msg_id = nil
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+		local off = title_offset()
+		local l = 1 + off
+		for i, m in ipairs(state.messages) do
+			local n = state.msg_line_counts[i] or #fmt_msg(m)
+			if cursor_line >= l and cursor_line < l + n then
+				cursor_msg_id = m.id
+				break
+			end
+			l = l + n
+		end
+	end
+
 	local lines = {}
 	local line_counts = {}
 	for i, msg in ipairs(state.messages) do
@@ -250,6 +265,13 @@ local function render()
 	vim.bo[buf].modified = false
 
 	apply_highlights()
+
+	if cursor_msg_id then
+		local l = line_of(cursor_msg_id)
+		if l then
+			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+		end
+	end
 end
 
 M.render = render
@@ -669,6 +691,8 @@ local function setup_chat_keymaps()
 			if server.edit_message(state.chat_id, target.id, input) then
 				target.text = input
 				render()
+			else
+				vim.notify("Failed to edit message", vim.log.levels.WARN, { title = "tg" })
 			end
 		end)
 	end)
@@ -697,6 +721,8 @@ local function setup_chat_keymaps()
 				end
 				render()
 				vim.notify("Message " .. (revoke and "revoked" or "deleted"), vim.log.levels.INFO, { title = "tg" })
+			else
+				vim.notify("Failed to delete message", vim.log.levels.WARN, { title = "tg" })
 			end
 		end)
 	end)
@@ -720,6 +746,8 @@ local function setup_chat_keymaps()
 			local ok = server.forward_messages(state.chat_id, target.id, item.id)
 			if ok then
 				vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
+			else
+				vim.notify("Failed to forward message", vim.log.levels.WARN, { title = "tg" })
 			end
 		end)
 	end)
@@ -1206,7 +1234,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				local l = line_of(saved_id)
 				if l then
-					pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
+					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 				else
 					M.jump_to_bottom()
 				end
@@ -1306,7 +1334,7 @@ end
 function M.jump_to_message(target_id, callback)
 	local l = line_of(target_id)
 	if l then
-		pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
+		pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 		M.update_title()
 		if callback then
 			callback(true)
@@ -1325,7 +1353,7 @@ function M.jump_to_message(target_id, callback)
 		M.update_title()
 		local l = line_of(target_id)
 		if l then
-			pcall(vim.api.nvim_win_set_cursor, state.win, { l - 1, 0 })
+			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 		end
 		if callback then
 			callback(true)
@@ -1463,7 +1491,7 @@ function M.refresh_messages(on_complete)
 			local last = state.messages[#state.messages]
 			local head = line_of(last.id)
 			if head then
-				pcall(vim.api.nvim_win_set_cursor, state.win, { head - 1, 0 })
+				pcall(vim.api.nvim_win_set_cursor, state.win, { head, 0 })
 			end
 		end
 		if #state.messages > 0 then
@@ -1547,6 +1575,9 @@ local function user_actions_menu(chat_id, user, on_done)
 			vim.notify(choice .. ": " .. user.name, vim.log.levels.INFO, { title = "tg" })
 		elseif choice ~= "Open DM" then
 			vim.notify(choice .. " failed: " .. user.name, vim.log.levels.WARN, { title = "tg" })
+		end
+		if chat_id == ui.state.chat_id then
+			M.update_title()
 		end
 		if on_done then on_done() end
 	end)

@@ -142,9 +142,9 @@ local function flush_msg_queue()
 		local mid = msg.id or (os.time() + math.random())
 		local skip_insert = false
 
-		if msg.own then
+		if msg.own and mid then
 			for _, m in ipairs(st.messages) do
-				if m.own and m.sender and msg.sender and m.sender.id == msg.sender.id and m.text == msg.text then
+				if m.own and tostring(m.id) == tostring(mid) then
 					m.id = mid
 					m.date = msg.date
 					m.sender = msg.sender
@@ -708,7 +708,11 @@ vim.api.nvim_create_user_command("TgSend", function(opts)
 		vim.notify("Text is required", vim.log.levels.ERROR, { title = "tg" })
 		return
 	end
-	if not server.send_message(chat_id, text) then
+	local sent = server.send_message(chat_id, text)
+	if sent then
+		table.insert(ui.state.messages, sent)
+		ui.render()
+	else
 		vim.notify("Failed to send message", vim.log.levels.ERROR, { title = "tg" })
 	end
 end, { nargs = "+" })
