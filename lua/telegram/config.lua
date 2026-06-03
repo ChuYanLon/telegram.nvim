@@ -34,6 +34,7 @@ M.config = {
 	http_port = 8080,
 	ws_port = 8081,
 	keys = {},
+	notify_chat_types = { "private", "mention" },
 }
 
 local function hl_fg(name)

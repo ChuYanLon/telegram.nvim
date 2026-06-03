@@ -17,7 +17,7 @@ beforeAll(async () => {
   client.resolver._users.set(1, 'Alice');
   client.resolver._users.set(2, 'Bob Lee');
   client.resolver._users.set(3, 'Charlie');
-  client._chats.set(-1001, { id: -1001, title: 'Test Group' });
+  client._chats.set(-1001, { id: -1001, title: 'Test Group', type: { _: 'chatTypeSupergroup' } });
 });
 
 describe('_extractText', () => {
@@ -73,6 +73,7 @@ describe('_formatMessage', () => {
       sender: { id: 1, name: 'Alice' },
       date: 1000000,
       own: false,
+      containsMention: false,
     });
   });
 

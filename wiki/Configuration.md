@@ -8,6 +8,7 @@ require("telegram").setup({
   -- data_dir = "/path/to/data",  -- default: plugin root directory
   -- http_port = 8080,
   -- ws_port = 8081,
+  -- notify_chat_types = { "private", "mention" },  -- types: "private", "group", "channel"; add "mention" for @mentions
 
   -- Custom keymaps (nil/false to disable a key)
   -- keys = {
@@ -27,6 +28,7 @@ require("telegram").setup({
 | `http_port` | `number?` | `8080` | Backend HTTP server port |
 | `ws_port` | `number?` | `8081` | Backend WebSocket server port |
 | `keys` | `table?` | all defaults | Custom keymaps — see [Keymaps](#keymaps) below |
+| `notify_chat_types` | `table?` | `{"private", "mention"}` | Chat types that trigger `vim.notify` on new messages (`"private"`, `"group"`, `"channel"`). Include `"mention"` for @mentions |
 
 ## Keymaps
 

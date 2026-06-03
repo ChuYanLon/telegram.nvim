@@ -47,6 +47,15 @@ local function flush_notify()
 	vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "tg" })
 end
 
+local function should_notify(msg)
+	if not msg or not msg.chat then return false end
+	for _, t in ipairs(config.config.notify_chat_types) do
+		if t == "mention" and msg.containsMention then return true end
+		if msg.chat.type == t then return true end
+	end
+	return false
+end
+
 local function queue_notify(chat_id, chat_title, sender, text)
 	local preview = (text or ""):gsub("\n", " "):sub(1, 50)
 	local g = notify_groups[chat_id]
@@ -104,7 +113,7 @@ local function flush_msg_queue()
 			if not is_current then
 				local sender = msg.sender and msg.sender.name or "?"
 				ui.update_group_last_msg(msg.chat and msg.chat.id, sender, msg.text and msg.text:sub(1, 60) or "")
-				if msg.chat and (msg.chat.type == "private" or msg.containsMention) then
+				if should_notify(msg) then
 					queue_notify(msg.chat.id, msg.chat.title or "?", sender, msg.text)
 				end
 			else
@@ -130,7 +139,7 @@ local function flush_msg_queue()
 
 	if not st.buf or not st.win or not vim.api.nvim_buf_is_valid(st.buf) or not vim.api.nvim_win_is_valid(st.win) then
 		for _, msg in ipairs(current_msgs) do
-			if msg.chat and (msg.chat.type == "private" or msg.containsMention) then
+			if should_notify(msg) then
 				local sender = msg.sender and msg.sender.name or "?"
 				queue_notify(msg.chat.id, msg.chat.title or "?", sender, msg.text)
 			end
@@ -174,7 +183,7 @@ local function flush_msg_queue()
 				added_to_buffer = true
 				local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
 				if not is_focused then
-					if msg.chat and (msg.chat.type == "private" or msg.containsMention) then
+					if should_notify(msg) then
 						local sender = msg.sender and msg.sender.name or "?"
 						queue_notify(msg.chat.id, msg.chat.title or "?", sender, msg.text)
 					end
