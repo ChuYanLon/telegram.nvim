@@ -386,6 +386,19 @@ local function finish_init()
 				end
 				ui.render()
 			end)
+		elseif msg.event == "messageReactions" then
+			local mr_chat_id = msg.chat_id
+			vim.schedule(function()
+				if not mr_chat_id or mr_chat_id ~= ui.state.chat_id then return end
+				local mid = tostring(msg.message_id)
+				for _, m in ipairs(ui.state.messages) do
+					if tostring(m.id) == mid then
+						m.reactions = msg.reactions
+						ui.render()
+						break
+					end
+				end
+			end)
 		elseif msg.event == "chatLastMessageUpdated" then
 			local clm_chat_id = msg.chat_id
 			vim.schedule(function()

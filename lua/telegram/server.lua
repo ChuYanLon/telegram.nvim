@@ -715,6 +715,46 @@ function M.delete_chat_history(chat_id)
 	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
 end
 
+-- ─── Reactions ──────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param message_id any
+---@param emoji string
+---@return table|nil
+function M.add_reaction(chat_id, message_id, emoji)
+	local url = base_url() .. "/message/reaction/add"
+	local body = vim.json.encode({ chatId = chat_id, messageId = message_id, emoji = emoji })
+	local res = vim.fn.system({ "curl", "-s", "--noproxy", "*", "--connect-timeout", "2", "--max-time", "5", "-X", "POST", url, "-H", "Content-Type: application/json", "-d", body })
+	if vim.v.shell_error ~= 0 then return nil end
+	local ok, data = pcall(vim.json.decode, res)
+	if ok and type(data) == "table" then
+		if data.error then
+			vim.notify(data.error, vim.log.levels.WARN, { title = "tg" })
+		end
+		return data
+	end
+	return nil
+end
+
+---@param chat_id any
+---@param message_id any
+---@param emoji string
+---@return table|nil
+function M.remove_reaction(chat_id, message_id, emoji)
+	local url = base_url() .. "/message/reaction/remove"
+	local body = vim.json.encode({ chatId = chat_id, messageId = message_id, emoji = emoji })
+	local res = vim.fn.system({ "curl", "-s", "--noproxy", "*", "--connect-timeout", "2", "--max-time", "5", "-X", "POST", url, "-H", "Content-Type: application/json", "-d", body })
+	if vim.v.shell_error ~= 0 then return nil end
+	local ok, data = pcall(vim.json.decode, res)
+	if ok and type(data) == "table" then
+		if data.error then
+			vim.notify(data.error, vim.log.levels.WARN, { title = "tg" })
+		end
+		return data
+	end
+	return nil
+end
+
 -- ─── Invite Links ──────────────────────────────────────────────────────
 
 ---@param chat_id any

@@ -90,6 +90,9 @@ export class UpdateDispatcher {
         case 'updateMessageIsPinned':
           this.handleMessageIsPinned(update);
           break;
+        case 'updateMessageReactions':
+          this.handleMessageReactions(update);
+          break;
         case 'updateAuthorizationState':
           this.handleAuthorizationState(update);
           break;
@@ -457,6 +460,23 @@ export class UpdateDispatcher {
       event: 'chatUnreadMentionCount',
       chat_id: update.chat_id,
       unread_mention_count: update.unread_mention_count,
+    });
+  }
+
+  handleMessageReactions(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const rawReactions = update.reactions as { emoji: string; total_count: number; is_chosen: boolean }[] | undefined;
+    if (!rawReactions) return;
+    broadcast({
+      event: 'messageReactions',
+      chat_id: update.chat_id,
+      message_id: update.message_id,
+      reactions: rawReactions.map(r => ({
+        emoji: r.emoji,
+        count: r.total_count,
+        is_chosen: r.is_chosen,
+      })),
     });
   }
 }

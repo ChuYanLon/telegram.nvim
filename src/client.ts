@@ -608,11 +608,30 @@ export class TelegramLSPClient {
     const chat = this._chats.get(chatId);
     const t1 = Date.now();
     const raw = result.messages || [];
+
+    // Backfill interaction_info for messages that lack it (some TDLib versions
+    // don't include it in getChatHistory responses)
+    let backfillCount = 0;
+    const MAX_BACKFILL = 5;
+    for (const m of raw) {
+      if (!m.interaction_info && backfillCount < MAX_BACKFILL && m.id > 0) {
+        backfillCount++;
+        try {
+          const detailed = await this.client.invoke({
+            _: 'getMessage',
+            chat_id: chatId,
+            message_id: m.id,
+          }) as RawTdMessage;
+          if (detailed.interaction_info) {
+            m.interaction_info = detailed.interaction_info;
+          }
+        } catch {}
+      }
+    }
+
     const senderCache = raw.length > 1 ? await this.formatter.preloadSenders(raw) : null;
     let msgs = (await Promise.all(raw.map(m => this.formatter.format(m, senderCache, chatId)))).filter(Boolean) as FormattedMessage[];
-    if (before && beforeDate) {
-      msgs = msgs.filter(m => m.date < beforeDate || (m.date === beforeDate && m.id < before));
-    }
+
     msgs.sort((a, b) => a.date - b.date);
     const fmtMs = Date.now() - t1;
     return {
@@ -634,6 +653,23 @@ export class TelegramLSPClient {
       only_local: false,
     }) as { messages?: RawTdMessage[] };
     const raw = result.messages || [];
+
+    let backfillCount = 0;
+    const MAX_BACKFILL = 5;
+    for (const m of raw) {
+      if (!m.interaction_info && backfillCount < MAX_BACKFILL && m.id > 0) {
+        backfillCount++;
+        try {
+          const detailed = await this.client.invoke({
+            _: 'getMessage',
+            chat_id: chatId,
+            message_id: m.id,
+          }) as RawTdMessage;
+          if (detailed.interaction_info) m.interaction_info = detailed.interaction_info;
+        } catch {}
+      }
+    }
+
     const senderCache = raw.length > 1 ? await this.formatter.preloadSenders(raw) : null;
     let msgs = (await Promise.all(
       raw.map(m => this.formatter.format(m, senderCache))
@@ -912,6 +948,42 @@ export class TelegramLSPClient {
     });
   }
 
+  // ─── Reactions ────────────────────────────────────────────────────────
+
+  async addMessageReaction(chatId: number, messageId: number, emoji: string): Promise<{ ok: boolean; error?: string }> {
+    if (!this._ready) return { ok: false, error: 'Client not ready' };
+    try {
+      await this.client.invoke({
+        _: 'addMessageReaction',
+        chat_id: chatId,
+        message_id: messageId,
+        reaction_type: { _: 'reactionTypeEmoji', emoji },
+      });
+      return { ok: true };
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.error('addMessageReaction failed:', msg);
+      return { ok: false, error: msg };
+    }
+  }
+
+  async removeMessageReaction(chatId: number, messageId: number, emoji: string): Promise<{ ok: boolean; error?: string }> {
+    if (!this._ready) return { ok: false, error: 'Client not ready' };
+    try {
+      await this.client.invoke({
+        _: 'removeMessageReaction',
+        chat_id: chatId,
+        message_id: messageId,
+        reaction_type: { _: 'reactionTypeEmoji', emoji },
+      });
+      return { ok: true };
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.error('removeMessageReaction failed:', msg);
+      return { ok: false, error: msg };
+    }
+  }
+
   // ─── Permissions ─────────────────────────────────────────────────────
 
   async getMyPermissions(chatId: number): Promise<Record<string, unknown>> {
@@ -1049,6 +1121,23 @@ export class TelegramLSPClient {
     ]) as [{ messages?: RawTdMessage[] }, { messages?: RawTdMessage[] }];
 
     const allRaw = [...(olderResult.messages || []), ...(newerResult.messages || [])];
+
+    let backfillCount = 0;
+    const MAX_BACKFILL = 5;
+    for (const m of allRaw) {
+      if (!m.interaction_info && backfillCount < MAX_BACKFILL && m.id > 0) {
+        backfillCount++;
+        try {
+          const detailed = await this.client.invoke({
+            _: 'getMessage',
+            chat_id: chatId,
+            message_id: m.id,
+          }) as RawTdMessage;
+          if (detailed.interaction_info) m.interaction_info = detailed.interaction_info;
+        } catch {}
+      }
+    }
+
     const senderCache = allRaw.length > 1 ? await this.formatter.preloadSenders(allRaw) : null;
 
     const centerDate = target ? target.date : 0;

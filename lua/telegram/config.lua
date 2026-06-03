@@ -19,6 +19,7 @@ M.default_keys = {
 	editor_cancel = "<Esc>",
 	help_close = "<Esc>",
 	help_close_q = "q",
+	reaction = "r",
 	perms_down = "j",
 	perms_up = "k",
 	perms_toggle = "<Tab>",

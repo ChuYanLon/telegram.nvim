@@ -68,7 +68,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Group settings — change title/description, granular default permissions editor (14 permission types with toggle-all), leave group, unsubscribe from channel, delete history
 - [x] Invite links — create (with optional member limit and expiration), view, edit, and revoke invite links
 - [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
-- [x] Real-time sync between devices — edits, deletions, group info changes, user name/status changes sync via WebSocket from other clients
+- [x] React to messages — press `r` to open reaction picker with 40+ verified emojis; same emoji toggles off, different auto-switches; real-time sync via WebSocket
+- [x] Real-time sync between devices — edits, deletions, reactions, group info changes, user name/status changes sync via WebSocket from other clients
 - [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
 - [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
 - [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
@@ -79,8 +80,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [ ] **Send stickers / GIFs**
 - [ ] **Create polls**
 - [ ] **Scheduled messages**
-- [ ] **Emoji picker**
-- [ ] **React to messages** (like, heart, etc.)
 - [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
 - [ ] **Inline bots** / bot commands
 

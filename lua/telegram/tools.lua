@@ -156,6 +156,14 @@ local function open_target(target)
 	})
 end
 
+M.register("reaction", {
+	description = "React to message",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		ui.show_reaction_picker()
+	end,
+})
+
 M.register("openlink", {
 	description = "Open URL or media file under cursor",
 	condition = function()

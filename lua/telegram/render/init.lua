@@ -99,6 +99,19 @@ function M.render(msg)
 		for _, l in ipairs(content) do
 			table.insert(out, l)
 		end
+		if msg.reactions and #msg.reactions > 0 then
+			local parts = {}
+			for _, r in ipairs(msg.reactions) do
+				local txt = r.emoji
+				if r.is_chosen then
+					txt = txt .. " **" .. r.count .. "**"
+				else
+					txt = txt .. " " .. r.count
+				end
+				table.insert(parts, txt)
+			end
+			table.insert(out, "└─ " .. table.concat(parts, "  "))
+		end
 	end
 
 	table.insert(out, "")

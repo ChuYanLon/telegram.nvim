@@ -1,4 +1,4 @@
-import type { RawTdMessage, FormattedMessage, SenderInfo } from './types';
+import type { RawTdMessage, FormattedMessage, SenderInfo, Reaction } from './types';
 import type { Resolver } from './resolve';
 
 interface Entity { offset: number; length: number; type: { _: string; url?: string; language?: string } }
@@ -113,6 +113,14 @@ export class MessageFormatter {
     }
 
     if (msg.views) formatted.views = msg.views;
+
+    if (msg.interaction_info?.reactions?.reactions?.length) {
+      formatted.reactions = msg.interaction_info.reactions.reactions.map((r) => ({
+        emoji: r.type.emoji,
+        count: r.total_count,
+        is_chosen: r.is_chosen,
+      }));
+    }
 
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;

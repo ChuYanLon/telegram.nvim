@@ -12,6 +12,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | `d` | Delete / revoke message (highlighted in red) |
 | `f` | Forward message to another chat |
 | `p` | Pin / unpin message at cursor |
+| `r` | React to message (opens emoji picker) |
 | `c` | Open DM with message sender |
 | `B` | Ban message sender |
 | `G` | Refresh messages, jump to bottom |

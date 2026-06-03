@@ -4,6 +4,12 @@ export interface SenderInfo {
   custom_title?: string;
 }
 
+export interface Reaction {
+  emoji: string;
+  count: number;
+  is_chosen: boolean;
+}
+
 export interface FormattedMessage {
   id: number;
   type: string;
@@ -24,6 +30,7 @@ export interface FormattedMessage {
   mediaPath?: string;
   mimeType?: string;
   views?: number;
+  reactions?: Reaction[];
 }
 
 export interface RawTdMessage {
@@ -48,6 +55,23 @@ export interface RawTdMessage {
     chat_id?: number;
   } | null;
   views?: number;
+  interaction_info?: {
+    _: string;
+    view_count?: number;
+    forward_count?: number;
+    reactions?: {
+      _: string;
+      reactions: {
+        _: string;
+        type: { _: string; emoji: string };
+        total_count: number;
+        is_chosen: boolean;
+        recent_sender_ids?: { _: string; user_id?: number; chat_id?: number }[];
+      }[];
+      are_tags?: boolean;
+    };
+    [key: string]: unknown;
+  };
 }
 
 export interface RawTdChat {

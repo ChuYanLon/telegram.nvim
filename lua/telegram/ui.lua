@@ -834,6 +834,9 @@ local function setup_chat_keymaps()
 	set("ban", function()
 		M.ban_sender()
 	end)
+	set("reaction", function()
+		M.show_reaction_picker()
+	end)
 	set("open_dm", function()
 		local target = M.curr_msg()
 		if not target or not target.sender or not target.sender.id then
@@ -905,6 +908,7 @@ function M.show_help()
 		" G          refresh + jump to bottom",
 		" B          ban message sender",
 		" c          open DM with message sender",
+		" r          react to message",
 		"",
 		"-- Tools (@) --",
 		" chats      switch chat (Snacks picker)",
@@ -2082,6 +2086,143 @@ function M.show_group_settings(chat_id)
 					end
 				end
 			end)
+		end
+	end)
+end
+
+-- ─── Reaction Picker ──────────────────────────────────────────────────
+
+---Toggle reaction on a specific message, following Telegram behavior:
+---one reaction per user. Same emoji toggles off, different emoji switches.
+---@param msg table the message object from state.messages
+---@param emoji string
+function M.toggle_reaction_on(msg, emoji)
+	if not msg or not msg.id then return end
+
+	-- Find user's current chosen reaction
+	local chosen_emoji
+	for _, r in ipairs(msg.reactions or {}) do
+		if r.is_chosen then
+			chosen_emoji = r.emoji
+			break
+		end
+	end
+
+	local ok = false
+	if chosen_emoji then
+		if chosen_emoji == emoji then
+			local res = server.remove_reaction(state.chat_id, msg.id, emoji)
+			ok = res and res.ok == true
+		else
+			local res = server.add_reaction(state.chat_id, msg.id, emoji)
+			ok = res and res.ok == true
+		end
+	else
+		local res = server.add_reaction(state.chat_id, msg.id, emoji)
+		ok = res and res.ok == true
+	end
+	if not ok then return end
+
+	-- Only update local state on success
+	if chosen_emoji then
+		if chosen_emoji == emoji then
+			--- Same emoji: remove
+			local new_reactions = {}
+			for _, r in ipairs(msg.reactions or {}) do
+				if r.emoji == emoji then
+					if r.count > 1 then
+						table.insert(new_reactions, { emoji = r.emoji, count = r.count - 1, is_chosen = false })
+					end
+				else
+					table.insert(new_reactions, r)
+				end
+			end
+			msg.reactions = #new_reactions > 0 and new_reactions or nil
+		else
+			--- Different emoji: switch
+			local new_reactions = {}
+			for _, r in ipairs(msg.reactions or {}) do
+				if r.emoji == chosen_emoji then
+					if r.count > 1 then
+						table.insert(new_reactions, { emoji = r.emoji, count = r.count - 1, is_chosen = false })
+					end
+				elseif r.emoji == emoji then
+					table.insert(new_reactions, { emoji = r.emoji, count = r.count + 1, is_chosen = true })
+				else
+					table.insert(new_reactions, r)
+				end
+			end
+			local found_new = false
+			for _, r in ipairs(new_reactions) do
+				if r.emoji == emoji then found_new = true; break end
+			end
+			if not found_new then
+				table.insert(new_reactions, { emoji = emoji, count = 1, is_chosen = true })
+			end
+			msg.reactions = #new_reactions > 0 and new_reactions or nil
+		end
+	else
+		--- No existing reaction: add
+		msg.reactions = msg.reactions or {}
+		local found = false
+		for _, r in ipairs(msg.reactions) do
+			if r.emoji == emoji then
+				r.count = (r.count or 0) + 1
+				r.is_chosen = true
+				found = true
+				break
+			end
+		end
+		if not found then
+			table.insert(msg.reactions, { emoji = emoji, count = 1, is_chosen = true })
+		end
+	end
+	render()
+end
+
+function M.show_reaction_picker()
+	local target = M.curr_msg()
+	if not target or not target.id then
+		vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+		return
+	end
+
+	local target_ref = target
+	local emojis = require("telegram.emojis")
+	local items = {
+		{ emoji = "👍" }, { emoji = "👎" }, { emoji = "🔥" }, { emoji = "😢" },
+		{ emoji = "😱" }, { emoji = "😨" }, { emoji = "😁" }, { emoji = "😎" },
+		{ emoji = "😘" }, { emoji = "😡" }, { emoji = "😈" }, { emoji = "😇" },
+		{ emoji = "😴" }, { emoji = "😐" }, { emoji = "🤔" }, { emoji = "🤗" },
+		{ emoji = "🤣" }, { emoji = "🤓" }, { emoji = "🤝" }, { emoji = "🙏" },
+		{ emoji = "🙈" }, { emoji = "🙊" }, { emoji = "💋" }, { emoji = "💘" },
+		{ emoji = "💯" }, { emoji = "💩" }, { emoji = "💊" }, { emoji = "💅" },
+		{ emoji = "👀" }, { emoji = "👌" }, { emoji = "👎" }, { emoji = "🖕" },
+		{ emoji = "🏆" }, { emoji = "🎉" }, { emoji = "🎄" }, { emoji = "🎃" },
+		{ emoji = "🎅" }, { emoji = "🆒" }, { emoji = "⚡" }, { emoji = "🐳" },
+		{ emoji = "🦄" }, { emoji = "🌚" }, { emoji = "🍌" }, { emoji = "🍓" },
+	}
+	for _, item in ipairs(items) do
+		local name = emojis.get_name(item.emoji)
+		item.label = item.emoji
+		if name then
+			item.label = item.emoji .. "  " .. name
+		end
+		if target.reactions then
+			for _, r in ipairs(target.reactions) do
+				if r.emoji == item.emoji and r.is_chosen then
+					item.label = item.label .. "  ✓"
+					break
+				end
+			end
+		end
+	end
+	vim.ui.select(items, {
+		prompt = "React to message",
+		format_item = function(item) return item.label end,
+	}, function(choice)
+		if choice then
+			M.toggle_reaction_on(target_ref, choice.emoji)
 		end
 	end)
 end

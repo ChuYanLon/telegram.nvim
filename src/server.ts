@@ -485,6 +485,40 @@ app.post('/chat/revoke-invite-link', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Reactions ──────────────────────────────────────────────────────
+
+app.post('/message/reaction/add', async (req, res) => {
+  try {
+    const { chatId, messageId, emoji } = req.body;
+    if (!chatId || !messageId || !emoji) {
+      res.status(400).json({ error: 'chatId, messageId, and emoji are required' });
+      return;
+    }
+    const result = await tgClient.addMessageReaction(Number(chatId), Number(messageId), emoji);
+    if (result.ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ ok: false, error: result.error || 'Unknown error' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/message/reaction/remove', async (req, res) => {
+  try {
+    const { chatId, messageId, emoji } = req.body;
+    if (!chatId || !messageId || !emoji) {
+      res.status(400).json({ error: 'chatId, messageId, and emoji are required' });
+      return;
+    }
+    const result = await tgClient.removeMessageReaction(Number(chatId), Number(messageId), emoji);
+    if (result.ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ ok: false, error: result.error || 'Unknown error' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageMedia', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;
