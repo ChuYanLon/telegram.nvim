@@ -515,10 +515,14 @@ async function shutdown() {
   try {
     await tgClient.shutdown();
   } catch {}
-  setTimeout(() => process.exit(0), 5000).unref();
+  process.exit(0);
 }
 
 process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGTERM', () => {
+  wss.close();
+  server.close();
+  process.exit(0);
+});
 
 tgClient.start().catch(console.error);
