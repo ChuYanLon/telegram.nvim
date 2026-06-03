@@ -554,6 +554,14 @@ local function finish_init()
 					refresh_groups_list()
 				end
 			end
+		elseif msg.event == "authState" then
+			if msg.state == "authorizationStateClosed" or msg.state == "authorizationStateLoggingOut" then
+				ui.destroy_chat()
+				ui.state.last_group = nil
+				ws.ws_stop()
+				initialized = false
+				vim.notify("Session closed from another device", vim.log.levels.WARN, { title = "tg" })
+			end
 		end
 	end)
 	initialized = true

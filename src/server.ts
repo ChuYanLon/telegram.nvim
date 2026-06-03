@@ -33,6 +33,12 @@ global.broadcast = (data: unknown) => {
 
 wss.on('connection', (ws) => {
   console.log('Neovim client connected');
+  ws.on('error', (err) => {
+    console.error('WebSocket client error:', err.message);
+  });
+  ws.on('close', () => {
+    console.log('Neovim client disconnected');
+  });
 });
 
 app.use(express.json());

@@ -1039,6 +1039,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 
 	if state.chat_id then
 		server.close_chat(state.chat_id)
+		state.typing_users[state.chat_id] = nil
 	end
 
 	state.chat_id = chat_id
@@ -1180,7 +1181,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		end
 
 		vim.api.nvim_create_autocmd("VimResized", {
-			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
+			group = vim.api.nvim_create_augroup("TgResizeVim", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
 					vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
@@ -1190,7 +1191,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		})
 
 		vim.api.nvim_create_autocmd("WinScrolled", {
-			group = vim.api.nvim_create_augroup("TgResize", { clear = true }),
+			group = vim.api.nvim_create_augroup("TgScroll", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
 					debounced_title_update()

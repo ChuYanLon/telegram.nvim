@@ -13,12 +13,19 @@ export class UpdateDispatcher {
     private pinnedMessageIds: Map<number, number>,
   ) {}
 
-  listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void }) {
-    tdClient.on('update', async (update: TdUpdate) => {
+  private _updateHandler: ((update: TdUpdate) => void) | null = null;
+
+  listen(tdClient: { on: (event: string, handler: (update: TdUpdate) => void) => void; off?: (event: string, handler: (update: TdUpdate) => void) => void }) {
+    this._updateHandler = async (update: TdUpdate) => {
       try {
       switch (update._) {
         case 'updateNewChat':
-          this.chats.set((update.chat as RawTdChat).id, update.chat as RawTdChat);
+          const chatId = (update.chat as RawTdChat).id;
+          if (!this.chats.has(chatId) && this.chats.size >= 500) {
+            const first = this.chats.keys().next().value;
+            if (first !== undefined) this.chats.delete(first);
+          }
+          this.chats.set(chatId, update.chat as RawTdChat);
           this.broadcastRaw(update);
           break;
         case 'updateNewMessage':
@@ -83,11 +90,22 @@ export class UpdateDispatcher {
         case 'updateMessageIsPinned':
           this.handleMessageIsPinned(update);
           break;
+        case 'updateAuthorizationState':
+          this.handleAuthorizationState(update);
+          break;
         default:
           this.broadcastRaw(update);
       }
       } catch (e) { console.error('Update handler error:', (e as Error).message); }
-    });
+    };
+    tdClient.on('update', this._updateHandler);
+  }
+
+  stopListening(tdClient: { off?: (event: string, handler: (update: TdUpdate) => void) => void }) {
+    if (tdClient.off && this._updateHandler) {
+      tdClient.off('update', this._updateHandler);
+    }
+    this._updateHandler = null;
   }
 
   async handleNewMessage(msg: RawTdMessage) {
@@ -237,6 +255,7 @@ export class UpdateDispatcher {
     if (!chatId) return;
     const rawMsg = update.last_message as RawTdMessage | null;
     const chat = this.chats.get(chatId);
+    if (chat && rawMsg) chat.last_message = rawMsg;
     let formatted = null as FormattedMessage | null;
     if (rawMsg) {
       formatted = await this.formatter.format(rawMsg);
@@ -252,6 +271,8 @@ export class UpdateDispatcher {
   handleChatReadInbox(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
+    const chat = update.chat_id && this.chats.get(update.chat_id);
+    if (chat && update.unread_count !== undefined) chat.unread_count = update.unread_count as number;
     broadcast({
       event: 'chatReadInbox',
       chat_id: update.chat_id,
@@ -276,6 +297,8 @@ export class UpdateDispatcher {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
     const perms = (update as any).permissions as Record<string, unknown> | undefined;
+    const chat = update.chat_id && this.chats.get(update.chat_id as number);
+    if (chat && perms) chat.permissions = perms;
     broadcast({
       event: 'chatPermissions',
       chat_id: update.chat_id,
@@ -292,6 +315,10 @@ export class UpdateDispatcher {
     const isPinned = update.is_pinned as boolean;
     if (chatId && messageId) {
       if (isPinned) {
+        if (!this.pinnedMessageIds.has(chatId) && this.pinnedMessageIds.size >= 200) {
+          const first = this.pinnedMessageIds.keys().next().value;
+          if (first !== undefined) this.pinnedMessageIds.delete(first);
+        }
         this.pinnedMessageIds.set(chatId, messageId);
       } else if (this.pinnedMessageIds.get(chatId) === messageId) {
         this.pinnedMessageIds.delete(chatId);
@@ -304,13 +331,26 @@ export class UpdateDispatcher {
     });
   }
 
+  handleAuthorizationState(update: TdUpdate) {
+    const state = update.authorization_state as { _: string } | undefined;
+    if (!state) return;
+    if (state._ === 'authorizationStateClosed' || state._ === 'authorizationStateLoggingOut') {
+      this.chats.clear();
+      this.resolver._users.clear();
+      this.pinnedMessageIds.clear();
+    }
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    broadcast({ event: 'authState', state: state._ });
+  }
+
   handleUserUpdate(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
     const user = update.user as { id: number; first_name?: string; last_name?: string } | undefined;
     if (!user) return;
     const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${user.id}`;
-    this.resolver._users.set(user.id, name);
+    this.resolver.setUser(user.id, name);
     broadcast({
       event: 'userUpdate',
       user_id: user.id,

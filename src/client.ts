@@ -27,6 +27,24 @@ export class TelegramLSPClient {
   _chats: Map<number, RawTdChat> = new Map();
   _chatsLoaded = false;
   _pinnedMessageIds: Map<number, number> = new Map();
+  private static MAX_CHATS = 500;
+  private static MAX_PINNED = 200;
+
+  private _cacheChat(id: number, chat: RawTdChat) {
+    if (!this._chats.has(id) && this._chats.size >= TelegramLSPClient.MAX_CHATS) {
+      const first = this._chats.keys().next().value;
+      if (first !== undefined) this._chats.delete(first);
+    }
+    this._chats.set(id, chat);
+  }
+
+  private _cachePinned(chatId: number, msgId: number) {
+    if (!this._pinnedMessageIds.has(chatId) && this._pinnedMessageIds.size >= TelegramLSPClient.MAX_PINNED) {
+      const first = this._pinnedMessageIds.keys().next().value;
+      if (first !== undefined) this._pinnedMessageIds.delete(first);
+    }
+    this._pinnedMessageIds.set(chatId, msgId);
+  }
 
   auth: AuthManager;
   resolver: Resolver;
@@ -282,7 +300,7 @@ export class TelegramLSPClient {
       username: clean,
     }) as RawTdChat;
     if (!chat || !chat.id) throw new Error('User not found');
-    this._chats.set(chat.id, chat);
+    this._cacheChat(chat.id, chat);
     if (chat.type._ === 'chatTypePrivate' || chat.type._ === 'chatTypeSecret') {
       const enriched = await this._enrichPrivate(chat);
       if (enriched) return enriched;
@@ -303,7 +321,7 @@ export class TelegramLSPClient {
       user_id: userId,
       force: true,
     }) as RawTdChat;
-    this._chats.set(chat.id, chat);
+    this._cacheChat(chat.id, chat);
     const enriched = await this._enrichPrivate(chat);
     if (enriched) return enriched;
     return {
@@ -486,7 +504,7 @@ export class TelegramLSPClient {
         }) as { messages: { id: number }[] };
         if (result.messages?.length > 0) {
           pinnedId = result.messages[0].id;
-          this._pinnedMessageIds.set(chatId, pinnedId);
+          this._cachePinned(chatId, pinnedId);
         }
       } catch (e) { /* no pinned messages found */ }
     }
@@ -1133,6 +1151,7 @@ export class TelegramLSPClient {
   }
 
   async shutdown() {
+    this.updates.stopListening(this.client);
     if (this._keepOnlineTimer) {
       clearTimeout(this._keepOnlineTimer);
       this._keepOnlineTimer = undefined;

@@ -49,6 +49,7 @@ export function extractText(content: { _: string; text?: { text: string }; capti
 }
 
 export class MessageFormatter {
+  private _downloadingFiles = new Set<number>();
   constructor(private resolver: Resolver, private invoke: (q: unknown) => Promise<unknown>) {}
 
   async format(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>): Promise<FormattedMessage | null> {
@@ -99,9 +100,11 @@ export class MessageFormatter {
     }
     if (msg.content && msg.content._ && msg.content._ !== 'messageText') {
       this.invoke({ _: 'openMessageContent', chat_id: msg.chat_id, message_id: msg.id }).catch(() => {});
-      if (fileInfo && fileInfo.fileId > 0) {
+      if (fileInfo && fileInfo.fileId > 0 && !this._downloadingFiles.has(fileInfo.fileId)) {
+        this._downloadingFiles.add(fileInfo.fileId);
         this.invoke({ _: 'downloadFile', file_id: fileInfo.fileId, priority: 1 }).catch(() => {});
-        if (fileInfo.priorityFileId && fileInfo.priorityFileId !== fileInfo.fileId) {
+        if (fileInfo.priorityFileId && fileInfo.priorityFileId !== fileInfo.fileId && !this._downloadingFiles.has(fileInfo.priorityFileId)) {
+          this._downloadingFiles.add(fileInfo.priorityFileId);
           this.invoke({ _: 'downloadFile', file_id: fileInfo.priorityFileId, priority: 2 }).catch(() => {});
         }
       }

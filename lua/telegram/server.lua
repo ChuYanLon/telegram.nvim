@@ -24,12 +24,12 @@ function M.ws_url()
 	return ws_url_internal()
 end
 
-local RETRY_DELAYS = { 500, 1000, 2000 }
+local RETRY_DELAYS = { 300, 500 }
 
 ---@param curl_args string[]
 ---@return string|nil body, string|nil error_msg
 local function curl_with_retry(curl_args)
-	for attempt = 1, 4 do
+	for attempt = 1, 2 do
 		local result = vim.fn.system(curl_args)
 		if vim.v.shell_error == 0 then
 			return result
@@ -39,7 +39,7 @@ local function curl_with_retry(curl_args)
 			local err = (ok and type(data) == "table" and data.error) or result
 			return nil, err
 		end
-		if attempt < 4 then
+		if attempt < 2 then
 			vim.wait(RETRY_DELAYS[attempt])
 		end
 	end
@@ -49,7 +49,7 @@ end
 ---@param path string
 ---@return table|nil
 local function http_get(path)
-	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", "--connect-timeout", "5", "--max-time", "15", base_url() .. path })
+	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", "--connect-timeout", "2", "--max-time", "5", base_url() .. path })
 	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
@@ -72,8 +72,8 @@ local function http_post(path, body)
 		"curl",
 		"-s",
 		"--fail-with-body",
-		"--connect-timeout", "5",
-		"--max-time", "15",
+		"--connect-timeout", "2",
+		"--max-time", "5",
 		"-X",
 		"POST",
 		url,
@@ -168,7 +168,7 @@ end
 
 ---@return table|nil
 function M.server_health()
-	local r = vim.fn.system({ "curl", "-s", "--connect-timeout", "2", "--max-time", "3", base_url() .. "/health" })
+	local r = vim.fn.system({ "curl", "-s", "--connect-timeout", "1", "--max-time", "2", base_url() .. "/health" })
 	if vim.v.shell_error ~= 0 then
 		return nil
 	end
@@ -187,6 +187,8 @@ function M.post_auth_input(value)
 	vim.fn.system({
 		"curl",
 		"-s",
+		"--connect-timeout", "2",
+		"--max-time", "5",
 		"-X",
 		"POST",
 		url,
@@ -218,7 +220,7 @@ end
 
 ---@return boolean
 local function server_wait_reachable()
-	for _ = 1, 20 do
+	for _ = 1, 10 do
 		if M.server_health() then
 			return true
 		end

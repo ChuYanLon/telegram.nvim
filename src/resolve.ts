@@ -4,9 +4,22 @@ export class Resolver {
   _users: Map<number, string> = new Map();
   _chats: Map<number, { title: string }> = new Map();
   _invoke: (q: unknown) => Promise<unknown>;
+  private static MAX_USERS = 5000;
 
   constructor(invoke: (q: unknown) => Promise<unknown>) {
     this._invoke = invoke;
+  }
+
+  private _cacheUser(id: number, name: string) {
+    if (!this._users.has(id) && this._users.size >= Resolver.MAX_USERS) {
+      const first = this._users.keys().next().value;
+      if (first !== undefined) this._users.delete(first);
+    }
+    this._users.set(id, name);
+  }
+
+  setUser(id: number, name: string) {
+    this._cacheUser(id, name);
   }
 
   setChatsMap(chats: Map<number, { title: string }>) {
@@ -19,7 +32,7 @@ export class Resolver {
     try {
       const user = await this._invoke({ _: 'getUser', user_id: userId }) as { first_name?: string; last_name?: string };
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${userId}`;
-      this._users.set(userId, name);
+      this._cacheUser(userId, name);
       return name;
     } catch (e) {
       console.warn('getUserName failed for', userId, (e as Error).message);
