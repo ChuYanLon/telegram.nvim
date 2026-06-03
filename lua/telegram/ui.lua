@@ -1045,6 +1045,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 
 	state.chat_id = chat_id
 	state.chat_title = chat_title
+	state.unread = 0
 	state.last_group = { id = chat_id, title = chat_title }
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
@@ -1137,8 +1138,17 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					return
 				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
-				if state.unread > 0 and cursor_line >= total_lines - 1 then
-					state.unread = 0
+				if state.unread > 0 then
+					local first_unread_idx = #state.messages - state.unread + 1
+					if first_unread_idx >= 1 and first_unread_idx <= #state.messages then
+						local first_unread_line = line_of(state.messages[first_unread_idx].id)
+						if first_unread_line and cursor_line >= first_unread_line then
+							state.unread = 0
+							if state.chat_id and state.groups[state.chat_id] then
+								state.groups[state.chat_id].unread_count = 0
+							end
+						end
+					end
 				end
 				if cursor_line == min_line and not state.exhausted and not state.loading then
 					M.load_older()
