@@ -107,6 +107,7 @@ All available keys and their defaults:
 | `delete` | `d` | Delete / revoke message |
 | `forward` | `f` | Forward message |
 | `pin` | `p` | Pin / unpin message |
+| `reaction` | `r` | React to message (opens emoji picker) |
 | `refresh` | `G` | Refresh messages, jump to bottom |
 | `ban` | `B` | Ban message sender |
 | `open_dm` | `c` | Open DM with message sender |
