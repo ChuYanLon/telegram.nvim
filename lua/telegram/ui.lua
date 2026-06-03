@@ -1135,15 +1135,20 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					pcall(vim.api.nvim_win_set_cursor, state.win, { min_line, 0 })
 					return
 				end
-				if state.unread > 0 and cursor_line >= vim.api.nvim_buf_line_count(state.buf) - 1 then
+				local total_lines = vim.api.nvim_buf_line_count(state.buf)
+				if state.unread > 0 and cursor_line >= total_lines - 1 then
 					state.unread = 0
+				end
+				if cursor_line == min_line and not state.exhausted and not state.loading then
+					M.load_older()
+				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward and not state.loading_newer then
+					M.load_newer()
 				end
 				if state._scroll_timer then
 					vim.fn.timer_stop(state._scroll_timer)
 				end
 				state._scroll_timer = vim.fn.timer_start(50, function()
 					state._scroll_timer = nil
-					local total_lines = vim.api.nvim_buf_line_count(state.buf)
 					local line_counts = state.msg_line_counts
 					local l = min_line
 					for i, msg in ipairs(state.messages) do
@@ -1154,11 +1159,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							break
 						end
 						l = l + n
-					end
-					if cursor_line == min_line and not state.exhausted and not state.loading then
-						M.load_older()
-					elseif cursor_line >= total_lines - 1 and not state.exhausted_forward and not state.loading_newer then
-						M.load_newer()
 					end
 				end, { ["repeat"] = 1 })
 			end,
