@@ -50,6 +50,7 @@ local state = {
 
 	msg_line_counts = {},
 	_title_update_timer = nil,
+	_scroll_timer = nil,
 	title_dirty = false,
 }
 
@@ -728,6 +729,12 @@ local function setup_chat_keymaps()
 				target.text = edited.text or input
 				state._edit_ts = state._edit_ts or {}
 				state._edit_ts[tostring(target.id)] = os.time() + 3
+				local now = os.time()
+				for k, v in pairs(state._edit_ts) do
+					if v < now then
+						state._edit_ts[k] = nil
+					end
+				end
 				render()
 			else
 				vim.notify("Failed to edit message", vim.log.levels.WARN, { title = "tg" })
@@ -1127,26 +1134,32 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					pcall(vim.api.nvim_win_set_cursor, state.win, { min_line, 0 })
 					return
 				end
-				local total_lines = vim.api.nvim_buf_line_count(state.buf)
-				local line_counts = state.msg_line_counts
-				local l = min_line
-				for i, msg in ipairs(state.messages) do
-					local n = line_counts[i] or #fmt_msg(msg)
-					if cursor_line >= l and cursor_line < l + n then
-						state.saved_cursors = state.saved_cursors or {}
-						state.saved_cursors[state.chat_id] = msg.id
-						break
-					end
-					l = l + n
-				end
-				if state.unread > 0 and cursor_line >= total_lines - 1 then
+				if state.unread > 0 and cursor_line >= vim.api.nvim_buf_line_count(state.buf) - 1 then
 					state.unread = 0
 				end
-				if cursor_line == min_line and not state.exhausted and not state.loading then
-					M.load_older()
-				elseif cursor_line >= total_lines - 1 and not state.exhausted_forward and not state.loading_newer then
-					M.load_newer()
+				if state._scroll_timer then
+					vim.fn.timer_stop(state._scroll_timer)
 				end
+				state._scroll_timer = vim.fn.timer_start(50, function()
+					state._scroll_timer = nil
+					local total_lines = vim.api.nvim_buf_line_count(state.buf)
+					local line_counts = state.msg_line_counts
+					local l = min_line
+					for i, msg in ipairs(state.messages) do
+						local n = line_counts[i] or #fmt_msg(msg)
+						if cursor_line >= l and cursor_line < l + n then
+							state.saved_cursors = state.saved_cursors or {}
+							state.saved_cursors[state.chat_id] = msg.id
+							break
+						end
+						l = l + n
+					end
+					if cursor_line == min_line and not state.exhausted and not state.loading then
+						M.load_older()
+					elseif cursor_line >= total_lines - 1 and not state.exhausted_forward and not state.loading_newer then
+						M.load_newer()
+					end
+				end, { ["repeat"] = 1 })
 			end,
 		})
 
@@ -1341,7 +1354,16 @@ function M.destroy_chat()
 	state.chat_title = ""
 	state.win = nil
 	if state._title_update_timer then
+		vim.fn.timer_stop(state._title_update_timer)
 		state._title_update_timer = nil
+	end
+	if state._scroll_timer then
+		vim.fn.timer_stop(state._scroll_timer)
+		state._scroll_timer = nil
+	end
+	if state._typing_timer then
+		vim.fn.timer_stop(state._typing_timer)
+		state._typing_timer = nil
 	end
 	state.title_dirty = false
 end

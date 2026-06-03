@@ -249,6 +249,12 @@ local function queue_msg(msg)
 end
 
 local refresh_timer = nil
+local function stop_refresh_timer()
+	if refresh_timer then
+		vim.fn.timer_stop(refresh_timer)
+		refresh_timer = nil
+	end
+end
 local function refresh_groups_list()
 	if refresh_timer then
 		vim.fn.timer_stop(refresh_timer)
@@ -666,6 +672,7 @@ function M.list_groups()
 end
 
 function M.logout()
+	stop_refresh_timer()
 	vim.notify("Logging out and clearing auth data...", vim.log.levels.INFO, { title = "tg" })
 	ui.destroy_chat()
 	ui.state.last_group = nil
@@ -695,6 +702,7 @@ M.open_chat = ui.open_chat
 vim.api.nvim_create_autocmd("VimLeavePre", {
 	group = vim.api.nvim_create_augroup("TgCleanup", { clear = true }),
 	callback = function()
+		stop_refresh_timer()
 		ui.destroy_chat()
 		ws.ws_stop()
 		server.stop_server()
