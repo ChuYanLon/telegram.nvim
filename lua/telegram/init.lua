@@ -138,6 +138,7 @@ local function flush_msg_queue()
 	local total_before = vim.api.nvim_buf_line_count(st.buf)
 	local at_bottom = cur[1] >= total_before - 1
 
+	local added_to_buffer = false
 	for _, msg in ipairs(current_msgs) do
 		local mid = msg.id or (os.time() + math.random())
 		local skip_insert = false
@@ -164,32 +165,45 @@ local function flush_msg_queue()
 			if st.groups[st.chat_id] then
 				st.groups[st.chat_id].unread_count = st.unread
 			end
-			local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
-			if not is_focused then
+
+			if at_bottom or msg.own then
+				added_to_buffer = true
+				local is_focused = st.win and vim.api.nvim_win_is_valid(st.win) and vim.api.nvim_get_current_win() == st.win
+				if not is_focused then
+					local sender = msg.sender and msg.sender.name or "?"
+					queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
+				end
+				table.insert(st.messages, {
+					id = mid,
+					type = msg.type,
+					date = msg.date,
+					sender = msg.sender,
+					text = msg.text,
+					own = msg.own,
+					replyTo = msg.replyTo,
+					filePath = msg.filePath,
+					mediaPath = msg.mediaPath,
+					mimeType = msg.mimeType,
+				})
+			else
+				st.exhausted_forward = false
 				local sender = msg.sender and msg.sender.name or "?"
 				queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
 			end
-			table.insert(st.messages, {
-				id = mid,
-				type = msg.type,
-				date = msg.date,
-				sender = msg.sender,
-				text = msg.text,
-				own = msg.own,
-				replyTo = msg.replyTo,
-				filePath = msg.filePath,
-				mediaPath = msg.mediaPath,
-				mimeType = msg.mimeType,
-			})
 		end
 	end
 
-	table.sort(st.messages, function(a, b)
-		if a.date ~= b.date then return a.date < b.date end
-		return a.id < b.id
-	end)
+	if added_to_buffer then
+		table.sort(st.messages, function(a, b)
+			if a.date ~= b.date then return a.date < b.date end
+			return a.id < b.id
+		end)
 
-	ui.render()
+		ui.trim_oldest()
+		ui.render()
+		st.exhausted = false
+		st.exhausted_forward = false
+	end
 
 	local last = current_msgs[#current_msgs]
 	if last then
@@ -198,11 +212,9 @@ local function flush_msg_queue()
 		ui.update_title()
 	end
 
-	if at_bottom then
+	if at_bottom and st.win and vim.api.nvim_win_is_valid(st.win) then
 		pcall(vim.api.nvim_win_set_cursor, st.win, { vim.api.nvim_buf_line_count(st.buf) - 1, cur[2] })
 	end
-	st.exhausted = false
-	st.exhausted_forward = false
 
 	local t = last and last.type or ""
 	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then

@@ -55,6 +55,30 @@ local state = {
 
 M.state = state
 
+local MAX_WINDOW_MESSAGES = 200
+
+function M.trim_oldest()
+	if #state.messages <= MAX_WINDOW_MESSAGES then return end
+	local remove = #state.messages - MAX_WINDOW_MESSAGES
+	local new = {}
+	for i = remove + 1, #state.messages do
+		new[#new + 1] = state.messages[i]
+	end
+	state.messages = new
+	state.exhausted = false
+end
+
+local function trim_newest()
+	if #state.messages <= MAX_WINDOW_MESSAGES then return end
+	local keep = MAX_WINDOW_MESSAGES
+	local new = {}
+	for i = 1, keep do
+		new[i] = state.messages[i]
+	end
+	state.messages = new
+	state.exhausted_forward = false
+end
+
 local hl_ns = vim.api.nvim_create_namespace("TgChat")
 local target_ns = vim.api.nvim_create_namespace("TgTarget")
 
@@ -222,6 +246,9 @@ end
 local function render()
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		return
+	end
+	if #state.messages > MAX_WINDOW_MESSAGES then
+		M.trim_oldest()
 	end
 	local buf = state.buf
 
@@ -1418,6 +1445,7 @@ function M.load_older()
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
+			trim_newest()
 			render()
 			pcall(vim.api.nvim_win_set_cursor, state.win, { old_top + new_lines, cursor[2] })
 		end
@@ -1460,6 +1488,7 @@ function M.load_newer()
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
+			M.trim_oldest()
 			render()
 		end
 		state.loading_newer = false
