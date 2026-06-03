@@ -10,6 +10,7 @@ export interface FormattedMessage {
   sender: SenderInfo | null;
   date: number;
   own: boolean;
+  containsMention: boolean;
   replyTo?: {
     id: number;
     sender?: SenderInfo | null;
@@ -37,6 +38,7 @@ export interface RawTdMessage {
   sender_id: { _: string; user_id?: number; chat_id?: number } | null;
   date: number;
   is_outgoing: boolean;
+  contains_mention?: boolean;
   reply_to: {
     _: string;
     message_id: number;

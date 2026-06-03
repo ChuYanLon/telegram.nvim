@@ -72,6 +72,7 @@ export class MessageFormatter {
       sender: sender ?? null,
       date: msg.date,
       own: msg.is_outgoing || false,
+      containsMention: msg.contains_mention || false,
     };
 
     if (msg.content?._ === 'messageAnimatedEmoji') {

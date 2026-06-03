@@ -113,9 +113,15 @@ export class UpdateDispatcher {
     if (typeof broadcast !== 'function') return;
     const chat = this.chats.get(msg.chat_id);
     const formatted = await this.formatter.format(msg);
+    let chat_type = 'group';
+    if (chat) {
+      const t = chat.type._;
+      if (t === 'chatTypePrivate' || t === 'chatTypeSecret') chat_type = 'private';
+      else if (t === 'chatTypeSupergroup' && chat.type.is_channel) chat_type = 'channel';
+    }
     broadcast({
       event: 'newMessage',
-      chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown group' },
+      chat: { id: msg.chat_id, title: chat ? chat.title : 'Unknown', type: chat_type },
       ...formatted,
     });
   }
