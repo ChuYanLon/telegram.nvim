@@ -220,6 +220,36 @@ ldconfig 2>/dev/null || true
 
 `build = "npm i"` installs Node.js dependencies automatically on first install.
 
+## Lua API
+
+### Statusline
+
+`require("telegram").lualine` is a pre-built lualine component:
+
+```lua
+require("lualine").setup({
+  sections = {
+    lualine_x = { require("telegram").lualine },
+  },
+})
+```
+
+For other statuslines (heirline, feline, etc.):
+
+```lua
+require("telegram").status()       -- "disconnected" | "connecting" | "connected" | "error"
+require("telegram").status_color() -- { fg = "#..." }   -- color matching current status
+require("telegram").total_unread() -- total, mentions   -- unread counts across all chats
+```
+
+Displays `  ` with:
+- 🟢 green — connected, no unread
+- 🟡 yellow — connecting
+- ⚫ gray — disconnected
+- 🔴 red — error or has @mentions
+- Shows unread count after icon when there are new messages, e.g. `  5`
+- Appends `!` when there are @mentions, e.g. `  3!`
+
 ## Commands
 
 | Command       | Description                                                                                                                   |
@@ -232,28 +262,6 @@ ldconfig 2>/dev/null || true
 | `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
 
 > The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
-
-## Lua API
-
-`require("telegram").lualine` is a pre-built lualine component. Drop it into any lualine section:
-
-```lua
-require("lualine").setup({
-  sections = {
-    lualine_x = {
-      require("telegram").lualine,
-    },
-  },
-})
-```
-
-Displays `  ` with:
-- 🟢 green — connected, no unread
-- 🟡 yellow — connecting
-- ⚫ gray — disconnected
-- 🔴 red — error or has @mentions
-- Shows unread count after icon when there are new messages, e.g. `  5`
-- Appends `!` when there are @mentions, e.g. `  3!`
 
 ## Neovim Keymaps
 

@@ -103,6 +103,13 @@ lualine_x = {
 }
 ```
 
+For other statuslines:
+```lua
+require("telegram").status()       -- "disconnected" | "connecting" | "connected" | "error"
+require("telegram").status_color() -- { fg = "#..." }
+require("telegram").total_unread() -- total, mentions
+```
+
 Displays `  ` with:
 - 🟢 green — connected, no unread
 - 🟡 yellow — connecting
