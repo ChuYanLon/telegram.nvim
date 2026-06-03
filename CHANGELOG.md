@@ -1,6 +1,34 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.2] - 2026-06-03
+
+### Performance
+
+- **Message window capped at 200** — `state.messages` no longer grows unbounded; trimmed on scroll and new message arrival to prevent long-session lag
+- **CursorMoved handler debounced** — O(n) message scan and pagination trigger deferred to 50ms after last cursor movement, eliminating jank on rapid scrolling
+- **`curl_with_retry` timeouts reduced** — retries 4→2, max-time 15s→5s, connect-timeout 5s→2s for faster failure recovery
+- **Chat title update debounced** — `VimResized`/`WinScrolled` no longer share the same augroup (VimResized was silently dropped)
+- **`close_chat` non-blocking** — replaced synchronous `vim.fn.system("curl")` with fire-and-forget `request_async`, preventing exit freeze
+- **Timer leaks fixed** — `refresh_timer`, `_scroll_timer`, `_typing_timer`, `_title_update_timer` now properly stopped in `destroy_chat`, logout, and VimLeavePre
+- **`_edit_ts` stale entries cleaned** — expired edit debounce timestamps removed on each new edit
+
+### Caching
+
+- **`_users` cache** — capped at 5,000 entries with gentle FIFO eviction; updated in real-time via `updateUser` events
+- **`_chats` cache** — capped at 500 entries; new chats from `updateNewChat` evict oldest when full; individual chat inserts use `_cacheChat`
+- **`_pinnedMessageIds` cache** — capped at 200 entries; pin/unpin events update cache; unpin removes entry
+
+### Fixed
+
+- **Exit freeze on Neovim close** — server now exits immediately on SIGTERM (without awaiting TDLib close), Neovim doesn't wait for the job
+- **First-exit lag** — TDLib's first-time database finalization no longer blocks Neovim's shutdown
+- **Remote session termination** — `updateAuthorizationState` (closed/logging-out) clears all caches and notifies Lua UI
+- **Stale typing indicators** — `typing_users` entries for the previous chat are cleaned up on `open_chat` switch
+
+### Changed
+
+- **SIGTERM exits immediately** — closes HTTP/WS servers and calls `process.exit(0)` without `tgClient.shutdown()`; SIGINT (Ctrl+C) still does graceful shutdown
+- **`getGroups()` always fetches fresh** — reverted to `getChats(true)` to avoid stale chat list when chats are removed
 
 ## [0.5.0] - 2026-06-01
 
