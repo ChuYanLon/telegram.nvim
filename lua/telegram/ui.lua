@@ -1667,21 +1667,22 @@ function M.show_member_list(chat_id)
 	vim.notify("Loading members...", vim.log.levels.INFO, { title = "tg" })
 	server.get_members_async(chat_id, function(data)
 		if not data or not data.members then
-			vim.notify("Failed to load members", vim.log.levels.ERROR, { title = "tg" })
 			return
 		end
 		local items = {}
 		for _, m in ipairs(data.members) do
 			if m.user_id ~= state.my_user_id then
-				table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. " (" .. m.status .. ")" })
+				local title_str = m.custom_title and #m.custom_title > 0 and " [" .. m.custom_title .. "]" or ""
+				table.insert(items, { user_id = m.user_id, name = m.name, status = m.status, label = status_icon(m.status) .. " " .. m.name .. title_str .. " (" .. m.status .. ")" })
 			end
 		end
 		if #items == 0 then
 			vim.notify("No members found", vim.log.levels.INFO, { title = "tg" })
 			return
 		end
+		local total_str = data.total_count and ("/" .. data.total_count) or ""
 		vim.ui.select(items, {
-			prompt = "Members (" .. #items .. ")",
+			prompt = "Members (" .. #items .. total_str .. ")",
 			format_item = function(item) return item.label end,
 		}, function(choice)
 			if choice then

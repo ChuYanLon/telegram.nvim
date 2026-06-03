@@ -47,7 +47,12 @@ local service_styles = {
 
 function M.render(msg)
 	local date_str = os.date("%Y-%m-%d %H:%M", msg.date)
-	local sender = msg.own and "Me" or (msg.sender and msg.sender.name or "unknown")
+	local sender_name = msg.own and "Me" or (msg.sender and msg.sender.name or "unknown")
+	local title_str = ""
+	if not msg.own and msg.sender and msg.sender.custom_title and #msg.sender.custom_title > 0 then
+		title_str = " [" .. msg.sender.custom_title .. "]"
+	end
+	local sender = sender_name .. title_str
 	local out = {}
 
 	if msg.type == "messageChatAddMembers" then

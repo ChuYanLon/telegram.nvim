@@ -112,7 +112,8 @@ export class UpdateDispatcher {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
     const chat = this.chats.get(msg.chat_id);
-    const formatted = await this.formatter.format(msg);
+    if (msg.chat_id) this.formatter.preloadAdminTitles(msg.chat_id).catch(() => {});
+    const formatted = await this.formatter.format(msg, undefined, msg.chat_id);
     let chat_type = 'group';
     if (chat) {
       const t = chat.type._;

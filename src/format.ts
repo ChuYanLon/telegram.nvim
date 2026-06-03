@@ -49,9 +49,26 @@ export function extractText(content: { _: string; text?: { text: string }; capti
 }
 
 export class MessageFormatter {
+  private _adminTitles = new Map<number, Map<number, string>>();
+
   constructor(private resolver: Resolver, private invoke: (q: unknown) => Promise<unknown>) {}
 
-  async format(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>): Promise<FormattedMessage | null> {
+  async preloadAdminTitles(chatId: number) {
+    if (this._adminTitles.has(chatId)) return;
+    try {
+      const result = await this.invoke({
+        _: 'getChatAdministrators',
+        chat_id: chatId,
+      }) as { administrators?: { user_id: number; custom_title: string }[] };
+      const titles = new Map<number, string>();
+      for (const a of result.administrators || []) {
+        titles.set(a.user_id, a.custom_title || 'Administrator');
+      }
+      this._adminTitles.set(chatId, titles);
+    } catch {}
+  }
+
+  async format(msg: RawTdMessage | null, senderCache?: Map<string, SenderInfo>, chatId?: number): Promise<FormattedMessage | null> {
     if (!msg) return null;
 
     let sender: SenderInfo | undefined | null;
@@ -63,6 +80,14 @@ export class MessageFormatter {
     }
     if (!sender) {
       sender = await this.resolver.resolveSender(msg.sender_id);
+    }
+    if (sender && chatId) {
+      const titles = this._adminTitles.get(chatId);
+      if (titles && sender.id) {
+        const uid = typeof sender.id === 'number' ? sender.id : Number(sender.id);
+        const ct = titles.get(uid);
+        if (ct) sender.custom_title = ct;
+      }
     }
 
     const formatted: FormattedMessage = {

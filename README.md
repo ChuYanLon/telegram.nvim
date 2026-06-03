@@ -60,6 +60,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Download HD media — `@refreshmedia` downloads highest-quality version of photos/videos under cursor (async, non-blocking)
 - [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
 - [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
+- [x] Admin custom titles — shows `[头衔]` next to admin names in messages and member list; admins without title show `[Administrator]`
 - [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
 - [x] Private chats (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
 - [x] Channel support — view channels and their messages; admin tools (member list, change info) shown based on permissions

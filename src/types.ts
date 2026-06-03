@@ -1,6 +1,7 @@
 export interface SenderInfo {
   id: number | string | null;
   name: string;
+  custom_title?: string;
 }
 
 export interface FormattedMessage {
