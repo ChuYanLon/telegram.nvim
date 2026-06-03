@@ -293,11 +293,14 @@ function M.stop_server()
 	if not server_owner then
 		return
 	end
+	if server_pid then
+		vim.fn.system({ "kill", tostring(server_pid) })
+		server_pid = nil
+	end
 	if server_job then
 		vim.fn.jobstop(server_job)
 		server_job = nil
 	end
-	server_pid = nil
 	server_owner = false
 end
 
