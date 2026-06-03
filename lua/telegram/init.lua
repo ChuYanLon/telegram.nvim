@@ -400,6 +400,12 @@ local function finish_init()
 					end
 				end
 			end)
+		elseif msg.event == "chatUnreadMentionCount" then
+			vim.schedule(function()
+				if msg.chat_id and ui.state.groups[msg.chat_id] then
+					ui.state.groups[msg.chat_id].mention_count = msg.unread_mention_count or 0
+				end
+			end)
 		elseif msg.event == "chatTitle" then
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
@@ -709,10 +715,26 @@ M.status = server.status
 
 M.lualine = {
 	function()
+		local total, mentions = 0, 0
+		for _, g in pairs(ui.state.groups) do
+			total = total + (g.unread_count or 0)
+			mentions = mentions + (g.mention_count or 0)
+		end
+		if mentions > 0 then
+			return "  " .. total .. "!"
+		end
+		if total > 0 then
+			return "  " .. total
+		end
 		return "  "
 	end,
 	cond = function() return true end,
 	color = function()
+		local mentions = 0
+		for _, g in pairs(ui.state.groups) do
+			mentions = mentions + (g.mention_count or 0)
+		end
+		if mentions > 0 then return { fg = "#f38ba8" } end
 		local c = { disconnected = "#6c7086", connecting = "#f9e2af", connected = "#a6e3a1", error = "#f38ba8" }
 		return { fg = c[M.status()] or c.disconnected }
 	end,

@@ -416,6 +416,7 @@ function M.set_groups(groups)
 			title = g.title,
 			type = g.type or "group",
 			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
+			mention_count = (existing and existing.mention_count) or g.unreadMentionCount or 0,
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
 			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,

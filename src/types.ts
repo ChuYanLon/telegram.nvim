@@ -58,6 +58,7 @@ export interface RawTdChat {
     user_id?: number;
   };
   unread_count?: number;
+  unread_mention_count?: number;
   online_member_count?: number;
   last_message?: RawTdMessage | null;
   positions?: { list: { _: string }; order: string }[];
@@ -68,6 +69,7 @@ export interface GroupInfo {
   id: number;
   title: string;
   unreadCount: number;
+  unreadMentionCount: number;
   onlineMemberCount: number;
   lastMessage?: FormattedMessage | null;
   memberCount?: number;
@@ -80,6 +82,7 @@ export interface ChatInfo {
   title: string;
   type: 'group' | 'private' | 'channel';
   unreadCount: number;
+  unreadMentionCount: number;
   onlineMemberCount: number;
   lastMessage?: FormattedMessage | null;
   memberCount?: number;

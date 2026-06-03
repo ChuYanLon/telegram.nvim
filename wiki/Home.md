@@ -27,6 +27,7 @@ A Telegram chat client inside Neovim.
 - Full auth flow (phone → code → 2FA), logout support
 - Proxy support (SOCKS5/HTTP) for restricted regions
 - Theme-adaptive colors — all highlights derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
+- Lualine integration — drop `require("telegram").lualine` into your lualine config for connection status, unread count, and @mention indicators
 
 ## Project Structure
 

@@ -217,6 +217,7 @@ export class TelegramLSPClient {
       id: chat.id,
       title: chat.title,
       unreadCount: chat.unread_count || 0,
+      unreadMentionCount: chat.unread_mention_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
     };
 
@@ -257,6 +258,7 @@ export class TelegramLSPClient {
       title: chat.title,
       type: 'private',
       unreadCount: chat.unread_count || 0,
+      unreadMentionCount: chat.unread_mention_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
     };
     if (chat.last_message) {
@@ -310,6 +312,7 @@ export class TelegramLSPClient {
       title: chat.title,
       type: chat.type._ === 'chatTypePrivate' || chat.type._ === 'chatTypeSecret' ? 'private' : 'group',
       unreadCount: chat.unread_count || 0,
+      unreadMentionCount: chat.unread_mention_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
     };
   }
@@ -329,6 +332,7 @@ export class TelegramLSPClient {
       title: chat.title,
       type: 'private',
       unreadCount: chat.unread_count || 0,
+      unreadMentionCount: chat.unread_mention_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
     };
   }

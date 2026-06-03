@@ -99,15 +99,17 @@ The proxy is applied via TDLib's `addProxy` at startup.
 
 ```lua
 lualine_x = {
-  require("telegram").status,
+  require("telegram").lualine,
 }
 ```
 
-Shows `  ` with color-coded status:
-- 🟢 green — connected
+Displays `  ` with:
+- 🟢 green — connected, no unread
 - 🟡 yellow — connecting
-- ⚫ gray — disconnected (hidden)
-- 🔴 red — error
+- ⚫ gray — disconnected
+- 🔴 red — error or has @mentions
+- Shows unread count after icon when there are new messages, e.g. `  5`
+- Appends `!` when there are @mentions, e.g. `  3!`
 
 ## Database
 

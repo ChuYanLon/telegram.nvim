@@ -235,23 +235,25 @@ ldconfig 2>/dev/null || true
 
 ## Lua API
 
-`require("telegram").status` is a pre-built lualine component. Drop it into any lualine section:
+`require("telegram").lualine` is a pre-built lualine component. Drop it into any lualine section:
 
 ```lua
 require("lualine").setup({
   sections = {
     lualine_x = {
-      require("telegram").status,
+      require("telegram").lualine,
     },
   },
 })
 ```
 
-Shows `  ` with color-coded status:
-- 🟢 green — connected
+Displays `  ` with:
+- 🟢 green — connected, no unread
 - 🟡 yellow — connecting
-- ⚫ gray — disconnected (hidden)
-- 🔴 red — error
+- ⚫ gray — disconnected
+- 🔴 red — error or has @mentions
+- Shows unread count after icon when there are new messages, e.g. `  5`
+- Appends `!` when there are @mentions, e.g. `  3!`
 
 ## Neovim Keymaps
 
