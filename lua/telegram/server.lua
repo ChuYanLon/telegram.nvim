@@ -2,6 +2,13 @@ local config = require("telegram.config")
 
 local M = {}
 
+do
+	local existing = vim.env.NO_PROXY or ""
+	if not existing:find("localhost") then
+		vim.env.NO_PROXY = existing .. ",localhost,127.0.0.1,::1"
+	end
+end
+
 local function http_port()
 	return tonumber(vim.env.TG_PORT) or config.config.http_port or 8080
 end
@@ -49,7 +56,7 @@ end
 ---@param path string
 ---@return table|nil
 local function http_get(path)
-	local result, err = curl_with_retry({ "curl", "-s", "--fail-with-body", "--connect-timeout", "2", "--max-time", "5", base_url() .. path })
+	local result, err = curl_with_retry({ "curl", "-s", "--noproxy", "*", "--fail-with-body", "--connect-timeout", "2", "--max-time", "5", base_url() .. path })
 	if not result then
 		vim.notify(err, vim.log.levels.ERROR, { title = "tg" })
 		return nil
@@ -71,6 +78,7 @@ local function http_post(path, body)
 	local result, err = curl_with_retry({
 		"curl",
 		"-s",
+		"--noproxy", "*",
 		"--fail-with-body",
 		"--connect-timeout", "2",
 		"--max-time", "5",
@@ -101,7 +109,7 @@ end
 ---@param opts { url: string, body?: string }
 ---@param callback fun(data: table|nil, err: string|nil)
 local function request_curl(opts, callback)
-	local args = { "curl", "-s", "--connect-timeout", "3", "--max-time", "15" }
+	local args = { "curl", "-s", "--noproxy", "*", "--connect-timeout", "3", "--max-time", "15" }
 	if opts.body then
 		table.insert(args, "-X"); table.insert(args, "POST")
 		table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
@@ -136,7 +144,6 @@ local function request_async(opts, callback)
 				return
 			end
 			local data, status = args[2], args[3]
-			-- Response may be wrapped: { body = json_string, status = int }
 			if type(data) == "table" and data.body then
 				status = data.status or status
 				local ok, d = pcall(vim.json.decode, data.body)
@@ -168,7 +175,7 @@ end
 
 ---@return table|nil
 function M.server_health()
-	local r = vim.fn.system({ "curl", "-s", "--connect-timeout", "1", "--max-time", "2", base_url() .. "/health" })
+	local r = vim.fn.system({ "curl", "-s", "--noproxy", "*", "--connect-timeout", "1", "--max-time", "2", base_url() .. "/health" })
 	if vim.v.shell_error ~= 0 then
 		return nil
 	end
@@ -187,6 +194,7 @@ function M.post_auth_input(value)
 	vim.fn.system({
 		"curl",
 		"-s",
+		"--noproxy", "*",
 		"--connect-timeout", "2",
 		"--max-time", "5",
 		"-X",
@@ -202,7 +210,7 @@ end
 
 ---@return '"free"'|'"ready"'|'"ours"'|'"other"'
 local function check_port()
-	local r = vim.fn.system({ "curl", "-s", "--connect-timeout", "1", "--max-time", "2", base_url() .. "/health" })
+	local r = vim.fn.system({ "curl", "-s", "--noproxy", "*", "--connect-timeout", "1", "--max-time", "2", base_url() .. "/health" })
 	if vim.v.shell_error ~= 0 then
 		return "free"
 	end
@@ -422,7 +430,7 @@ end
 
 function M.get_media(chat_id, message_id)
 	local url = base_url() .. "/messageMedia?chatId=" .. chat_id .. "&messageId=" .. message_id
-	local result = vim.fn.system({ "curl", "-s", "--connect-timeout", "5", "--max-time", "20", url })
+	local result = vim.fn.system({ "curl", "-s", "--noproxy", "*", "--connect-timeout", "5", "--max-time", "20", url })
 	if vim.v.shell_error ~= 0 or #result == 0 then
 		vim.notify("Failed to get media for message " .. message_id, vim.log.levels.WARN, { title = "tg" })
 		return nil
