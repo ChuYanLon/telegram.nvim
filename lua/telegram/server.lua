@@ -334,7 +334,7 @@ end
 ---@param chat_id any
 ---@return boolean
 function M.close_chat(chat_id)
-	return http_post("/chat/close", { chatId = chat_id }) ~= nil
+	request_async({ url = base_url() .. "/chat/close", body = vim.json.encode({ chatId = chat_id }) }, function() end)
 end
 
 ---@param chat_id any
