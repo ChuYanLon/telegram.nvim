@@ -233,6 +233,26 @@ ldconfig 2>/dev/null || true
 
 > The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 
+## Lua API
+
+`require("telegram").status` is a pre-built lualine component. Drop it into any lualine section:
+
+```lua
+require("lualine").setup({
+  sections = {
+    lualine_x = {
+      require("telegram").status,
+    },
+  },
+})
+```
+
+Shows `  ` with color-coded status:
+- 🟢 green — connected
+- 🟡 yellow — connecting
+- ⚫ gray — disconnected (hidden)
+- 🔴 red — error
+
 ## Neovim Keymaps
 
 ```lua

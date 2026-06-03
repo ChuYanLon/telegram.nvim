@@ -19,6 +19,7 @@ end
 local server_job = nil
 local server_pid = nil
 local server_owner = false
+local _status = "disconnected"
 
 local function base_url()
 	return "http://localhost:" .. http_port()
@@ -29,6 +30,23 @@ end
 
 function M.ws_url()
 	return ws_url_internal()
+end
+
+---@return string "disconnected"|"connecting"|"connected"|"error"
+function M.status()
+	return _status
+end
+
+local STATUS_COLORS = {
+	disconnected = "#6c7086",
+	connecting = "#f9e2af",
+	connected = "#a6e3a1",
+	error = "#f38ba8",
+}
+
+---@return { fg: string }
+function M.status_color()
+	return { fg = STATUS_COLORS[_status] or STATUS_COLORS.disconnected }
 end
 
 local RETRY_DELAYS = { 300, 500 }
@@ -183,6 +201,7 @@ function M.server_health()
 	if not ok or type(data) ~= "table" then
 		return nil
 	end
+	_status = data.ready == true and "connected" or "connecting"
 	return data
 end
 
@@ -241,15 +260,19 @@ end
 function M.start_server()
 	local status = check_port()
 	if status == "ready" then
+		_status = "connected"
 		return true
 	end
 	if status == "ours" then
+		_status = "connecting"
 		return server_wait_reachable()
 	end
 	if status == "other" then
+		_status = "error"
 		vim.notify("Port " .. http_port() .. " is occupied by another process", vim.log.levels.WARN, { title = "tg" })
 		return false
 	end
+	_status = "connecting"
 	server_owner = true
 	local env = {
 		TG_DATA_DIR = config.config.data_dir,
@@ -285,6 +308,7 @@ function M.start_server()
 			end
 		end,
 		on_exit = function(_, code)
+			_status = "disconnected"
 			if code > 0 then
 				vim.notify("Server exited with code " .. code, vim.log.levels.ERROR, { title = "tg" })
 			end
@@ -296,13 +320,16 @@ function M.start_server()
 		return false
 	end
 	server_pid = vim.fn.jobpid(server_job)
-	return server_wait_reachable()
+	local ok = server_wait_reachable()
+	if not ok then _status = "error" end
+	return ok
 end
 
 function M.stop_server()
 	if not server_owner then
 		return
 	end
+	_status = "disconnected"
 	if server_pid then
 		vim.fn.system({ "kill", tostring(server_pid) })
 		server_pid = nil

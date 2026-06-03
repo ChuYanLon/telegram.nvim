@@ -705,6 +705,18 @@ M.forward_messages = server.forward_messages
 M.ws_start = ws.ws_start
 M.ws_stop = ws.ws_stop
 M.open_chat = ui.open_chat
+M.status = server.status
+
+M.lualine = {
+	function()
+		return "  "
+	end,
+	cond = function() return true end,
+	color = function()
+		local c = { disconnected = "#6c7086", connecting = "#f9e2af", connected = "#a6e3a1", error = "#f38ba8" }
+		return { fg = c[M.status()] or c.disconnected }
+	end,
+}
 
 -- Cleanup on exit
 vim.api.nvim_create_autocmd("VimLeavePre", {

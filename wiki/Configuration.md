@@ -93,6 +93,22 @@ Supported formats:
 
 The proxy is applied via TDLib's `addProxy` at startup.
 
+## Lua API
+
+`require("telegram").status` is a pre-built lualine component. Drop it into any lualine section:
+
+```lua
+lualine_x = {
+  require("telegram").status,
+}
+```
+
+Shows `  ` with color-coded status:
+- 🟢 green — connected
+- 🟡 yellow — connecting
+- ⚫ gray — disconnected (hidden)
+- 🔴 red — error
+
 ## Database
 
 TDLib stores data in `data_dir/tdlib_db/` (SQLite + binlog) and files in `data_dir/tdlib_files/`.  
