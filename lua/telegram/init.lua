@@ -232,7 +232,7 @@ local function flush_msg_queue()
 	end
 
 	local t = last and last.type or ""
-	if t ~= "messageText" and t:find("^message") and (not last.filePath or #last.filePath == 0) then
+	if ({ messagePhoto = true, messageVideo = true, messageAnimation = true, messageDocument = true, messageAudio = true, messageVoiceNote = true, messageVideoNote = true, messageSticker = true })[t] and (not last.filePath or #last.filePath == 0) then
 		local media_chat_id = st.chat_id
 		local media_msg_id = last.id
 		if media_msg_id and type(media_msg_id) == "number" then

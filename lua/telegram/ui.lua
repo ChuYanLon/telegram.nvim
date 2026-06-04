@@ -565,7 +565,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							state.saved_cursors = state.saved_cursors or {}
 							state.saved_cursors[state.chat_id] = msg.id
 							local t = msg.type or ""
-							if t ~= "messageText" and t:find("^message") and (not msg.filePath or #msg.filePath == 0) then
+							if ({ messagePhoto = true, messageVideo = true, messageAnimation = true, messageDocument = true, messageAudio = true, messageVoiceNote = true, messageVideoNote = true, messageSticker = true })[t] and (not msg.filePath or #msg.filePath == 0) then
 								local mid = msg.id
 								if mid and type(mid) == "number" then
 									if state._media_dl_timer then
