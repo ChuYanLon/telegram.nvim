@@ -1163,20 +1163,52 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				if state._scroll_timer then
 					vim.fn.timer_stop(state._scroll_timer)
 				end
-				state._scroll_timer = vim.fn.timer_start(50, function()
-					state._scroll_timer = nil
-					local line_counts = state.msg_line_counts
-					local l = min_line
-					for i, msg in ipairs(state.messages) do
-						local n = line_counts[i] or #fmt_msg(msg)
-						if cursor_line >= l and cursor_line < l + n then
-							state.saved_cursors = state.saved_cursors or {}
-							state.saved_cursors[state.chat_id] = msg.id
-							break
+			state._scroll_timer = vim.fn.timer_start(50, function()
+				state._scroll_timer = nil
+				local line_counts = state.msg_line_counts
+				local l = min_line
+				for i, msg in ipairs(state.messages) do
+					local n = line_counts[i] or #fmt_msg(msg)
+					if cursor_line >= l and cursor_line < l + n then
+						state.saved_cursors = state.saved_cursors or {}
+						state.saved_cursors[state.chat_id] = msg.id
+						local t = msg.type or ""
+						if t ~= "messageText" and t:find("^message") and (not msg.filePath or #msg.filePath == 0) then
+							local mid = msg.id
+							if mid and type(mid) == "number" then
+								if state._media_dl_timer then
+									vim.fn.timer_stop(state._media_dl_timer)
+								end
+								state._media_dl_timer = vim.fn.timer_start(400, function()
+									state._media_dl_timer = nil
+									state._req_media = state._req_media or {}
+									if not state._req_media[mid] then
+										state._req_media[mid] = true
+										vim.notify("Downloading media...", vim.log.levels.INFO, { title = "tg" })
+										server.get_media_async(state.chat_id, mid, function(res)
+											if not state.chat_id then return end
+											if res and res.path and #res.path > 0 then
+												for _, m in ipairs(state.messages) do
+													if tostring(m.id) == tostring(mid) then
+														if res.mediaPath and #res.mediaPath > 0 then
+															m.mediaPath = res.mediaPath
+														end
+														m.filePath = res.path
+														render()
+														break
+													end
+												end
+											end
+										end)
+									end
+								end, { ["repeat"] = 1 })
+							end
 						end
-						l = l + n
+						break
 					end
-				end, { ["repeat"] = 1 })
+					l = l + n
+				end
+			end, { ["repeat"] = 1 })
 			end,
 		})
 
@@ -1295,8 +1327,8 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					if a.date ~= b.date then return a.date < b.date end
 					return a.id < b.id
 				end)
-				render()
-				M.update_title()
+		render()
+		M.update_title()
 				if #state.messages > 0 then
 					server.view_messages(state.chat_id, state.messages[#state.messages].id)
 				end
@@ -1377,6 +1409,10 @@ function M.destroy_chat()
 	if state._typing_timer then
 		vim.fn.timer_stop(state._typing_timer)
 		state._typing_timer = nil
+	end
+	if state._media_dl_timer then
+		vim.fn.timer_stop(state._media_dl_timer)
+		state._media_dl_timer = nil
 	end
 end
 
@@ -2125,9 +2161,10 @@ function M.toggle_reaction_on(msg, emoji)
 			--- Same emoji: remove
 			local new_reactions = {}
 			for _, r in ipairs(msg.reactions or {}) do
+				local rc = r.count or 0
 				if r.emoji == emoji then
-					if r.count > 1 then
-						table.insert(new_reactions, { emoji = r.emoji, count = r.count - 1, is_chosen = false })
+					if rc > 1 then
+						table.insert(new_reactions, { emoji = r.emoji, count = rc - 1, is_chosen = false })
 					end
 				else
 					table.insert(new_reactions, r)
@@ -2138,12 +2175,13 @@ function M.toggle_reaction_on(msg, emoji)
 			--- Different emoji: switch
 			local new_reactions = {}
 			for _, r in ipairs(msg.reactions or {}) do
+				local rc = r.count or 0
 				if r.emoji == chosen_emoji then
-					if r.count > 1 then
-						table.insert(new_reactions, { emoji = r.emoji, count = r.count - 1, is_chosen = false })
+					if rc > 1 then
+						table.insert(new_reactions, { emoji = r.emoji, count = rc - 1, is_chosen = false })
 					end
 				elseif r.emoji == emoji then
-					table.insert(new_reactions, { emoji = r.emoji, count = r.count + 1, is_chosen = true })
+					table.insert(new_reactions, { emoji = r.emoji, count = rc + 1, is_chosen = true })
 				else
 					table.insert(new_reactions, r)
 				end

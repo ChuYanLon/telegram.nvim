@@ -466,14 +466,14 @@ export class UpdateDispatcher {
   handleMessageReactions(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const rawReactions = update.reactions as { emoji: string; total_count: number; is_chosen: boolean }[] | undefined;
+    const rawReactions = update.reactions as { type: { _: string; emoji: string }; total_count: number; is_chosen: boolean }[] | undefined;
     if (!rawReactions) return;
     broadcast({
       event: 'messageReactions',
       chat_id: update.chat_id,
       message_id: update.message_id,
       reactions: rawReactions.map(r => ({
-        emoji: r.emoji,
+        emoji: r.type?.emoji || '',
         count: r.total_count,
         is_chosen: r.is_chosen,
       })),

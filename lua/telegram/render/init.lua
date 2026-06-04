@@ -102,11 +102,12 @@ function M.render(msg)
 		if msg.reactions and #msg.reactions > 0 then
 			local parts = {}
 			for _, r in ipairs(msg.reactions) do
-				local txt = r.emoji
+				local txt = r.emoji or ""
+				local cnt = r.count or 0
 				if r.is_chosen then
-					txt = txt .. " **" .. r.count .. "**"
+					txt = txt .. " **" .. cnt .. "**"
 				else
-					txt = txt .. " " .. r.count
+					txt = txt .. " " .. cnt
 				end
 				table.insert(parts, txt)
 			end
