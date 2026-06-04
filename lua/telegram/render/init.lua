@@ -1,3 +1,4 @@
+local emojis = require("telegram.emojis")
 local text = require("telegram.render.text")
 local link = require("telegram.render.link")
 local media = require("telegram.render.media")
@@ -102,7 +103,7 @@ function M.render(msg)
 		if msg.reactions and #msg.reactions > 0 then
 			local parts = {}
 			for _, r in ipairs(msg.reactions) do
-				local txt = r.emoji or ""
+				local txt = emojis.get(emojis.get_name(r.emoji or "")) or r.emoji or ""
 				local cnt = r.count or 0
 				if r.is_chosen then
 					txt = txt .. " **" .. cnt .. "**"

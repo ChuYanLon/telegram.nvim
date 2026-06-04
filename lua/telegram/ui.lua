@@ -2128,14 +2128,19 @@ end
 ---one reaction per user. Same emoji toggles off, different emoji switches.
 ---@param msg table the message object from state.messages
 ---@param emoji string
+local function norm_e(e)
+	return (e or ""):gsub("\xEF\xB8\x8F", "")
+end
+
 function M.toggle_reaction_on(msg, emoji)
 	if not msg or not msg.id then return end
+	emoji = norm_e(emoji)
 
 	-- Find user's current chosen reaction
 	local chosen_emoji
 	for _, r in ipairs(msg.reactions or {}) do
 		if r.is_chosen then
-			chosen_emoji = r.emoji
+			chosen_emoji = norm_e(r.emoji)
 			break
 		end
 	end
@@ -2224,7 +2229,7 @@ function M.show_reaction_picker()
 	local target_ref = target
 	local emojis = require("telegram.emojis")
 	local items = {
-		{ emoji = "👍" }, { emoji = "👎" }, { emoji = "🔥" }, { emoji = "😢" },
+		{ emoji = "👍" }, { emoji = "👎" }, { emoji = "❤️" }, { emoji = "🔥" }, { emoji = "😢" },
 		{ emoji = "😱" }, { emoji = "😨" }, { emoji = "😁" }, { emoji = "😎" },
 		{ emoji = "😘" }, { emoji = "😡" }, { emoji = "😈" }, { emoji = "😇" },
 		{ emoji = "😴" }, { emoji = "😐" }, { emoji = "🤔" }, { emoji = "🤗" },
@@ -2243,8 +2248,9 @@ function M.show_reaction_picker()
 			item.label = item.emoji .. "  " .. name
 		end
 		if target.reactions then
+			local item_e = norm_e(item.emoji)
 			for _, r in ipairs(target.reactions) do
-				if r.emoji == item.emoji and r.is_chosen then
+				if r.is_chosen and norm_e(r.emoji) == item_e then
 					item.label = item.label .. "  ✓"
 					break
 				end

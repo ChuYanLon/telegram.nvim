@@ -1551,20 +1551,29 @@ function M.get(name)
 end
 
 -- Build reverse map: char → first name
+-- Strip U+FE0F variation selector so TDLib emojis (which lack it) still match
+local function strip_vs(c)
+  return c:gsub("\xEF\xB8\x8F", "")
+end
+
 local reverse_map = {}
-for name, char in pairs(emoji_map) do
+
+local function map_set(char, name)
   if not reverse_map[char] then
     reverse_map[char] = name
-  elseif not reverse_map[char]:match("^e[0-9a-f]") and name:match("^e[0-9a-f]") then
-    -- Keep existing text name
   elseif reverse_map[char]:match("^e[0-9a-f]") and not name:match("^e[0-9a-f]") then
-    -- Replace hex name with text name
     reverse_map[char] = name
   end
 end
 
+for name, char in pairs(emoji_map) do
+  map_set(char, name)
+  local bare = strip_vs(char)
+  if bare ~= char then map_set(bare, name) end
+end
+
 function M.get_name(char)
-  return reverse_map[char]
+  return reverse_map[char] or reverse_map[strip_vs(char or "")]
 end
 
 function M.get_all()
