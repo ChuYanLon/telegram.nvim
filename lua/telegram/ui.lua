@@ -1195,8 +1195,10 @@ function M.open_chat(chat_id, chat_title, chat_type)
 													if tostring(m.id) == tostring(mid) then
 														if res.mediaPath and #res.mediaPath > 0 then
 															m.mediaPath = res.mediaPath
+															m.filePath = res.mediaPath
+														else
+															m.filePath = res.path
 														end
-														m.filePath = res.path
 														render()
 														break
 													end

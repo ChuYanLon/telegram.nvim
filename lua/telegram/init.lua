@@ -243,8 +243,10 @@ local function flush_msg_queue()
 						if tostring(m.id) == tostring(media_msg_id) then
 							if res.mediaPath and #res.mediaPath > 0 then
 								m.mediaPath = res.mediaPath
+								m.filePath = res.mediaPath
+							else
+								m.filePath = res.path
 							end
-							m.filePath = res.path
 							ui.render()
 							break
 						end
