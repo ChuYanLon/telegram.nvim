@@ -72,9 +72,6 @@ function M.update_group_last_msg(chat_id, sender_name, text)
 	if not state.groups[chat_id] then
 		return
 	end
-	if chat_id ~= state.chat_id then
-		state.groups[chat_id].unread_count = (state.groups[chat_id].unread_count or 0) + 1
-	end
 	state.groups[chat_id].last_msg = ("[%s] %s: %s"):format(os.date("%H:%M"), sender_name, (text or ""):gsub("\n", " "):sub(1, 40))
 end
 

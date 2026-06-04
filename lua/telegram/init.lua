@@ -81,6 +81,17 @@ M.setup = config.setup
 
 local msg_queue = {}
 local msg_timer = nil
+local redraw_pending = false
+
+local function debounced_redraw()
+	if not redraw_pending then
+		redraw_pending = true
+		vim.defer_fn(function()
+			redraw_pending = false
+			vim.cmd("redrawstatus")
+		end, 0)
+	end
+end
 
 local function flush_msg_queue()
 	msg_timer = nil
@@ -428,6 +439,7 @@ local function finish_init()
 						ui.state.unread = msg.unread_count or 0
 						ui.update_title()
 					end
+					debounced_redraw()
 				end
 			end)
 		elseif msg.event == "chatUnreadMentionCount" then
