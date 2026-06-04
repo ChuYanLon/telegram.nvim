@@ -1054,12 +1054,14 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	state.last_group = { id = chat_id, title = chat_title }
 	if state.groups[chat_id] then
 		state.groups[chat_id].unread_count = 0
+		state.groups[chat_id].mention_count = 0
 	else
 		state.groups[chat_id] = {
 			id = chat_id,
 			title = chat_title,
 			type = chat_type or "private",
 			unread_count = 0,
+			mention_count = 0,
 			online_count = 0,
 		}
 		table.insert(state.group_ids, 1, chat_id)
@@ -1151,6 +1153,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							state.unread = 0
 							if state.chat_id and state.groups[state.chat_id] then
 								state.groups[state.chat_id].unread_count = 0
+								state.groups[state.chat_id].mention_count = 0
 							end
 						end
 					end
