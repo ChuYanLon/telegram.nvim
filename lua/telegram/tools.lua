@@ -16,6 +16,10 @@ function M.run(name, ...)
 	end
 end
 
+function M.list()
+	return tool_list
+end
+
 function M.pick()
 	local items = {}
 	for _, name in ipairs(tool_list) do
