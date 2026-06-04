@@ -1230,8 +1230,8 @@ export class TelegramLSPClient {
 
       // Poll specifically for the highest-quality file
       if (targetId > 0) {
-        for (let attempt = 0; attempt < 15; attempt++) {
-          await new Promise(r => setTimeout(r, 1000));
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(r => setTimeout(r, 800));
           const fi = await this.client.invoke({ _: 'getFile', file_id: targetId }).catch(() => null) as Record<string, unknown> | null;
           const local = fi?.['local'] as Record<string, unknown> | undefined;
           const path = local?.['path'] as string | undefined;

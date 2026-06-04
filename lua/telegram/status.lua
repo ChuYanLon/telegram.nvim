@@ -26,4 +26,3 @@ return {
 		return { fg = c[m.status()] or c.disconnected }
 	end,
 }
-

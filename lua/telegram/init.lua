@@ -369,10 +369,10 @@ local function finish_init()
 			vim.schedule(function()
 				if not mcu_chat_id or mcu_chat_id ~= ui.state.chat_id then return end
 				local mid = tostring(msg.message_id)
-				local edit_ts = ui.state._edit_ts and ui.state._edit_ts[mid]
+				local pending = ui.state._pending_edit and ui.state._pending_edit[mid]
 				for _, m in ipairs(ui.state.messages) do
 					if tostring(m.id) == mid then
-						if not edit_ts or edit_ts < os.time() then
+						if not pending then
 							m.text = msg.text or ""
 						end
 						m.type = msg.type or m.type
@@ -672,6 +672,7 @@ function M.list_groups()
 
 	if not initialized then
 		if starting then return end
+		poll_cancelled = false
 		starting = true
 		vim.notify("Starting server...", vim.log.levels.INFO, { title = "tg" })
 		vim.defer_fn(function()

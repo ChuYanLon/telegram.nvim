@@ -84,6 +84,10 @@ local function http_get(path)
 		vim.notify("Invalid response from server", vim.log.levels.ERROR, { title = "tg" })
 		return nil
 	end
+	if type(data) == "table" and data.error then
+		vim.notify(data.error, vim.log.levels.ERROR, { title = "tg" })
+		return nil
+	end
 	return data
 end
 
@@ -442,7 +446,7 @@ end
 ---@param query string
 ---@return table|nil
 function M.search_messages(chat_id, query)
-	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+"))
+	return http_get("/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986"))
 end
 
 ---@param chat_id any
@@ -450,7 +454,7 @@ end
 ---@param on_ok fun(data: table)
 ---@param on_err fun()|nil
 function M.search_messages_async(chat_id, query, on_ok, on_err)
-	request_async({ url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. query:gsub(" ", "+") }, function(data, err)
+	request_async({ url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986") }, function(data, err)
 		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end

@@ -150,10 +150,11 @@ local function is_service()
 end
 
 local function open_target(target)
-	vim.fn.jobstart({
-		"sh", "-c",
-		'xdg-open "' .. target .. '" 2>/dev/null || open "' .. target .. '" 2>/dev/null || true',
-	})
+	if vim.fn.has("mac") == 1 then
+		vim.fn.jobstart({ "open", "--", target })
+	else
+		vim.fn.jobstart({ "xdg-open", target })
+	end
 end
 
 M.register("reaction", {

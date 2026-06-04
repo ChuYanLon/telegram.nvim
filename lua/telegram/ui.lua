@@ -290,12 +290,15 @@ local function setup_chat_keymaps()
 			local edited = server.edit_message(state.chat_id, target.id, input)
 			if edited then
 				target.text = edited.text or input
-				state._edit_ts = state._edit_ts or {}
-				state._edit_ts[tostring(target.id)] = os.time() + 3
-				local now = os.time()
-				for k, v in pairs(state._edit_ts) do
-					if v < now then state._edit_ts[k] = nil end
-				end
+				state._pending_edit = state._pending_edit or {}
+					local key = tostring(target.id)
+					state._pending_edit[key] = (state._pending_edit[key] or 0) + 1
+					local seq = state._pending_edit[key]
+					vim.defer_fn(function()
+						if state._pending_edit and state._pending_edit[key] == seq then
+						state._pending_edit[key] = nil
+						end
+					end, 3000)
 				render()
 			else
 				vim.notify("Failed to edit message", vim.log.levels.WARN, { title = "tg" })
@@ -768,6 +771,7 @@ function M.destroy_chat()
 	end
 	state.buf = nil
 	state.messages = {}
+	state._pending_edit = nil
 	state.msg_line_counts = {}
 	state.loading = false
 	state.exhausted = false
