@@ -411,12 +411,14 @@ function M.set_groups(groups)
 	for _, g in ipairs(groups or {}) do
 		local existing = state.groups[g.id]
 		local existing_online = existing and existing.online_count
+		local uc = (existing and existing.unread_count) or g.unreadCount or 0
+		local mc = (existing and existing.mention_count) or (uc > 0 and g.unreadMentionCount) or 0
 		new_groups[g.id] = {
 			id = g.id,
 			title = g.title,
 			type = g.type or "group",
-			unread_count = (existing and existing.unread_count) or g.unreadCount or 0,
-			mention_count = (existing and existing.mention_count) or g.unreadMentionCount or 0,
+			unread_count = uc,
+			mention_count = mc,
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
 			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,
