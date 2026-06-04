@@ -420,6 +420,7 @@ function M.set_groups(groups)
 			member_count = g.memberCount or (existing and existing.member_count) or 0,
 			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,
+			last_msg = existing and existing.last_msg,
 		}
 		table.insert(new_ids, g.id)
 	end
@@ -617,7 +618,7 @@ function M.update_title()
 	else
 		state.title_win = vim.api.nvim_open_win(state.title_buf, false, float_opts)
 		vim.wo[state.title_win].winhighlight = "Normal:TgNoBg"
-		vim.api.nvim_create_autocmd("WinEnter", {
+		state._title_winenter = vim.api.nvim_create_autocmd("WinEnter", {
 			group = vim.api.nvim_create_augroup("TgTitleWinEnter", { clear = true }),
 			buffer = state.title_buf,
 			callback = function()
@@ -1369,10 +1370,6 @@ function M.destroy_chat()
 	state.chat_id = nil
 	state.chat_title = ""
 	state.win = nil
-	if state._title_update_timer then
-		vim.fn.timer_stop(state._title_update_timer)
-		state._title_update_timer = nil
-	end
 	if state._scroll_timer then
 		vim.fn.timer_stop(state._scroll_timer)
 		state._scroll_timer = nil
@@ -1381,7 +1378,6 @@ function M.destroy_chat()
 		vim.fn.timer_stop(state._typing_timer)
 		state._typing_timer = nil
 	end
-	state.title_dirty = false
 end
 
 function M.message_at_cursor()

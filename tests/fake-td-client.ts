@@ -95,6 +95,13 @@ class FakeTdClient {
         }
         return { messages: [] };
       }
+      case 'getChatAdministrators': {
+        const admins: { user_id: number; custom_title: string }[] = [];
+        for (const [uid, user] of this._users) {
+          admins.push({ user_id: uid, custom_title: '' });
+        }
+        return { administrators: admins };
+      }
       case 'setChatMemberStatus':
         return { ok: true };
       default:

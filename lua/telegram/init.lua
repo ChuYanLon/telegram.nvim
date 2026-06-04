@@ -559,8 +559,6 @@ local function finish_init()
 					end
 				end)
 			end
-		elseif msg.event == "chatUnreadMentionCount" then
-			-- no UI for mention count yet
 		elseif msg.event == "NewChat" then
 			refresh_groups_list()
 		elseif msg.event == "chatMember" then
