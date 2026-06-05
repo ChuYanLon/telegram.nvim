@@ -822,6 +822,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		if state.chat_id ~= cid then return end
 		if chat_info then
 			chat_info_holder = chat_info
+			state.last_read_id = chat_info.lastReadInboxMessageId or 0
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
 			end
@@ -876,6 +877,8 @@ function M.destroy_chat()
 	state._pending_edit = nil
 	state.msg_line_counts = {}
 	state.extra_before = {}
+	state.last_read_id = nil
+	state._unread_start = nil
 	state.loading = false
 	state.exhausted = false
 	state.exhausted_forward = false
@@ -1014,6 +1017,13 @@ function M.load_newer()
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
+			if state.last_read_id and state.last_read_id > 0 then
+				for _, m in ipairs(new_msgs) do
+					if m.id > state.last_read_id and not m.own then
+						m._unread = true
+					end
+				end
+			end
 			st.trim_oldest()
 			render()
 		end

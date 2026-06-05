@@ -210,7 +210,7 @@ local function flush_msg_queue()
 					filePath = msg.filePath,
 					mediaPath = msg.mediaPath,
 					mimeType = msg.mimeType,
-					_unread = not msg.own,
+					_unread = not msg.own and not at_bottom,
 				})
 			else
 				st.exhausted_forward = false
@@ -437,7 +437,10 @@ local function finish_init()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
 					ui.state.groups[msg.chat_id].unread_count = msg.unread_count or 0
 					if msg.chat_id == ui.state.chat_id then
-						ui.state.unread = msg.unread_count or 0
+						local server_count = msg.unread_count or 0
+						if server_count > ui.state.unread then
+							ui.state.unread = server_count
+						end
 						ui.update_title()
 					end
 					debounced_redraw()
