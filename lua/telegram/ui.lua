@@ -162,6 +162,16 @@ local function render()
 				if m._unread then unread_idx = i; break end
 			end
 		end
+	if #state.messages == 0 then
+		if state.loading then
+			table.insert(lines, "[~ Loading...]")
+		else
+			table.insert(lines, "[~ No messages yet]")
+		end
+	end
+	if state.loading and #state.messages > 0 then
+		table.insert(lines, "[~ Loading older messages...]")
+	end
 	end
 	for i, msg in ipairs(state.messages) do
 		local date_key = os.date("%Y%m%d", msg.date)
@@ -181,6 +191,9 @@ local function render()
 		for _, l in ipairs(msg_lines) do
 			table.insert(lines, l)
 		end
+	end
+	if state.loading_newer and #state.messages > 0 then
+		table.insert(lines, "[~ Loading newer messages...]")
 	end
 	state.msg_line_counts = line_counts
 	state.extra_before = extra_before
@@ -981,6 +994,7 @@ end
 function M.load_older()
 	if state.loading or state.exhausted or #state.messages == 0 then return end
 	state.loading = true
+	render()
 	local chat_id = state.chat_id
 	local oldest = state.messages[1]
 	local cursor_idx = M.message_at_cursor()
@@ -989,7 +1003,12 @@ function M.load_older()
 	server.get_messages_async(chat_id, server.DEFAULT_LIMIT, oldest.id, function(data)
 		if state.chat_id ~= chat_id then state.loading = false; return end
 		local new_msgs = data.messages or {}
-		if #new_msgs == 0 then state.exhausted = true; state.loading = false; return end
+		if #new_msgs == 0 then
+			state.exhausted = true
+			state.loading = false
+			render()
+			return
+		end
 		local added = false
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
@@ -1007,6 +1026,7 @@ function M.load_older()
 				return a.id < b.id
 			end)
 			st.trim_newest()
+				state.loading = false
 			render()
 		end
 		if cursor_msg_id then
@@ -1022,12 +1042,18 @@ end
 function M.load_newer()
 	if state.loading_newer or state.exhausted_forward or #state.messages == 0 then return end
 	state.loading_newer = true
+	render()
 	local chat_id = state.chat_id
 	local newest = state.messages[#state.messages]
 	server.get_messages_after_async(chat_id, newest.id, server.DEFAULT_LIMIT, function(data)
 		if state.chat_id ~= chat_id then state.loading_newer = false; return end
 		local new_msgs = data.messages or {}
-		if #new_msgs == 0 then state.exhausted_forward = true; state.loading_newer = false; return end
+		if #new_msgs == 0 then
+			state.exhausted_forward = true
+			state.loading_newer = false
+			render()
+			return
+		end
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
 		local newly_inserted = {}
@@ -1056,6 +1082,7 @@ function M.load_newer()
 				end
 			end
 			st.trim_oldest()
+				state.loading_newer = false
 			render()
 		end
 		state.loading_newer = false
