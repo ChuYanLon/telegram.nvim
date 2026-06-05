@@ -179,8 +179,11 @@ M.register("openlink", {
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
 		if not text then return false end
-		return text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
-			or text:match("!%[%w+%]%((.-)%)")
+		local url = text:match("https?://[^%s<>\"']+")
+		if url then
+			url = url:gsub("[%]%)>%.%,%;%!%?:;'\"]+$", "")
+		end
+		return url or text:match("!%[%w+%]%((.-)%)")
 	end,
 	callback = function()
 		if not ui.state.win or not vim.api.nvim_win_is_valid(ui.state.win) then return end
@@ -188,7 +191,10 @@ M.register("openlink", {
 		local cursor = vim.api.nvim_win_get_cursor(ui.state.win)
 		local text = vim.api.nvim_buf_get_lines(ui.state.buf, cursor[1] - 1, cursor[1], false)[1]
 		if not text then return end
-		local url = text:match("https?://[%w%._~:/?#%@!$&'()*+,;=-]+")
+		local url = text:match("https?://[^%s<>\"']+")
+		if url then
+			url = url:gsub("[%]%)>%.%,%;%!%?:;'\"]+$", "")
+		end
 		if url then
 			vim.notify("Opening: " .. url, vim.log.levels.INFO, { title = "tg" })
 			open_target(url)
