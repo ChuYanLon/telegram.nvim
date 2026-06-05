@@ -44,6 +44,7 @@ All keymaps are configurable via `setup({ keys = { ... } })`. Set a key to `nil`
 | `forward` | `f` | Forward message |
 | `pin` | `p` | Pin / unpin message |
 | `reaction` | `r` | React to message (opens emoji picker) |
+| `save` | `s` | Save message to Favorites (with confirmation) |
 | `refresh` | `G` | Refresh messages, jump to bottom |
 | `ban` | `B` | Ban message sender |
 | `open_dm` | `c` | Open DM with message sender |

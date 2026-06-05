@@ -73,6 +73,9 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] React to messages — press `r` to open reaction picker with 40+ verified emojis; same emoji toggles off, different auto-switches; real-time sync via WebSocket
 - [x] Real-time sync between devices — edits, deletions, reactions, group info changes, user name/status changes sync via WebSocket from other clients
 - [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
+- [x] Favorites (Saved Messages) — dedicated chat with 📌 icon in picker; press `s` on any message to save with confirmation
+- [x] View counts — channel messages show `👀 N` footer with k/M formatting; real-time update via WebSocket
+- [x] Read receipts — outgoing private messages show `(read HH:MM)` in header when read by recipient
 - [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
 - [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
@@ -110,6 +113,7 @@ All available keys and their defaults:
 | `forward` | `f` | Forward message |
 | `pin` | `p` | Pin / unpin message |
 | `reaction` | `r` | React to message (opens emoji picker) |
+| `save` | `s` | Save message to Favorites (with confirmation) |
 | `refresh` | `G` | Refresh messages, jump to bottom |
 | `ban` | `B` | Ban message sender |
 | `open_dm` | `c` | Open DM with message sender |

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.5] - 2026-06-05
+
+### Added
+
+- **Favorites (Saved Messages)** — dedicated chat always present in group list with 📌 icon; press `s` to forward current message to Favorites with confirmation dialog
+- **View counts** — channel messages show `👀 N` footer with k/M formatting; real-time sync via `updateMessageInteractionInfo` WebSocket event
+- **Read receipts** — outgoing private messages display `(read HH:MM)` in header when recipient has read the message; uses `getMessageReadDate` + `updateMessageReadDate` real-time updates
+
+### Fixed
+
+- **Message object field preservation** — `views`, `readDate`, `reactions` now stored on new message objects in Lua state
+- **Cursor positioning on empty chat** — `set_cursor_to_idx` guards against nil message when target index is out of bounds
+
 ## [0.5.4] - 2026-06-05
 
 ### Added

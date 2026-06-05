@@ -13,6 +13,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | `f` | Forward message to another chat |
 | `p` | Pin / unpin message at cursor |
 | `r` | React to message (opens emoji picker) |
+| `s` | Save message to Favorites (with confirmation) |
 | `c` | Open DM with message sender |
 | `B` | Ban message sender |
 | `G` | Refresh messages, jump to bottom |
