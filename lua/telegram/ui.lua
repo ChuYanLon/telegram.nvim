@@ -547,6 +547,10 @@ function M.open_chat(chat_id, chat_title, chat_type)
 								state.groups[state.chat_id].unread_count = 0
 								state.groups[state.chat_id].mention_count = 0
 							end
+							local latest = state.messages[#state.messages]
+							if latest then
+								server.view_messages(state.chat_id, latest.id)
+							end
 						end
 					end
 				end
@@ -892,31 +896,37 @@ function M.load_older()
 	state.loading = true
 	local chat_id = state.chat_id
 	local oldest = state.messages[1]
-	local cursor = vim.api.nvim_win_get_cursor(state.win)
-	local old_top = cursor[1]
+	local cursor_idx = M.message_at_cursor()
+	local cursor_msg_id = cursor_idx and state.messages[cursor_idx].id
+	local cursor_col = cursor_idx and vim.api.nvim_win_get_cursor(state.win)[2] or 0
 	server.get_messages_async(chat_id, server.DEFAULT_LIMIT, oldest.id, function(data)
 		if state.chat_id ~= chat_id then state.loading = false; return end
 		local new_msgs = data.messages or {}
 		if #new_msgs == 0 then state.exhausted = true; state.loading = false; return end
-		local new_lines = 0
+		local added = false
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
 		for _, m in ipairs(new_msgs) do
 			if not seen[tostring(m.id)] then
 				seen[tostring(m.id)] = true
 				table.insert(state.messages, m)
-				new_lines = new_lines + #fmt_msg(m)
+				added = true
 			end
 		end
 		if state.chat_id ~= chat_id then state.loading = false; return end
-		if new_lines > 0 then
+		if added then
 			table.sort(state.messages, function(a, b)
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
 			st.trim_newest()
 			render()
-			pcall(vim.api.nvim_win_set_cursor, state.win, { old_top + new_lines, cursor[2] })
+		end
+		if cursor_msg_id then
+			local restored_line = line_of(cursor_msg_id)
+			if restored_line then
+				pcall(vim.api.nvim_win_set_cursor, state.win, { restored_line, cursor_col })
+			end
 		end
 		state.loading = false
 	end, function() state.loading = false end, { before_date = oldest.date })
