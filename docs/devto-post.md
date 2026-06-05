@@ -31,6 +31,8 @@ Outline:
    - Single-panel layout with floating input popup
    - Inline fuzzy-find chat picker (Snacks/vim.ui.select)
    - Permissions editor (14 toggle types)
+   - Favorites (Saved Messages) with quick-save key
+   - View counts and read receipts
    - HD media download
    - GitHub integration (:TgPr, :TgIssue)
 

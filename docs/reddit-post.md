@@ -21,6 +21,9 @@ It uses TDLib via a TypeScript backend + Lua frontend, communicating over HTTP a
 - Proxy support (SOCKS5/HTTP)
 - Customizable keymaps
 - GitHub PR & Issue integration (:TgPr, :TgIssue)
+- Favorites (Saved Messages) — press `s` to save any message
+- View counts on channel messages
+- Read receipts on outgoing private messages
 - HD media download (@refreshmedia)
 
 **Tech stack:**
