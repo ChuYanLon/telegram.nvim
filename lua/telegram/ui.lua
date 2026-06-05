@@ -759,6 +759,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	local cid = state.chat_id
 	local cached = state.groups[cid]
 	state.online_count = (cached and cached.online_count) or 0
+	title.update_title()
 	state.permissions = {}
 	state.description = ""
 	local saved_id = state.saved_cursors and state.saved_cursors[cid]
@@ -861,6 +862,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			state.last_read_id = math.max(from_server, from_event)
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
+				title.update_title()
 			end
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false

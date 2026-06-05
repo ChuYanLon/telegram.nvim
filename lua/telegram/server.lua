@@ -367,6 +367,11 @@ function M.open_chat(chat_id)
 end
 
 ---@param chat_id any
+function M.open_chat_async(chat_id)
+	request_async({ url = base_url() .. "/chat/open", body = vim.json.encode({ chatId = chat_id }) }, function() end)
+end
+
+---@param chat_id any
 ---@param message_id any
 function M.view_messages(chat_id, message_id)
 	http_post("/chat/viewMessages", { chatId = chat_id, messageId = message_id })

@@ -460,7 +460,14 @@ local function finish_init()
 		elseif msg.event == "chatUnreadMentionCount" then
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
-					ui.state.groups[msg.chat_id].mention_count = msg.unread_mention_count or 0
+					local new = msg.unread_mention_count or 0
+					local cur = ui.state.groups[msg.chat_id].mention_count or 0
+					-- for the currently open chat, only let the count go down
+					-- prevents stale pre-openChat events from busting the local 0
+					if new > cur and msg.chat_id == ui.state.chat_id then
+						return
+					end
+					ui.state.groups[msg.chat_id].mention_count = new
 				end
 			end)
 		elseif msg.event == "chatTitle" then
