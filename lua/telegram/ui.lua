@@ -414,12 +414,17 @@ local function setup_chat_keymaps()
 			vim.notify("Saved Messages not found", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		local ok = server.forward_messages(state.chat_id, target.id, saved_id)
-		if ok then
-			vim.notify("Saved to Saved Messages", vim.log.levels.INFO, { title = "tg" })
-		else
-			vim.notify("Failed to save message", vim.log.levels.WARN, { title = "tg" })
-		end
+		vim.ui.select({ "Save", "Cancel" }, {
+			prompt = "Save to Favorites?",
+		}, function(choice)
+			if choice ~= "Save" then return end
+			local ok = server.forward_messages(state.chat_id, target.id, saved_id)
+			if ok then
+				vim.notify("Saved to Favorites", vim.log.levels.INFO, { title = "tg" })
+			else
+				vim.notify("Failed to save message", vim.log.levels.WARN, { title = "tg" })
+			end
+		end)
 	end)
 	set("forward", function()
 		local target = curr_msg()
