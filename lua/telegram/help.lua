@@ -22,6 +22,8 @@ local key_actions = {
 	{ key = "ban", label = "ban message sender" },
 	{ key = "open_dm", label = "open DM with message sender" },
 	{ key = "reaction", label = "react to message" },
+	{ key = "save", label = "save to Favorites" },
+	{ key = "copy", label = "copy message text" },
 }
 
 local general_actions = {
