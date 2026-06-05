@@ -31,7 +31,7 @@ local function line_of(target_id)
 	local line_counts = state.msg_line_counts
 	for i, m in ipairs(state.messages) do
 		if m.id == target_id then
-			local line = 1 + off
+			local line = 1 + off + (state.extra_before[i] or 0)
 			for j = 1, i - 1 do
 				line = line + (line_counts[j] or #fmt_msg(state.messages[j]))
 			end
@@ -50,8 +50,13 @@ local function apply_highlights()
 	vim.api.nvim_buf_clear_namespace(buf, st.target_ns, 0, -1)
 	for l = 0, vim.api.nvim_buf_line_count(buf) - 1 do
 		local line = vim.api.nvim_buf_get_lines(buf, l, l + 1, false)[1]
-		if line and line:find("^%[[%+%-%~%*%>!]%]") then
+		if not line then
+		elseif line:find("^%[%+%-%~%*%>!]%]") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgService", l, 0, -1)
+		elseif line:find("^  ── .+ ──  $") then
+			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgDateSeparator", l, 0, -1)
+		elseif line:find("^── %d+ unread messages ──$") then
+			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgUnreadDivider", l, 0, -1)
 		end
 	end
 	local target_id = state.reply_to
@@ -75,7 +80,11 @@ local function apply_highlights()
 		or "  \xE2\x97\x8F Forwarding"
 	local line = 1 + off
 	local line_counts = state.msg_line_counts
+	local prev_extra = 0
 	for i, m in ipairs(state.messages) do
+		local extra = state.extra_before[i] or 0
+		line = line + (extra - prev_extra)
+		prev_extra = extra
 		local n = line_counts[i] or #fmt_msg(m)
 		if m.id == target_id then
 			local start_line = line - 1
@@ -90,6 +99,28 @@ local function apply_highlights()
 			break
 		end
 		line = line + n
+	end
+end
+
+-- ─── Date separator formatting ──────────────────────────────────────────
+
+local weekday_names = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }
+local function format_date_separator(date_ts)
+	local t = os.date("*t", date_ts)
+	local now = os.date("*t")
+	local today = os.time({ year = now.year, month = now.month, day = now.day, hour = 0, min = 0, sec = 0 })
+	local msg_day = os.time({ year = t.year, month = t.month, day = t.day, hour = 0, min = 0, sec = 0 })
+	local diff = math.floor((today - msg_day) / 86400)
+	if diff == 0 then
+		return "  ── Today ──  "
+	elseif diff == 1 then
+		return "  ── Yesterday ──  "
+	elseif diff <= 7 and t.wday then
+		return "  ── " .. weekday_names[t.wday] .. " ──  "
+	elseif t.year == now.year then
+		return string.format("  ── %s %d ──  ", os.date("%B", date_ts), t.day)
+	else
+		return string.format("  ── %s %d, %d ──  ", os.date("%B", date_ts), t.day, t.year)
 	end
 end
 
@@ -119,7 +150,41 @@ local function render()
 	end
 	local lines = {}
 	local line_counts = {}
+	local extra_before = {}
+	local extra_count = 0
+	local prev_date_key = nil
+	local unread_idx = nil
+	if state.unread > 0 then
+		if state._unread_start then
+			unread_idx = state._unread_start
+		else
+			for i, m in ipairs(state.messages) do
+				if m._unread then unread_idx = i; break end
+			end
+		end
+	if #state.messages == 0 then
+		if state.loading then
+			table.insert(lines, "[~ Loading...]")
+		else
+			table.insert(lines, "[~ No messages yet]")
+		end
+	end
+	if state.loading and #state.messages > 0 then
+		table.insert(lines, "[~ Loading older messages...]")
+	end
+	end
 	for i, msg in ipairs(state.messages) do
+		local date_key = os.date("%Y%m%d", msg.date)
+		if prev_date_key and date_key ~= prev_date_key then
+			table.insert(lines, format_date_separator(msg.date))
+			extra_count = extra_count + 1
+		end
+		prev_date_key = date_key
+		if unread_idx and i == unread_idx then
+			table.insert(lines, "── " .. state.unread .. " unread messages ──")
+			extra_count = extra_count + 1
+		end
+		extra_before[i] = extra_count
 		local msg_lines = fmt_msg(msg)
 		local n = #msg_lines
 		line_counts[i] = n
@@ -127,7 +192,11 @@ local function render()
 			table.insert(lines, l)
 		end
 	end
+	if state.loading_newer and #state.messages > 0 then
+		table.insert(lines, "[~ Loading newer messages...]")
+	end
 	state.msg_line_counts = line_counts
+	state.extra_before = extra_before
 	if state.title_win and vim.api.nvim_win_is_valid(state.title_win) then
 		state.title_height = vim.api.nvim_win_get_height(state.title_win)
 	end
@@ -538,17 +607,31 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
 				if state.unread > 0 then
-					local first_unread_idx = #state.messages - state.unread + 1
-					if first_unread_idx >= 1 and first_unread_idx <= #state.messages then
-						local first_unread_line = line_of(state.messages[first_unread_idx].id)
-						if first_unread_line and cursor_line >= first_unread_line then
-							state.unread = 0
-							if state.chat_id and state.groups[state.chat_id] then
-								state.groups[state.chat_id].unread_count = 0
-								state.groups[state.chat_id].mention_count = 0
-							end
+					local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+					local off = title_offset()
+					local line = 1 + off
+					local last_read_id = nil
+					local prev_extra = 0
+					for i, m in ipairs(state.messages) do
+						local extra = state.extra_before[i] or 0
+						line = line + (extra - prev_extra)
+						prev_extra = extra
+						local n = state.msg_line_counts[i] or #fmt_msg(m)
+						if cursor_line >= line and m._unread then
+							m._unread = nil
+							state.unread = math.max(0, state.unread - 1)
+							last_read_id = m.id
 						end
+						line = line + n
 					end
+					if last_read_id then
+						server.view_messages(state.chat_id, last_read_id)
+						if state.chat_id and state.groups[state.chat_id] then
+							state.groups[state.chat_id].unread_count = state.unread
+						end
+						title.update_title()
+						vim.cmd("redrawstatus")
+						end
 				end
 				if cursor_line == min_line and not state.exhausted and not state.loading then
 					M.load_older()
@@ -560,10 +643,14 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				state._scroll_timer = vim.fn.timer_start(50, function()
 					state._scroll_timer = nil
-					local line_counts = state.msg_line_counts
-					local l = min_line
-					for i, msg in ipairs(state.messages) do
-						local n = line_counts[i] or #fmt_msg(msg)
+				local line_counts = state.msg_line_counts
+				local l = min_line
+				local prev_extra = 0
+				for i, msg in ipairs(state.messages) do
+					local extra = state.extra_before[i] or 0
+					l = l + (extra - prev_extra)
+					prev_extra = extra
+					local n = line_counts[i] or #fmt_msg(msg)
 						if cursor_line >= l and cursor_line < l + n then
 							state.saved_cursors = state.saved_cursors or {}
 							state.saved_cursors[state.chat_id] = msg.id
@@ -674,16 +761,104 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	state.online_count = (cached and cached.online_count) or 0
 	state.permissions = {}
 	state.description = ""
+	local saved_id = state.saved_cursors and state.saved_cursors[cid]
+	local chat_info_holder = nil
 	local pending = 2
 	local function check_done()
 		pending = pending - 1
+		local function count_unread()
+			local server_last = chat_info_holder and chat_info_holder.lastReadInboxMessageId or 0
+			local last_read = math.max(server_last, state.last_read_id or 0)
+			local unread_count = 0
+			local first_unread_idx
+			for i, m in ipairs(state.messages) do
+				if last_read > 0 and m.id > last_read and not m.own then
+					m._unread = true
+					unread_count = unread_count + 1
+					if not first_unread_idx then first_unread_idx = i end
+				else
+					m._unread = nil
+				end
+			end
+			state.unread = unread_count
+			state._unread_start = first_unread_idx
+			return first_unread_idx
+		end
+
+		local function set_cursor_to_idx(target_idx)
+			if not target_idx then return end
+			local l = line_of(state.messages[target_idx].id)
+			if not l then return end
+			if state.unread > 0 and state._unread_start == target_idx then
+				l = l + 1
+			end
+			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+		end
+
 		if pending == 0 then
 			title.update_title()
+			if saved_id then
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
+					if state.chat_id == cid then
+						state.messages = data.messages or {}
+						table.sort(state.messages, function(a, b)
+							if a.date ~= b.date then return a.date < b.date end
+							return a.id < b.id
+						end)
+						local first_unread_idx = count_unread()
+						render()
+						title.update_title()
+						local target_idx = first_unread_idx or #state.messages
+						set_cursor_to_idx(target_idx)
+					end
+				end)
+			elseif chat_info_holder and chat_info_holder.unreadCount
+					and chat_info_holder.unreadCount > 0
+					and chat_info_holder.lastReadInboxMessageId
+					and chat_info_holder.lastReadInboxMessageId > 0 then
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				server.get_messages_around_async(state.chat_id, chat_info_holder.lastReadInboxMessageId, 31, function(data)
+					if state.chat_id == cid then
+						state.messages = data.messages or {}
+						table.sort(state.messages, function(a, b)
+							if a.date ~= b.date then return a.date < b.date end
+							return a.id < b.id
+						end)
+						local first_unread_idx = count_unread()
+						render()
+						title.update_title()
+						local target_idx = first_unread_idx or #state.messages
+						set_cursor_to_idx(target_idx)
+					end
+				end)
+			else
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				M.refresh_messages(function()
+					local first_unread_idx = count_unread()
+					render()
+					local target_idx = first_unread_idx or #state.messages
+					set_cursor_to_idx(target_idx)
+				end)
+			end
 		end
 	end
 	server.get_chat_async(cid, function(chat_info)
 		if state.chat_id ~= cid then return end
 		if chat_info then
+			chat_info_holder = chat_info
+			local from_server = chat_info.lastReadInboxMessageId or 0
+			local from_event = state.saved_last_read and state.saved_last_read[cid] or 0
+			state.last_read_id = math.max(from_server, from_event)
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
 			end
@@ -701,42 +876,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		end
 		check_done()
 	end)
-	local saved_id = state.saved_cursors and state.saved_cursors[cid]
-	if saved_id then
-		state.messages = {}
-		state.exhausted = false
-		state.exhausted_forward = false
-		render()
-		local cid = state.chat_id
-		server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
-			if state.chat_id == cid then
-				state.messages = data.messages or {}
-				table.sort(state.messages, function(a, b)
-					if a.date ~= b.date then return a.date < b.date end
-					return a.id < b.id
-				end)
-				render()
-				title.update_title()
-				if #state.messages > 0 then
-					server.view_messages(state.chat_id, state.messages[#state.messages].id)
-				end
-				local l = line_of(saved_id)
-				if l then
-					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-				else
-					M.jump_to_bottom()
-				end
-			end
-		end)
-	else
-		state.messages = {}
-		state.exhausted = false
-		state.exhausted_forward = false
-		render()
-		M.refresh_messages(function()
-			M.jump_to_bottom()
-		end)
-	end
 end
 
 function M.close_chat()
@@ -773,6 +912,8 @@ function M.destroy_chat()
 	state.messages = {}
 	state._pending_edit = nil
 	state.msg_line_counts = {}
+	state.extra_before = {}
+	state._unread_start = nil
 	state.loading = false
 	state.exhausted = false
 	state.exhausted_forward = false
@@ -803,7 +944,11 @@ function M.message_at_cursor()
 	local off = title_offset()
 	local line_counts = state.msg_line_counts
 	local line = 1 + off
+	local prev_extra = 0
 	for idx, msg in ipairs(state.messages) do
+		local extra = state.extra_before[idx] or 0
+		line = line + (extra - prev_extra)
+		prev_extra = extra
 		local n = line_counts[idx] or #fmt_msg(msg)
 		if cursor_line >= line and cursor_line < line + n then
 			return idx
@@ -849,33 +994,46 @@ end
 function M.load_older()
 	if state.loading or state.exhausted or #state.messages == 0 then return end
 	state.loading = true
+	render()
 	local chat_id = state.chat_id
 	local oldest = state.messages[1]
-	local cursor = vim.api.nvim_win_get_cursor(state.win)
-	local old_top = cursor[1]
+	local cursor_idx = M.message_at_cursor()
+	local cursor_msg_id = cursor_idx and state.messages[cursor_idx].id
+	local cursor_col = cursor_idx and vim.api.nvim_win_get_cursor(state.win)[2] or 0
 	server.get_messages_async(chat_id, server.DEFAULT_LIMIT, oldest.id, function(data)
 		if state.chat_id ~= chat_id then state.loading = false; return end
 		local new_msgs = data.messages or {}
-		if #new_msgs == 0 then state.exhausted = true; state.loading = false; return end
-		local new_lines = 0
+		if #new_msgs == 0 then
+			state.exhausted = true
+			state.loading = false
+			render()
+			return
+		end
+		local added = false
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
 		for _, m in ipairs(new_msgs) do
 			if not seen[tostring(m.id)] then
 				seen[tostring(m.id)] = true
 				table.insert(state.messages, m)
-				new_lines = new_lines + #fmt_msg(m)
+				added = true
 			end
 		end
 		if state.chat_id ~= chat_id then state.loading = false; return end
-		if new_lines > 0 then
+		if added then
 			table.sort(state.messages, function(a, b)
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
 			st.trim_newest()
+				state.loading = false
 			render()
-			pcall(vim.api.nvim_win_set_cursor, state.win, { old_top + new_lines, cursor[2] })
+		end
+		if cursor_msg_id then
+			local restored_line = line_of(cursor_msg_id)
+			if restored_line then
+				pcall(vim.api.nvim_win_set_cursor, state.win, { restored_line, cursor_col })
+			end
 		end
 		state.loading = false
 	end, function() state.loading = false end, { before_date = oldest.date })
@@ -884,18 +1042,26 @@ end
 function M.load_newer()
 	if state.loading_newer or state.exhausted_forward or #state.messages == 0 then return end
 	state.loading_newer = true
+	render()
 	local chat_id = state.chat_id
 	local newest = state.messages[#state.messages]
 	server.get_messages_after_async(chat_id, newest.id, server.DEFAULT_LIMIT, function(data)
 		if state.chat_id ~= chat_id then state.loading_newer = false; return end
 		local new_msgs = data.messages or {}
-		if #new_msgs == 0 then state.exhausted_forward = true; state.loading_newer = false; return end
+		if #new_msgs == 0 then
+			state.exhausted_forward = true
+			state.loading_newer = false
+			render()
+			return
+		end
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
+		local newly_inserted = {}
 		for _, m in ipairs(new_msgs) do
 			if not seen[tostring(m.id)] then
 				seen[tostring(m.id)] = true
 				table.insert(state.messages, m)
+				table.insert(newly_inserted, m)
 			end
 		end
 		if #new_msgs > 0 then
@@ -903,7 +1069,20 @@ function M.load_newer()
 				if a.date ~= b.date then return a.date < b.date end
 				return a.id < b.id
 			end)
+			if state.last_read_id and state.last_read_id > 0 then
+				local new_unread = 0
+				for _, m in ipairs(newly_inserted) do
+					if m.id > state.last_read_id and not m.own then
+						m._unread = true
+						new_unread = new_unread + 1
+					end
+				end
+				if new_unread > 0 then
+					state.unread = state.unread + new_unread
+				end
+			end
 			st.trim_oldest()
+				state.loading_newer = false
 			render()
 		end
 		state.loading_newer = false
@@ -916,7 +1095,7 @@ function M.refresh_messages(on_complete)
 	state.exhausted = false
 	state.exhausted_forward = false
 	local chat_id = state.chat_id
-	server.get_messages_async(chat_id, 10, nil, function(data)
+	server.get_messages_async(chat_id, 30, nil, function(data)
 		if state.chat_id ~= chat_id then return end
 		local raw = data.messages or {}
 		state.messages = {}
@@ -945,7 +1124,6 @@ function M.refresh_messages(on_complete)
 			local latest = state.messages[#state.messages]
 			local ts = os.date("%Y-%m-%d %H:%M", latest.date)
 			state.last_msg = "[" .. ts .. "] " .. (latest.sender and latest.sender.name or "?") .. ": " .. (latest.text or "")
-			server.view_messages(state.chat_id, latest.id)
 		end
 		if on_complete then on_complete() end
 	end, function(err)

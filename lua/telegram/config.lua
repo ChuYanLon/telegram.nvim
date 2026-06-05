@@ -78,6 +78,8 @@ function M.setup(opts)
 	vim.api.nvim_set_hl(0, "TgPermToggle", { fg = hl_fg("DiagnosticInfo"), bold = true, default = true })
 	local border_fg = hl_fg("FloatBorder")
 	vim.api.nvim_set_hl(0, "TgBorder", { fg = border_fg, bg = "NONE", default = true })
+	vim.api.nvim_set_hl(0, "TgDateSeparator", { fg = comment_fg, default = true })
+	vim.api.nvim_set_hl(0, "TgUnreadDivider", { fg = hl_fg("DiagnosticInfo") or "#89b4fa", bold = true, default = true })
 end
 
 M.plugin_root = plugin_root

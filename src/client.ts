@@ -516,6 +516,7 @@ export class TelegramLSPClient {
       id: chat.id,
       title: chat.title,
       unreadCount: chat.unread_count || 0,
+      lastReadInboxMessageId: chat.last_read_inbox_message_id || 0,
       onlineMemberCount: chat.online_member_count || 0,
       memberCount,
       description,

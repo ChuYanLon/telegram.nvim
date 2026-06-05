@@ -10,3 +10,5 @@ tdlib_db/
 tdlib_files/
 tg: *
 Thumbs.db
+*.txt
+*.py
