@@ -433,9 +433,10 @@ local function finish_init()
 				end
 			end)
 		elseif msg.event == "chatReadInbox" then
+			local server_count = msg.unread_count or 0
+			local server_last = msg.last_read_inbox_message_id
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
-					local server_count = msg.unread_count or 0
 					if server_count > (ui.state.groups[msg.chat_id].unread_count or 0) then
 						ui.state.groups[msg.chat_id].unread_count = server_count
 					end
@@ -444,6 +445,10 @@ local function finish_init()
 							ui.state.unread = server_count
 						end
 						ui.update_title()
+					end
+					if server_last and server_last > 0 then
+						ui.state.saved_last_read = ui.state.saved_last_read or {}
+						ui.state.saved_last_read[msg.chat_id] = server_last
 					end
 					debounced_redraw()
 				end

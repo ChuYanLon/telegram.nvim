@@ -591,27 +591,24 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
 				if state.unread > 0 then
-					local current_idx = M.message_at_cursor()
-					if current_idx then
-						local last_read_id = nil
-						for i = 1, current_idx - 1 do
-							local m = state.messages[i]
-							if m._unread then
-								m._unread = nil
-								state.unread = math.max(0, state.unread - 1)
-								last_read_id = m.id
-							end
+					local cursor_line = vim.api.nvim_win_get_cursor(state.win)[1]
+					local off = title_offset()
+					local line = 1 + off
+					local last_read_id = nil
+					for i, m in ipairs(state.messages) do
+						line = line + (state.extra_before[i] or 0)
+						local n = state.msg_line_counts[i] or #fmt_msg(m)
+						if cursor_line >= line + n - 1 and m._unread then
+							m._unread = nil
+							state.unread = math.max(0, state.unread - 1)
+							last_read_id = m.id
 						end
-						if last_read_id then
-							server.view_messages(state.chat_id, last_read_id)
-							if last_read_id > (state.last_read_id or 0) then
-								state.last_read_id = last_read_id
-								state.saved_last_read = state.saved_last_read or {}
-								state.saved_last_read[state.chat_id] = last_read_id
-							end
-							if state.chat_id and state.groups[state.chat_id] then
-								state.groups[state.chat_id].unread_count = state.unread
-							end
+						line = line + n
+					end
+					if last_read_id then
+						server.view_messages(state.chat_id, last_read_id)
+						if state.chat_id and state.groups[state.chat_id] then
+							state.groups[state.chat_id].unread_count = state.unread
 						end
 					end
 				end
@@ -764,6 +761,16 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			return first_unread_idx
 		end
 
+		local function set_cursor_to_idx(target_idx)
+			if not target_idx then return end
+			local l = line_of(state.messages[target_idx].id)
+			if not l then return end
+			if state.unread > 0 and state._unread_start == target_idx then
+				l = l + 1
+			end
+			pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+		end
+
 		if pending == 0 then
 			title.update_title()
 			if saved_id then
@@ -782,8 +789,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						render()
 						title.update_title()
 						local target_idx = first_unread_idx or #state.messages
-						local l = line_of(state.messages[target_idx].id)
-						if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
+						set_cursor_to_idx(target_idx)
 					end
 				end)
 			elseif chat_info_holder and chat_info_holder.unreadCount
@@ -805,8 +811,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						render()
 						title.update_title()
 						local target_idx = first_unread_idx or #state.messages
-						local l = line_of(state.messages[target_idx].id)
-						if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
+						set_cursor_to_idx(target_idx)
 					end
 				end)
 			else
@@ -818,8 +823,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					local first_unread_idx = count_unread()
 					render()
 					local target_idx = first_unread_idx or #state.messages
-					local l = line_of(state.messages[target_idx].id)
-					if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
+					set_cursor_to_idx(target_idx)
 				end)
 			end
 		end
@@ -828,9 +832,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		if state.chat_id ~= cid then return end
 		if chat_info then
 			chat_info_holder = chat_info
-			local server_last = chat_info.lastReadInboxMessageId or 0
-			local local_last = state.saved_last_read and state.saved_last_read[cid] or 0
-			state.last_read_id = math.max(server_last, local_last)
+			local from_server = chat_info.lastReadInboxMessageId or 0
+			local from_event = state.saved_last_read and state.saved_last_read[cid] or 0
+			state.last_read_id = math.max(from_server, from_event)
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
 			end
