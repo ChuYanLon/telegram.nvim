@@ -119,6 +119,7 @@ export interface ChatInfo {
   owner?: SenderInfo | null;
   description?: string;
   userId?: number;
+  isSaved?: boolean;
 }
 
 export interface AuthState {

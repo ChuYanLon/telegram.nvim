@@ -400,6 +400,27 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end)
+	set("save", function()
+		local target = curr_msg()
+		if not target or not target.id then return end
+		local saved_id
+		for _, g in pairs(state.groups) do
+			if g.is_saved then
+				saved_id = g.id
+				break
+			end
+		end
+		if not saved_id then
+			vim.notify("Saved Messages not found", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local ok = server.forward_messages(state.chat_id, target.id, saved_id)
+		if ok then
+			vim.notify("Saved to Saved Messages", vim.log.levels.INFO, { title = "tg" })
+		else
+			vim.notify("Failed to save message", vim.log.levels.WARN, { title = "tg" })
+		end
+	end)
 	set("forward", function()
 		local target = curr_msg()
 		if not target or not target.id then return end
@@ -788,7 +809,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 
 		local function set_cursor_to_idx(target_idx)
 			if not target_idx then return end
-			local l = line_of(state.messages[target_idx].id)
+			local msg = state.messages[target_idx]
+			if not msg then return end
+			local l = line_of(msg.id)
 			if not l then return end
 			if state.unread > 0 and state._unread_start == target_idx then
 				l = l + 1

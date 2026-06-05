@@ -11,6 +11,7 @@ M.default_keys = {
 	delete = "d",
 	forward = "f",
 	pin = "p",
+	save = "s",
 	refresh = "G",
 	ban = "B",
 	open_dm = "c",

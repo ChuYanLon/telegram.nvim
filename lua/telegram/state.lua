@@ -38,6 +38,7 @@ local state = {
 
 	pinned_message = nil,
 	pinned_message_id = nil,
+	saved_chat_id = nil,
 
 	title_buf = nil,
 	title_win = nil,

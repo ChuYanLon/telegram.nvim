@@ -105,6 +105,15 @@ app.post('/chats/searchUser', async (req, res) => {
   }
 });
 
+app.get('/chats/saved', async (_req, res) => {
+  try {
+    const chat = await tgClient.getSavedMessages();
+    res.json(chat);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.get('/groups', async (_req, res) => {
   try {
     const groups = await tgClient.getGroups();

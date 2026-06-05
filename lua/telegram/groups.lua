@@ -33,6 +33,7 @@ function M.set_groups(groups)
 			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,
 			last_msg = existing and existing.last_msg,
+			is_saved = g.isSaved or false,
 		}
 		table.insert(new_ids, g.id)
 	end
@@ -107,6 +108,7 @@ local function show_groups_picker(on_select)
 				title = g.title,
 				type = g.type or "group",
 				unread = g.unread_count or 0,
+				is_saved = g.is_saved or false,
 			})
 		end
 	end
@@ -123,6 +125,7 @@ local function show_groups_picker(on_select)
 				id = item.id,
 				text = item.title,
 				unread = item.unread,
+				is_saved = item.is_saved,
 			})
 		end
 		local picked = false
@@ -132,6 +135,9 @@ local function show_groups_picker(on_select)
 			layout = "select",
 			format = function(item)
 				local label = item.text
+				if item.is_saved then
+					label = "\xF0\x9F\x93\x8C " .. label
+				end
 				if item.unread > 0 then
 					label = label .. "  \xE2\x97\x8F +" .. item.unread
 				end
@@ -157,7 +163,9 @@ local function show_groups_picker(on_select)
 			prompt = "Select chat:",
 			format_item = function(item)
 				local label = item.title
-				if item.type == "channel" then
+				if item.is_saved then
+					label = "\xF0\x9F\x93\x8C " .. label
+				elseif item.type == "channel" then
 					label = "# " .. label
 				elseif item.type == "private" then
 					label = "\xE2\x9C\x89 " .. label

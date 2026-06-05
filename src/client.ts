@@ -294,6 +294,28 @@ export class TelegramLSPClient {
     return enriched.filter(Boolean) as ChatInfo[];
   }
 
+  async getSavedMessages(): Promise<ChatInfo> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const me = await this.client.invoke({ _: 'getMe' }) as { id: number };
+    const chat = await this.client.invoke({
+      _: 'createPrivateChat',
+      user_id: me.id,
+      force: true,
+    }) as RawTdChat;
+    this._cacheChat(chat.id, chat);
+    const enriched = await this._enrichPrivate(chat);
+    if (enriched) { enriched.isSaved = true; enriched.title = 'Favorites'; return enriched; }
+    return {
+      id: chat.id,
+      title: 'Favorites',
+      type: 'private',
+      unreadCount: chat.unread_count || 0,
+      unreadMentionCount: chat.unread_mention_count || 0,
+      onlineMemberCount: chat.online_member_count || 0,
+      isSaved: true,
+    };
+  }
+
   async searchUserByUsername(username: string): Promise<ChatInfo> {
     if (!this._ready) throw new Error('Client not ready yet');
     const clean = username.replace(/^@/, '');

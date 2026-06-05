@@ -425,6 +425,11 @@ function M.open_private_chat(user_id)
 end
 
 ---@return table|nil
+function M.get_saved_chat()
+	return http_get("/chats/saved")
+end
+
+---@return table|nil
 function M.get_groups()
 	return http_get("/groups")
 end

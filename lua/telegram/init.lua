@@ -49,6 +49,7 @@ end
 
 local function should_notify(msg)
 	if not msg or not msg.chat then return false end
+	if msg.chat.id == ui.state.saved_chat_id then return false end
 	for _, t in ipairs(config.config.notify_chat_types) do
 		if t == "mention" and msg.containsMention then return true end
 		if msg.chat.type == t then return true end
@@ -298,6 +299,21 @@ local function refresh_groups_list()
 		refresh_timer = nil
 		server.get_chats_async(function(chats)
 			if chats then
+				local saved = server.get_saved_chat()
+				if saved then
+					local found
+					for i, c in ipairs(chats) do
+						if c.id == saved.id then
+							found = i
+							break
+						end
+					end
+					if found then
+						chats[found] = saved
+					else
+						table.insert(chats, saved)
+					end
+				end
 				ui.set_groups(chats)
 			end
 		end)
@@ -670,6 +686,23 @@ local function finish_init()
 end
 
 local function finish_open(chats)
+	local saved = server.get_saved_chat()
+	if saved then
+		ui.state.saved_chat_id = saved.id
+		chats = chats or {}
+		local found
+		for i, c in ipairs(chats) do
+			if c.id == saved.id then
+				found = i
+				break
+			end
+		end
+		if found then
+			chats[found] = saved
+		else
+			table.insert(chats, saved)
+		end
+	end
 	ui.set_groups(chats or {})
 	ui.destroy_chat()
 	if chats and #chats > 0 then
