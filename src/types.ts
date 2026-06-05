@@ -86,6 +86,7 @@ export interface RawTdChat {
   };
   unread_count?: number;
   unread_mention_count?: number;
+  last_read_inbox_message_id?: number;
   online_member_count?: number;
   last_message?: RawTdMessage | null;
   positions?: { list: { _: string }; order: string }[];
