@@ -674,16 +674,93 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	state.online_count = (cached and cached.online_count) or 0
 	state.permissions = {}
 	state.description = ""
+	local saved_id = state.saved_cursors and state.saved_cursors[cid]
+	local chat_info_holder = nil
 	local pending = 2
 	local function check_done()
 		pending = pending - 1
 		if pending == 0 then
 			title.update_title()
+			if saved_id then
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
+					if state.chat_id == cid then
+						state.messages = data.messages or {}
+						table.sort(state.messages, function(a, b)
+							if a.date ~= b.date then return a.date < b.date end
+							return a.id < b.id
+						end)
+						render()
+						title.update_title()
+						if #state.messages > 0 then
+							server.view_messages(state.chat_id, state.messages[#state.messages].id)
+						end
+						local l = line_of(saved_id)
+						if l then
+							pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+						else
+							M.jump_to_bottom()
+						end
+					end
+				end)
+			elseif chat_info_holder and chat_info_holder.unreadCount
+					and chat_info_holder.unreadCount > 0
+					and chat_info_holder.lastReadInboxMessageId
+					and chat_info_holder.lastReadInboxMessageId > 0 then
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				server.get_messages_around_async(state.chat_id, chat_info_holder.lastReadInboxMessageId, 31, function(data)
+					if state.chat_id == cid then
+						state.messages = data.messages or {}
+						table.sort(state.messages, function(a, b)
+							if a.date ~= b.date then return a.date < b.date end
+							return a.id < b.id
+						end)
+						render()
+						title.update_title()
+						if #state.messages > 0 then
+							server.view_messages(state.chat_id, state.messages[#state.messages].id)
+						end
+						local target = chat_info_holder.lastReadInboxMessageId
+						local scrolled = false
+						for i, m in ipairs(state.messages) do
+							if m.id == target then
+								local nxt = i + 1
+								if nxt <= #state.messages then
+									local l = line_of(state.messages[nxt].id)
+									if l then
+										pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
+										scrolled = true
+									end
+								end
+								break
+							end
+						end
+						if not scrolled then
+							M.jump_to_bottom()
+						end
+					end
+				end)
+			else
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				M.refresh_messages(function()
+					M.jump_to_bottom()
+				end)
+			end
 		end
 	end
 	server.get_chat_async(cid, function(chat_info)
 		if state.chat_id ~= cid then return end
 		if chat_info then
+			chat_info_holder = chat_info
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
 			end
@@ -701,42 +778,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		end
 		check_done()
 	end)
-	local saved_id = state.saved_cursors and state.saved_cursors[cid]
-	if saved_id then
-		state.messages = {}
-		state.exhausted = false
-		state.exhausted_forward = false
-		render()
-		local cid = state.chat_id
-		server.get_messages_around_async(state.chat_id, saved_id, 31, function(data)
-			if state.chat_id == cid then
-				state.messages = data.messages or {}
-				table.sort(state.messages, function(a, b)
-					if a.date ~= b.date then return a.date < b.date end
-					return a.id < b.id
-				end)
-				render()
-				title.update_title()
-				if #state.messages > 0 then
-					server.view_messages(state.chat_id, state.messages[#state.messages].id)
-				end
-				local l = line_of(saved_id)
-				if l then
-					pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-				else
-					M.jump_to_bottom()
-				end
-			end
-		end)
-	else
-		state.messages = {}
-		state.exhausted = false
-		state.exhausted_forward = false
-		render()
-		M.refresh_messages(function()
-			M.jump_to_bottom()
-		end)
-	end
 end
 
 function M.close_chat()
@@ -916,7 +957,7 @@ function M.refresh_messages(on_complete)
 	state.exhausted = false
 	state.exhausted_forward = false
 	local chat_id = state.chat_id
-	server.get_messages_async(chat_id, 10, nil, function(data)
+	server.get_messages_async(chat_id, 30, nil, function(data)
 		if state.chat_id ~= chat_id then return end
 		local raw = data.messages or {}
 		state.messages = {}
