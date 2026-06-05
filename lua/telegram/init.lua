@@ -185,7 +185,10 @@ local function flush_msg_queue()
 		end
 
 		if not skip_insert then
-			st.unread = st.unread + 1
+			local should_count_unread = not msg.own and not at_bottom
+			if should_count_unread then
+				st.unread = st.unread + 1
+			end
 			if st.groups[st.chat_id] then
 				st.groups[st.chat_id].unread_count = st.unread
 			end
@@ -210,7 +213,7 @@ local function flush_msg_queue()
 					filePath = msg.filePath,
 					mediaPath = msg.mediaPath,
 					mimeType = msg.mimeType,
-					_unread = not msg.own and not at_bottom,
+					_unread = should_count_unread,
 				})
 			else
 				st.exhausted_forward = false
@@ -437,12 +440,13 @@ local function finish_init()
 			local server_last = msg.last_read_inbox_message_id
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
-					if server_count > (ui.state.groups[msg.chat_id].unread_count or 0) then
-						ui.state.groups[msg.chat_id].unread_count = server_count
-					end
+					ui.state.groups[msg.chat_id].unread_count = server_count
 					if msg.chat_id == ui.state.chat_id then
-						if server_count > ui.state.unread then
-							ui.state.unread = server_count
+						ui.state.unread = math.min(server_count, ui.state.unread)
+						if server_last and server_last > 0 then
+							if (ui.state.last_read_id or 0) < server_last then
+								ui.state.last_read_id = server_last
+							end
 						end
 						ui.update_title()
 					end

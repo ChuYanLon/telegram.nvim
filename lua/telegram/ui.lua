@@ -80,8 +80,11 @@ local function apply_highlights()
 		or "  \xE2\x97\x8F Forwarding"
 	local line = 1 + off
 	local line_counts = state.msg_line_counts
+	local prev_extra = 0
 	for i, m in ipairs(state.messages) do
-		line = line + (state.extra_before[i] or 0)
+		local extra = state.extra_before[i] or 0
+		line = line + (extra - prev_extra)
+		prev_extra = extra
 		local n = line_counts[i] or #fmt_msg(m)
 		if m.id == target_id then
 			local start_line = line - 1
@@ -595,10 +598,13 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					local off = title_offset()
 					local line = 1 + off
 					local last_read_id = nil
+					local prev_extra = 0
 					for i, m in ipairs(state.messages) do
-						line = line + (state.extra_before[i] or 0)
+						local extra = state.extra_before[i] or 0
+						line = line + (extra - prev_extra)
+						prev_extra = extra
 						local n = state.msg_line_counts[i] or #fmt_msg(m)
-						if cursor_line >= line + n - 1 and m._unread then
+						if cursor_line >= line and m._unread then
 							m._unread = nil
 							state.unread = math.max(0, state.unread - 1)
 							last_read_id = m.id
@@ -610,7 +616,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						if state.chat_id and state.groups[state.chat_id] then
 							state.groups[state.chat_id].unread_count = state.unread
 						end
-					end
+						title.update_title()
+						vim.cmd("redrawstatus")
+						end
 				end
 				if cursor_line == min_line and not state.exhausted and not state.loading then
 					M.load_older()
@@ -624,8 +632,11 @@ function M.open_chat(chat_id, chat_title, chat_type)
 					state._scroll_timer = nil
 				local line_counts = state.msg_line_counts
 				local l = min_line
+				local prev_extra = 0
 				for i, msg in ipairs(state.messages) do
-					l = l + (state.extra_before[i] or 0)
+					local extra = state.extra_before[i] or 0
+					l = l + (extra - prev_extra)
+					prev_extra = extra
 					local n = line_counts[i] or #fmt_msg(msg)
 						if cursor_line >= l and cursor_line < l + n then
 							state.saved_cursors = state.saved_cursors or {}
@@ -920,9 +931,11 @@ function M.message_at_cursor()
 	local off = title_offset()
 	local line_counts = state.msg_line_counts
 	local line = 1 + off
+	local prev_extra = 0
 	for idx, msg in ipairs(state.messages) do
 		local extra = state.extra_before[idx] or 0
-		line = line + extra
+		line = line + (extra - prev_extra)
+		prev_extra = extra
 		local n = line_counts[idx] or #fmt_msg(msg)
 		if cursor_line >= line and cursor_line < line + n then
 			return idx
@@ -1017,10 +1030,12 @@ function M.load_newer()
 		if #new_msgs == 0 then state.exhausted_forward = true; state.loading_newer = false; return end
 		local seen = {}
 		for _, m in ipairs(state.messages) do seen[tostring(m.id)] = true end
+		local newly_inserted = {}
 		for _, m in ipairs(new_msgs) do
 			if not seen[tostring(m.id)] then
 				seen[tostring(m.id)] = true
 				table.insert(state.messages, m)
+				table.insert(newly_inserted, m)
 			end
 		end
 		if #new_msgs > 0 then
@@ -1029,10 +1044,15 @@ function M.load_newer()
 				return a.id < b.id
 			end)
 			if state.last_read_id and state.last_read_id > 0 then
-				for _, m in ipairs(new_msgs) do
+				local new_unread = 0
+				for _, m in ipairs(newly_inserted) do
 					if m.id > state.last_read_id and not m.own then
 						m._unread = true
+						new_unread = new_unread + 1
 					end
+				end
+				if new_unread > 0 then
+					state.unread = state.unread + new_unread
 				end
 			end
 			st.trim_oldest()
