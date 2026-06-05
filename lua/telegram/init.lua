@@ -210,6 +210,7 @@ local function flush_msg_queue()
 					filePath = msg.filePath,
 					mediaPath = msg.mediaPath,
 					mimeType = msg.mimeType,
+					_unread = not msg.own,
 				})
 			else
 				st.exhausted_forward = false

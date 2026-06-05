@@ -150,7 +150,16 @@ local function render()
 	local extra_before = {}
 	local extra_count = 0
 	local prev_date_key = nil
-	local unread_idx = state.unread > 0 and (#state.messages - state.unread + 1) or nil
+	local unread_idx = nil
+	if state.unread > 0 then
+		if state._unread_start then
+			unread_idx = state._unread_start
+		else
+			for i, m in ipairs(state.messages) do
+				if m._unread then unread_idx = i; break end
+			end
+		end
+	end
 	for i, msg in ipairs(state.messages) do
 		local date_key = os.date("%Y%m%d", msg.date)
 		if prev_date_key and date_key ~= prev_date_key then
@@ -582,18 +591,21 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				end
 				local total_lines = vim.api.nvim_buf_line_count(state.buf)
 				if state.unread > 0 then
-					local first_unread_idx = #state.messages - state.unread + 1
-					if first_unread_idx >= 1 and first_unread_idx <= #state.messages then
-						local first_unread_line = line_of(state.messages[first_unread_idx].id)
-						if first_unread_line and cursor_line >= first_unread_line then
-							state.unread = 0
-							if state.chat_id and state.groups[state.chat_id] then
-								state.groups[state.chat_id].unread_count = 0
-								state.groups[state.chat_id].mention_count = 0
+					local current_idx = M.message_at_cursor()
+					if current_idx then
+						local last_read_id = nil
+						for i = 1, current_idx - 1 do
+							local m = state.messages[i]
+							if m._unread then
+								m._unread = nil
+								state.unread = math.max(0, state.unread - 1)
+								last_read_id = m.id
 							end
-							local latest = state.messages[#state.messages]
-							if latest then
-								server.view_messages(state.chat_id, latest.id)
+						end
+						if last_read_id then
+							server.view_messages(state.chat_id, last_read_id)
+							if state.chat_id and state.groups[state.chat_id] then
+								state.groups[state.chat_id].unread_count = state.unread
 							end
 						end
 					end
@@ -728,20 +740,22 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	local pending = 2
 	local function check_done()
 		pending = pending - 1
-		local function position_at_first_unread()
-			local first_unread_idx = nil
+		local function count_unread()
 			local last_read = chat_info_holder and chat_info_holder.lastReadInboxMessageId or 0
 			local unread_count = 0
+			local first_unread_idx
 			for i, m in ipairs(state.messages) do
-				if last_read > 0 and m.id > last_read then
+				if last_read > 0 and m.id > last_read and not m.own then
+					m._unread = true
 					unread_count = unread_count + 1
 					if not first_unread_idx then first_unread_idx = i end
+				else
+					m._unread = nil
 				end
 			end
 			state.unread = unread_count
-			local target_idx = first_unread_idx or #state.messages
-			local l = line_of(state.messages[target_idx].id)
-			if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
+			state._unread_start = first_unread_idx
+			return first_unread_idx
 		end
 
 		if pending == 0 then
@@ -758,12 +772,12 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							if a.date ~= b.date then return a.date < b.date end
 							return a.id < b.id
 						end)
+						local first_unread_idx = count_unread()
 						render()
 						title.update_title()
-						if #state.messages > 0 then
-							server.view_messages(state.chat_id, state.messages[#state.messages].id)
-						end
-						position_at_first_unread()
+						local target_idx = first_unread_idx or #state.messages
+						local l = line_of(state.messages[target_idx].id)
+						if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
 					end
 				end)
 			elseif chat_info_holder and chat_info_holder.unreadCount
@@ -781,12 +795,12 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							if a.date ~= b.date then return a.date < b.date end
 							return a.id < b.id
 						end)
+						local first_unread_idx = count_unread()
 						render()
 						title.update_title()
-						if #state.messages > 0 then
-							server.view_messages(state.chat_id, state.messages[#state.messages].id)
-						end
-						position_at_first_unread()
+						local target_idx = first_unread_idx or #state.messages
+						local l = line_of(state.messages[target_idx].id)
+						if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
 					end
 				end)
 			else
@@ -795,7 +809,11 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				state.exhausted_forward = false
 				render()
 				M.refresh_messages(function()
-					position_at_first_unread()
+					local first_unread_idx = count_unread()
+					render()
+					local target_idx = first_unread_idx or #state.messages
+					local l = line_of(state.messages[target_idx].id)
+					if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
 				end)
 			end
 		end
@@ -1038,7 +1056,6 @@ function M.refresh_messages(on_complete)
 			local latest = state.messages[#state.messages]
 			local ts = os.date("%Y-%m-%d %H:%M", latest.date)
 			state.last_msg = "[" .. ts .. "] " .. (latest.sender and latest.sender.name or "?") .. ": " .. (latest.text or "")
-			server.view_messages(state.chat_id, latest.id)
 		end
 		if on_complete then on_complete() end
 	end, function(err)
