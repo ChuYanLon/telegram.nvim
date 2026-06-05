@@ -775,9 +775,16 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						if #state.messages > 0 then
 							server.view_messages(state.chat_id, state.messages[#state.messages].id)
 						end
-						local last = state.messages[#state.messages]
-						if last then
-							local l = line_of(last.id)
+						local target_id = chat_info_holder.lastReadInboxMessageId
+						local first_unread_idx = nil
+						for i, m in ipairs(state.messages) do
+							if m.id > target_id then
+								first_unread_idx = i
+								break
+							end
+						end
+						if first_unread_idx then
+							local l = line_of(state.messages[first_unread_idx].id)
 							if l then
 								pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
 							end
@@ -804,6 +811,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			end
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
+			state.unread = chat_info.unreadCount or 0
 			groups.refresh_pinned_message(cid, chat_info.pinnedMessageId)
 		end
 		check_done()
