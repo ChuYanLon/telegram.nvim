@@ -24,6 +24,8 @@ It uses TDLib via a TypeScript backend + Lua frontend, communicating over HTTP a
 - Favorites (Saved Messages) — press `s` to save any message
 - View counts on channel messages
 - Read receipts on outgoing private messages
+- Edited indicator with [edited] footer
+- Copy message text to clipboard (yy key)
 - HD media download (@refreshmedia)
 
 **Tech stack:**

@@ -19,6 +19,8 @@ A Telegram chat client inside Neovim.
 - Favorites — dedicated chat always in list; press `s` on any message to save with confirmation
 - View counts — channel messages show `👀 N` footer; real-time sync
 - Read receipts — outgoing private messages show `(read HH:MM)` when read
+- Edited indicator — edited messages show `[edited]` footer; `@edithistory` tool shows all previous versions
+- Copy message text — press `yy` to copy any message to clipboard
 - Message search within a chat
 - Media display (photos, video, documents, stickers, audio, voice)
 - Typing indicators in title bar, online member count

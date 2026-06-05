@@ -4,6 +4,21 @@
 
 ### Added
 
+- **Edited indicator** — edited messages show `[edited]` in the message footer alongside views and reactions; `editDate` field propagated through TypeScript backend and Lua state
+- **Copy message text** — press `yy` in the chat window to copy the current message's text to the system clipboard
+- **Favorites (Saved Messages)** — dedicated chat always present in group list with 📌 icon; press `s` to forward current message to Favorites with confirmation dialog
+- **View counts** — channel messages show `👀 N` footer with k/M formatting; real-time sync via `updateMessageInteractionInfo` WebSocket event
+- **Read receipts** — outgoing private messages display `(read HH:MM)` in header when recipient has read the message; uses `getMessageReadDate` + `updateMessageReadDate` real-time updates
+
+### Fixed
+
+- **Message object field preservation** — `views`, `readDate`, `reactions`, `editDate` now stored on new message objects in Lua state
+- **Favorites chat identification** — `isSaved` flag replaces existing chat entry in list instead of duplicating
+- **Favorites notifications** — messages in Favorites chat excluded from `should_notify()` via `saved_chat_id`
+- **Cursor positioning on empty chat** — `set_cursor_to_idx` guards against nil message when target index is out of bounds
+
+### Added
+
 - **Favorites (Saved Messages)** — dedicated chat always present in group list with 📌 icon; press `s` to forward current message to Favorites with confirmation dialog
 - **View counts** — channel messages show `👀 N` footer with k/M formatting; real-time sync via `updateMessageInteractionInfo` WebSocket event
 - **Read receipts** — outgoing private messages display `(read HH:MM)` in header when recipient has read the message; uses `getMessageReadDate` + `updateMessageReadDate` real-time updates
