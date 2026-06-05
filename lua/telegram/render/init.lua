@@ -6,6 +6,15 @@ local other = require("telegram.render.other")
 
 local M = {}
 
+local function fmt_count(n)
+	if n >= 1000000 then
+		return ("%.1fM"):format(n / 1000000)
+	elseif n >= 1000 then
+		return ("%.1fk"):format(n / 1000)
+	end
+	return tostring(n)
+end
+
 local function get_renderer(msg)
 	local t = msg.type or "messageText"
 	if t == "messageText" then
@@ -81,10 +90,12 @@ function M.render(msg)
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		table.insert(out, "[~] " .. s .. " performed an action at " .. date_str)
 	else
-		local header = string.format("## %s (%s)", sender, date_str)
-		if msg.views and msg.views > 0 then
-			header = header .. string.format(" [%d views]", msg.views)
+		local header = string.format("## %s (%s", sender, date_str)
+		if msg.own and msg.readDate and msg.readDate > 0 then
+			local read_str = os.date("%H:%M", msg.readDate)
+			header = header .. string.format(", read %s", read_str)
 		end
+		header = header .. ")"
 		table.insert(out, header)
 
 		if msg.replyTo then
@@ -100,8 +111,11 @@ function M.render(msg)
 		for _, l in ipairs(content) do
 			table.insert(out, l)
 		end
+		local footer_parts = {}
+		if msg.views and msg.views > 0 then
+			table.insert(footer_parts, "👀 " .. fmt_count(msg.views))
+		end
 		if msg.reactions and #msg.reactions > 0 then
-			local parts = {}
 			for _, r in ipairs(msg.reactions) do
 				local txt = emojis.get(emojis.get_name(r.emoji or "")) or r.emoji or ""
 				local cnt = r.count or 0
@@ -110,9 +124,11 @@ function M.render(msg)
 				else
 					txt = txt .. " " .. cnt
 				end
-				table.insert(parts, txt)
+				table.insert(footer_parts, txt)
 			end
-			table.insert(out, "└─ " .. table.concat(parts, "  "))
+		end
+		if #footer_parts > 0 then
+			table.insert(out, "└─ " .. table.concat(footer_parts, "  "))
 		end
 	end
 

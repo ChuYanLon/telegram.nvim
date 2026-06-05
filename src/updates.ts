@@ -90,8 +90,14 @@ export class UpdateDispatcher {
         case 'updateMessageIsPinned':
           this.handleMessageIsPinned(update);
           break;
+        case 'updateMessageInteractionInfo':
+          this.handleMessageInteractionInfo(update);
+          break;
         case 'updateMessageReactions':
           this.handleMessageReactions(update);
+          break;
+        case 'updateMessageReadDate':
+          this.handleMessageReadDate(update);
           break;
         case 'updateAuthorizationState':
           this.handleAuthorizationState(update);
@@ -460,6 +466,39 @@ export class UpdateDispatcher {
       event: 'chatUnreadMentionCount',
       chat_id: update.chat_id,
       unread_mention_count: update.unread_mention_count,
+    });
+  }
+
+  handleMessageInteractionInfo(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const info = update.interaction_info as { view_count?: number; forward_count?: number; reactions?: any } | undefined;
+    if (!info) return;
+    const payload: Record<string, unknown> = {
+      event: 'messageInteractionInfo',
+      chat_id: update.chat_id,
+      message_id: update.message_id,
+    };
+    if (info.view_count !== undefined) payload.view_count = info.view_count;
+    if (info.forward_count !== undefined) payload.forward_count = info.forward_count;
+    if (info.reactions?.reactions) {
+      payload.reactions = info.reactions.reactions.map((r: any) => ({
+        emoji: r.type?.emoji || '',
+        count: r.total_count,
+        is_chosen: r.is_chosen,
+      }));
+    }
+    broadcast(payload);
+  }
+
+  handleMessageReadDate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    broadcast({
+      event: 'messageReadDate',
+      chat_id: update.chat_id,
+      message_id: update.message_id,
+      read_date: update.read_date,
     });
   }
 

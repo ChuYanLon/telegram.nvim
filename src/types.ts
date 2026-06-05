@@ -30,6 +30,8 @@ export interface FormattedMessage {
   mediaPath?: string;
   mimeType?: string;
   views?: number;
+  forwardCount?: number;
+  readDate?: number;
   reactions?: Reaction[];
 }
 

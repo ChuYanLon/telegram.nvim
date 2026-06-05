@@ -112,7 +112,21 @@ export class MessageFormatter {
       );
     }
 
-    if (msg.views) formatted.views = msg.views;
+    const viewCount = msg.views || msg.interaction_info?.view_count || 0;
+    if (viewCount > 0) formatted.views = viewCount;
+    if (msg.interaction_info?.forward_count) formatted.forwardCount = msg.interaction_info.forward_count;
+
+    if (msg.is_outgoing && msg.chat_id) {
+      this.invoke({
+        _: 'getMessageReadDate',
+        chat_id: msg.chat_id,
+        message_id: msg.id,
+      }).then((readResult: any) => {
+        if (readResult?._ === 'messageReadDateResultReadDate' && readResult.read_date) {
+          formatted.readDate = readResult.read_date;
+        }
+      }).catch(() => {});
+    }
 
     if (msg.interaction_info?.reactions?.reactions?.length) {
       formatted.reactions = msg.interaction_info.reactions.reactions.map((r) => ({

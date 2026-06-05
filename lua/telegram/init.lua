@@ -213,6 +213,9 @@ local function flush_msg_queue()
 					filePath = msg.filePath,
 					mediaPath = msg.mediaPath,
 					mimeType = msg.mimeType,
+					views = msg.views,
+					readDate = msg.readDate,
+					reactions = msg.reactions,
 					_unread = should_count_unread,
 				})
 			else
@@ -345,6 +348,9 @@ local function finish_init()
 								filePath = msg.filePath,
 								mediaPath = msg.mediaPath,
 								mimeType = msg.mimeType,
+								views = msg.views,
+								readDate = msg.readDate,
+								reactions = msg.reactions,
 							}
 							ui.render()
 							break
@@ -411,6 +417,33 @@ local function finish_init()
 				for _, m in ipairs(ui.state.messages) do
 					if tostring(m.id) == mid then
 						m.reactions = msg.reactions
+						ui.render()
+						break
+					end
+				end
+			end)
+		elseif msg.event == "messageInteractionInfo" then
+			local ii_chat_id = msg.chat_id
+			vim.schedule(function()
+				if not ii_chat_id or ii_chat_id ~= ui.state.chat_id then return end
+				local mid = tostring(msg.message_id)
+				for _, m in ipairs(ui.state.messages) do
+					if tostring(m.id) == mid then
+						if msg.view_count then m.views = msg.view_count end
+						if msg.reactions then m.reactions = msg.reactions end
+						ui.render()
+						break
+					end
+				end
+			end)
+		elseif msg.event == "messageReadDate" then
+			local rd_chat_id = msg.chat_id
+			vim.schedule(function()
+				if not rd_chat_id or rd_chat_id ~= ui.state.chat_id then return end
+				local mid = tostring(msg.message_id)
+				for _, m in ipairs(ui.state.messages) do
+					if tostring(m.id) == mid then
+						m.readDate = msg.read_date
 						ui.render()
 						break
 					end
