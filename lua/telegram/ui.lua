@@ -606,6 +606,8 @@ function M.open_chat(chat_id, chat_title, chat_type)
 							server.view_messages(state.chat_id, last_read_id)
 							if last_read_id > (state.last_read_id or 0) then
 								state.last_read_id = last_read_id
+								state.saved_last_read = state.saved_last_read or {}
+								state.saved_last_read[state.chat_id] = last_read_id
 							end
 							if state.chat_id and state.groups[state.chat_id] then
 								state.groups[state.chat_id].unread_count = state.unread
@@ -826,7 +828,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		if state.chat_id ~= cid then return end
 		if chat_info then
 			chat_info_holder = chat_info
-			state.last_read_id = chat_info.lastReadInboxMessageId or 0
+			local server_last = chat_info.lastReadInboxMessageId or 0
+			local local_last = state.saved_last_read and state.saved_last_read[cid] or 0
+			state.last_read_id = math.max(server_last, local_last)
 			if chat_info.onlineMemberCount and chat_info.onlineMemberCount > 0 then
 				state.online_count = chat_info.onlineMemberCount
 			end
@@ -881,7 +885,6 @@ function M.destroy_chat()
 	state._pending_edit = nil
 	state.msg_line_counts = {}
 	state.extra_before = {}
-	state.last_read_id = nil
 	state._unread_start = nil
 	state.loading = false
 	state.exhausted = false
