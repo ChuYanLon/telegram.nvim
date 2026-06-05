@@ -222,8 +222,10 @@ local function flush_msg_queue()
 				})
 			else
 				st.exhausted_forward = false
-				local sender = msg.sender and msg.sender.name or "?"
-				queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
+				if should_notify(msg) then
+					local sender = msg.sender and msg.sender.name or "?"
+					queue_notify(msg.chat and msg.chat.id, msg.chat and msg.chat.title or "?", sender, msg.text)
+				end
 			end
 		end
 	end
