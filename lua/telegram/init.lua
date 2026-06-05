@@ -435,9 +435,11 @@ local function finish_init()
 		elseif msg.event == "chatReadInbox" then
 			vim.schedule(function()
 				if msg.chat_id and ui.state.groups[msg.chat_id] then
-					ui.state.groups[msg.chat_id].unread_count = msg.unread_count or 0
+					local server_count = msg.unread_count or 0
+					if server_count > (ui.state.groups[msg.chat_id].unread_count or 0) then
+						ui.state.groups[msg.chat_id].unread_count = server_count
+					end
 					if msg.chat_id == ui.state.chat_id then
-						local server_count = msg.unread_count or 0
 						if server_count > ui.state.unread then
 							ui.state.unread = server_count
 						end

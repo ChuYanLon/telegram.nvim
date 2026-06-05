@@ -604,6 +604,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						end
 						if last_read_id then
 							server.view_messages(state.chat_id, last_read_id)
+							if last_read_id > (state.last_read_id or 0) then
+								state.last_read_id = last_read_id
+							end
 							if state.chat_id and state.groups[state.chat_id] then
 								state.groups[state.chat_id].unread_count = state.unread
 							end
@@ -741,7 +744,8 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	local function check_done()
 		pending = pending - 1
 		local function count_unread()
-			local last_read = chat_info_holder and chat_info_holder.lastReadInboxMessageId or 0
+			local server_last = chat_info_holder and chat_info_holder.lastReadInboxMessageId or 0
+			local last_read = math.max(server_last, state.last_read_id or 0)
 			local unread_count = 0
 			local first_unread_idx
 			for i, m in ipairs(state.messages) do
