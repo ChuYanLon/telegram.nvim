@@ -25,7 +25,7 @@ A Telegram chat client inside Neovim.
 - Media display (photos, video, documents, stickers, audio, voice)
 - Typing indicators in title bar, online member count
 - Multi-line input editor with placeholder
-- Tool system (`@` key): group switcher, refresh, quick send, search, refresh media
+- Tool system (`@` key): group switcher, refresh, quick send, search, refresh media, toggle title bar
 - Group management: view members (incl. admins), ban/unban, restrict/unrestrict, promote/demote, add members by @username
 - Granular default permissions editor with interactive floating window and toggle-all
 - Invite links: create (with expiry + member limit), view, edit, revoke

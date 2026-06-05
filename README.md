@@ -78,6 +78,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Read receipts — outgoing private messages show `(read HH:MM)` in header when read by recipient
 - [x] Edited indicator — edited messages show `[edited]` footer; `@edithistory` tool shows all previous versions
 - [x] Copy message text — press `yy` to copy message text to system clipboard
+- [x] Toggle title bar — `@toggleheader` shows/hides the floating title bar; configurable via `hide_title` option
 - [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
 - [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 

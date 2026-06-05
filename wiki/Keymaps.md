@@ -34,6 +34,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | **members** | View and manage chat members |
 | **invitelinks** | Manage invite links |
 | **groupsettings** | Group / channel settings (title, description, granular default permissions editor, add member, leave/unsubscribe) |
+| **toggleheader** | Toggle floating title bar visibility |
 
 ## Input Editor
 
