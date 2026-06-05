@@ -728,6 +728,22 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	local pending = 2
 	local function check_done()
 		pending = pending - 1
+		local function position_at_first_unread()
+			local first_unread_idx = nil
+			local last_read = chat_info_holder and chat_info_holder.lastReadInboxMessageId or 0
+			local unread_count = 0
+			for i, m in ipairs(state.messages) do
+				if last_read > 0 and m.id > last_read then
+					unread_count = unread_count + 1
+					if not first_unread_idx then first_unread_idx = i end
+				end
+			end
+			state.unread = unread_count
+			local target_idx = first_unread_idx or #state.messages
+			local l = line_of(state.messages[target_idx].id)
+			if l then pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 }) end
+		end
+
 		if pending == 0 then
 			title.update_title()
 			if saved_id then
@@ -747,12 +763,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						if #state.messages > 0 then
 							server.view_messages(state.chat_id, state.messages[#state.messages].id)
 						end
-						local l = line_of(saved_id)
-						if l then
-							pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-						else
-							M.jump_to_bottom()
-						end
+						position_at_first_unread()
 					end
 				end)
 			elseif chat_info_holder and chat_info_holder.unreadCount
@@ -775,20 +786,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						if #state.messages > 0 then
 							server.view_messages(state.chat_id, state.messages[#state.messages].id)
 						end
-						local target_id = chat_info_holder.lastReadInboxMessageId
-						local first_unread_idx = nil
-						for i, m in ipairs(state.messages) do
-							if m.id > target_id then
-								first_unread_idx = i
-								break
-							end
-						end
-						if first_unread_idx then
-							local l = line_of(state.messages[first_unread_idx].id)
-							if l then
-								pcall(vim.api.nvim_win_set_cursor, state.win, { l, 0 })
-							end
-						end
+						position_at_first_unread()
 					end
 				end)
 			else
@@ -797,7 +795,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 				state.exhausted_forward = false
 				render()
 				M.refresh_messages(function()
-					M.jump_to_bottom()
+					position_at_first_unread()
 				end)
 			end
 		end
@@ -811,7 +809,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			end
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
-			state.unread = chat_info.unreadCount or 0
 			groups.refresh_pinned_message(cid, chat_info.pinnedMessageId)
 		end
 		check_done()
