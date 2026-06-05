@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.4] - 2026-06-05
+
+### Added
+
+- **Loading indicators and empty state** — chat buffer shows loading spinner during fetch and "No messages" when empty
+- **Date separators and unread divider** — date group headers between messages; "Unread messages" divider at the unread boundary
+- **Unread-aware loading** — initial load fetches 30 messages (up from 10), centered around `lastReadInboxMessageId`
+
+### Fixed
+
+- **Cursor positioned at first unread message** — jumps to first message below the unread divider, not date group boundary
+- **Unread divider stays fixed** — stays at original position until all messages above are read; per-message read tracking
+- **Read receipt reliability** — `last_read_id` persisted per-chat like `saved_cursors`, protected from stale server responses; read only marked when cursor reaches last line of a message
+- **Unread count accuracy** — deduplicated `load_newer` counting; own/at-bottom messages no longer increment; `math.min()` guards against stale server counts
+- **Cursor maintenance** — tracked by message ID during older loads, not buffer line number
+- **`extra_before` delta** — corrected cumulative offset calc using `(extra - prev_extra)` in incremental loops
+- **Immediate title/status update** — `CursorMoved` calls `update_title()` + `redrawstatus` right after marking read, no longer waiting for server round-trip
+
+### Changed
+
+- **Initial message load** — 10 → 30 messages on first chat open
+- **`getChat` returns `lastReadInboxMessageId`** — Lua side receives it for unread-aware positioning
+
 ## [0.5.2] - 2026-06-03
 
 ### Performance

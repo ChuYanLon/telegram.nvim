@@ -38,8 +38,10 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Scroll infinitely in both directions (older and newer messages)
 - [x] Receive new messages in real-time via WebSocket
 - [x] Typing indicators and online member count
-- [x] Cursor position is remembered per chat
-- [x] Messages are marked as read when opening a chat
+- [x] Cursor position is remembered per chat (tracked by message ID)
+- [x] Messages are marked as read when opening a chat; per-message read tracking with `last_read_id` persistence
+- [x] Unread-aware loading — opens at first unread message with unread divider
+- [x] Date separators between messages, loading indicators, and empty state
 - [x] Send plain text messages (with reply context)
 - [x] Send messages with formatting — type markdown syntax (`**bold**`, `### heading`) in input; Telegram clients (Android, iOS, Desktop) parse markdown natively, Neovim buffer renders via markdown treesitter
 - [x] Edit your own messages
