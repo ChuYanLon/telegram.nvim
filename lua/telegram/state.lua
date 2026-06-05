@@ -49,6 +49,7 @@ local state = {
 	_title_update_timer = nil,
 	_scroll_timer = nil,
 	title_dirty = false,
+	hide_title = false,
 }
 
 M.state = state

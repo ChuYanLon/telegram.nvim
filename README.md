@@ -312,6 +312,7 @@ require("telegram").setup({
   -- http_port = 8080,                      -- HTTP server port
   -- ws_port = 8081,                        -- WebSocket server port
   -- notify_chat_types = { "private", "mention" },  -- types: "private", "group", "channel"; add "mention" for @mentions
+  -- hide_title = false,  -- start with floating title bar hidden
 })
 ```
 

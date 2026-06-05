@@ -68,7 +68,7 @@ function M.update_title()
 	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
 		pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	end
-	if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+	if not state.win or not vim.api.nvim_win_is_valid(state.win) or state.hide_title then
 		hide_title_float()
 		return
 	end

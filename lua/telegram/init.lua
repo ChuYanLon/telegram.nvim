@@ -683,6 +683,7 @@ local function finish_init()
 			end
 		end
 	end)
+	ui.state.hide_title = config.config.hide_title
 	initialized = true
 	vim.notify("Ready", vim.log.levels.INFO, { title = "tg" })
 end

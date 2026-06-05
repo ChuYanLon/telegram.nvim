@@ -29,6 +29,7 @@ require("telegram").setup({
 | `ws_port` | `number?` | `8081` | Backend WebSocket server port |
 | `keys` | `table?` | all defaults | Custom keymaps — see [Keymaps](#keymaps) below |
 | `notify_chat_types` | `table?` | `{"private", "mention"}` | Chat types that trigger `vim.notify` on new messages (`"private"`, `"group"`, `"channel"`). Include `"mention"` for @mentions |
+| `hide_title` | `boolean?` | `false` | Start with floating title bar hidden |
 
 ## Keymaps
 

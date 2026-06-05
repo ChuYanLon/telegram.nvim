@@ -1,5 +1,6 @@
 local server = require("telegram.server")
 local ui = require("telegram.ui")
+local st = require("telegram.state")
 
 local M = {}
 local tool_list = {}
@@ -262,6 +263,19 @@ M.register("groupsettings", {
 			return
 		end
 		ui.show_group_settings(ui.state.chat_id)
+	end,
+})
+
+M.register("toggleheader", {
+	description = "Toggle floating title bar visibility",
+	callback = function()
+		st.state.hide_title = not st.state.hide_title
+		if st.state.hide_title then
+			local title = require("telegram.render.title")
+			title.update_title()
+		end
+		ui.render()
+		vim.notify("Title bar " .. (st.state.hide_title and "hidden" or "shown"), vim.log.levels.INFO, { title = "tg" })
 	end,
 })
 
