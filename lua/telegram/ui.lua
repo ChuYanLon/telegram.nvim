@@ -427,6 +427,12 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end)
+	set("copy", function()
+		local target = curr_msg()
+		if not target or not target.text then return end
+		vim.fn.setreg("+", target.text)
+		vim.notify("Copied to clipboard", vim.log.levels.INFO, { title = "tg" })
+	end)
 	set("forward", function()
 		local target = curr_msg()
 		if not target or not target.id then return end

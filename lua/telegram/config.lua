@@ -12,6 +12,7 @@ M.default_keys = {
 	forward = "f",
 	pin = "p",
 	save = "s",
+	copy = "yy",
 	refresh = "G",
 	ban = "B",
 	open_dm = "c",

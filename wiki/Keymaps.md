@@ -14,6 +14,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | `p` | Pin / unpin message at cursor |
 | `r` | React to message (opens emoji picker) |
 | `s` | Save message to Favorites (with confirmation) |
+| `yy` | Copy message text to clipboard |
 | `c` | Open DM with message sender |
 | `B` | Ban message sender |
 | `G` | Refresh messages, jump to bottom |
