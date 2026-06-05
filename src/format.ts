@@ -128,6 +128,8 @@ export class MessageFormatter {
       }).catch(() => {});
     }
 
+    if (msg.edit_date) formatted.editDate = msg.edit_date;
+
     if (msg.interaction_info?.reactions?.reactions?.length) {
       formatted.reactions = msg.interaction_info.reactions.reactions.map((r) => ({
         emoji: r.type.emoji,

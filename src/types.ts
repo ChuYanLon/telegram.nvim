@@ -32,6 +32,7 @@ export interface FormattedMessage {
   views?: number;
   forwardCount?: number;
   readDate?: number;
+  editDate?: number;
   reactions?: Reaction[];
 }
 
@@ -57,6 +58,7 @@ export interface RawTdMessage {
     chat_id?: number;
   } | null;
   views?: number;
+  edit_date?: number;
   interaction_info?: {
     _: string;
     view_count?: number;

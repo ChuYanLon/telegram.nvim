@@ -214,10 +214,11 @@ local function flush_msg_queue()
 					filePath = msg.filePath,
 					mediaPath = msg.mediaPath,
 					mimeType = msg.mimeType,
-					views = msg.views,
-					readDate = msg.readDate,
-					reactions = msg.reactions,
-					_unread = should_count_unread,
+				views = msg.views,
+				readDate = msg.readDate,
+				reactions = msg.reactions,
+				editDate = msg.editDate,
+				_unread = should_count_unread,
 				})
 			else
 				st.exhausted_forward = false
@@ -367,6 +368,7 @@ local function finish_init()
 								views = msg.views,
 								readDate = msg.readDate,
 								reactions = msg.reactions,
+								editDate = msg.editDate,
 							}
 							ui.render()
 							break

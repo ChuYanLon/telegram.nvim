@@ -95,8 +95,8 @@ function M.render(msg)
 			local read_str = os.date("%H:%M", msg.readDate)
 			header = header .. string.format(", read %s", read_str)
 		end
-		header = header .. ")"
-		table.insert(out, header)
+	header = header .. ")"
+	table.insert(out, header)
 
 		if msg.replyTo then
 			local r_sender = msg.replyTo.sender and msg.replyTo.sender.name or "?"
@@ -112,6 +112,9 @@ function M.render(msg)
 			table.insert(out, l)
 		end
 		local footer_parts = {}
+		if msg.editDate and msg.editDate > 0 then
+			table.insert(footer_parts, "[edited]")
+		end
 		if msg.views and msg.views > 0 then
 			table.insert(footer_parts, "👀 " .. fmt_count(msg.views))
 		end

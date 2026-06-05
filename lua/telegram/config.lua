@@ -80,6 +80,7 @@ function M.setup(opts)
 	local border_fg = hl_fg("FloatBorder")
 	vim.api.nvim_set_hl(0, "TgBorder", { fg = border_fg, bg = "NONE", default = true })
 	vim.api.nvim_set_hl(0, "TgDateSeparator", { fg = comment_fg, default = true })
+	vim.api.nvim_set_hl(0, "TgEdited", { fg = comment_fg, italic = true, default = true })
 	vim.api.nvim_set_hl(0, "TgUnreadDivider", { fg = hl_fg("DiagnosticInfo") or "#89b4fa", bold = true, default = true })
 end
 
