@@ -130,6 +130,19 @@ export class MessageFormatter {
 
     if (msg.edit_date) formatted.editDate = msg.edit_date;
 
+    if (msg.content?._ === 'messageText') {
+      const content = msg.content as any;
+      const lp = content.link_preview as { url?: string; title?: string; description?: string; site_name?: string } | undefined;
+      if (lp?.url) {
+        formatted.linkPreview = {
+          url: lp.url,
+          title: lp.title,
+          description: lp.description,
+          siteName: lp.site_name,
+        };
+      }
+    }
+
     if (msg.interaction_info?.reactions?.reactions?.length) {
       formatted.reactions = msg.interaction_info.reactions.reactions.map((r) => ({
         emoji: r.type.emoji,

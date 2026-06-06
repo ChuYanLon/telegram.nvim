@@ -107,9 +107,39 @@ function M.render(msg)
 			table.insert(out, string.format("> %s: %s", r_sender, r_text))
 		end
 
+		local function trunc(s, n)
+			n = n or 50
+			if vim.fn.strdisplaywidth(s) <= n then return s end
+			local r = ""
+			for c in s:gmatch(".[\128-\191]*") do
+				if vim.fn.strdisplaywidth(r .. c) > n - 1 then
+					return r .. "…"
+				end
+				r = r .. c
+			end
+			return r
+		end
 		local content = get_renderer(msg).render(msg)
-		for _, l in ipairs(content) do
-			table.insert(out, l)
+		if msg.linkPreview and msg.linkPreview.url then
+			local parts = {}
+			if msg.linkPreview.siteName and #msg.linkPreview.siteName > 0 then
+				table.insert(parts, msg.linkPreview.siteName)
+			end
+			if msg.linkPreview.title and #msg.linkPreview.title > 0 then
+				table.insert(parts, msg.linkPreview.title)
+			end
+			if #parts > 0 then
+				local label = table.concat(parts, " — "):gsub("%[", "("):gsub("%]", ")")
+				table.insert(out, "[" .. label .. "](" .. msg.linkPreview.url .. ")")
+			else
+				for _, l in ipairs(content) do
+					table.insert(out, l)
+				end
+			end
+		else
+			for _, l in ipairs(content) do
+				table.insert(out, l)
+			end
 		end
 		local footer_parts = {}
 		if msg.editDate and msg.editDate > 0 then

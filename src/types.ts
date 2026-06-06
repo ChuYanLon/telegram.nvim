@@ -10,6 +10,13 @@ export interface Reaction {
   is_chosen: boolean;
 }
 
+export interface LinkPreview {
+  url: string;
+  title?: string;
+  description?: string;
+  siteName?: string;
+}
+
 export interface FormattedMessage {
   id: number;
   type: string;
@@ -34,6 +41,7 @@ export interface FormattedMessage {
   readDate?: number;
   editDate?: number;
   reactions?: Reaction[];
+  linkPreview?: LinkPreview;
 }
 
 export interface RawTdMessage {
