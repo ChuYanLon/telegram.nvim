@@ -119,6 +119,9 @@ function M.render(msg)
 			end
 			return r
 		end
+		if msg.forwardInfo and msg.forwardInfo.name then
+			table.insert(out, "  ↳ " .. msg.forwardInfo.name)
+		end
 		local content = get_renderer(msg).render(msg)
 		if msg.linkPreview and msg.linkPreview.url then
 			local parts = {}

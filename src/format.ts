@@ -143,6 +143,20 @@ export class MessageFormatter {
       }
     }
 
+    if (msg.forward_info?.origin) {
+      const origin = msg.forward_info.origin;
+      let name = '';
+      if (origin._ === 'messageOriginUser') {
+        const uid = (origin as any).sender_user_id as number | undefined;
+        if (uid) name = this.resolver._users.get(uid) || await this.resolver.getUserName(uid);
+      } else if (origin._ === 'messageOriginChat' || origin._ === 'messageOriginChannel') {
+        name = (origin as any).sender_name || (origin as any).author_signature || '';
+      } else if (origin._ === 'messageOriginHiddenUser') {
+        name = (origin as any).sender_name || 'Hidden';
+      }
+      if (name) formatted.forwardInfo = { type: origin._, name };
+    }
+
     if (msg.interaction_info?.reactions?.reactions?.length) {
       formatted.reactions = msg.interaction_info.reactions.reactions.map((r) => ({
         emoji: r.type.emoji,

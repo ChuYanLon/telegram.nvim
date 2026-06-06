@@ -17,6 +17,11 @@ export interface LinkPreview {
   siteName?: string;
 }
 
+export interface ForwardInfo {
+  type: string;
+  name: string;
+}
+
 export interface FormattedMessage {
   id: number;
   type: string;
@@ -42,6 +47,7 @@ export interface FormattedMessage {
   editDate?: number;
   reactions?: Reaction[];
   linkPreview?: LinkPreview;
+  forwardInfo?: ForwardInfo;
 }
 
 export interface RawTdMessage {
@@ -67,6 +73,18 @@ export interface RawTdMessage {
   } | null;
   views?: number;
   edit_date?: number;
+  forward_info?: {
+    _: string;
+    origin?: {
+      _: string;
+      sender_user_id?: number;
+      sender_chat_id?: number;
+      sender_name?: string;
+      author_signature?: string;
+      chat_id?: number;
+    };
+    date?: number;
+  };
   interaction_info?: {
     _: string;
     view_count?: number;

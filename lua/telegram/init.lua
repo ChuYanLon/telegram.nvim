@@ -219,6 +219,7 @@ local function flush_msg_queue()
 				reactions = msg.reactions,
 				editDate = msg.editDate,
 				linkPreview = msg.linkPreview,
+				forwardInfo = msg.forwardInfo,
 				_unread = should_count_unread,
 				})
 			else
@@ -373,6 +374,7 @@ local function finish_init()
 								reactions = msg.reactions,
 								editDate = msg.editDate,
 								linkPreview = msg.linkPreview,
+								forwardInfo = msg.forwardInfo,
 							}
 							ui.render()
 							break
