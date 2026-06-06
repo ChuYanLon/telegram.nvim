@@ -680,6 +680,11 @@ local function finish_init()
 					refresh_groups_list()
 				end
 			end
+		elseif msg.event == "connectionState" then
+			vim.schedule(function()
+				ui.state.connection_state = msg.state
+				ui.update_title()
+			end)
 		elseif msg.event == "authState" then
 			if msg.state == "authorizationStateClosed" or msg.state == "authorizationStateLoggingOut" then
 				ui.destroy_chat()

@@ -50,6 +50,7 @@ local state = {
 	_scroll_timer = nil,
 	title_dirty = false,
 	hide_title = false,
+	connection_state = "connectionStateReady",
 }
 
 M.state = state

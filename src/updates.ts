@@ -99,6 +99,9 @@ export class UpdateDispatcher {
         case 'updateMessageReadDate':
           this.handleMessageReadDate(update);
           break;
+        case 'updateConnectionState':
+          this.handleConnectionState(update);
+          break;
         case 'updateAuthorizationState':
           this.handleAuthorizationState(update);
           break;
@@ -352,6 +355,17 @@ export class UpdateDispatcher {
       event: 'ChatPinnedMessage',
       chat_id: chatId,
       pinned_message_id: isPinned ? messageId : 0,
+    });
+  }
+
+  handleConnectionState(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const connState = update.state as { _: string } | undefined;
+    if (!connState) return;
+    broadcast({
+      event: 'connectionState',
+      state: connState._,
     });
   }
 

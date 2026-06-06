@@ -102,7 +102,8 @@ function M.update_title()
 
 	local lines = {}
 
-	lines[#lines + 1] = title
+	local conn_map = { connectionStateReady = "", connectionStateConnecting = " ●", connectionStateWaitingForNetwork = " ●" }
+	lines[#lines + 1] = title .. (conn_map[state.connection_state] or " ●")
 
 	local online = state.online_count or 0
 	if has_typing then
@@ -186,7 +187,11 @@ function M.update_title()
 			vim.api.nvim_buf_add_highlight(state.title_buf, st.hl_ns, "TgBorder", li - 1, 0, -1)
 		elseif li == 1 then
 			vim.api.nvim_buf_add_highlight(state.title_buf, st.hl_ns, "TgWinbarTitle", li - 1, 0, #title)
-			vim.api.nvim_buf_add_highlight(state.title_buf, st.hl_ns, "TgTimestamp", li - 1, #title, -1)
+			if state.connection_state ~= "connectionStateReady" then
+				vim.api.nvim_buf_add_highlight(state.title_buf, st.hl_ns, "TgConnectionOff", li - 1, #title, -1)
+			else
+				vim.api.nvim_buf_add_highlight(state.title_buf, st.hl_ns, "TgTimestamp", li - 1, #title, -1)
+			end
 		else
 			local colon = line:find(":")
 			if colon then
