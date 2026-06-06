@@ -237,17 +237,25 @@ export class UpdateDispatcher {
     const chatId = update.chat_id;
     const messageId = update.message_id;
     if (!chatId || !messageId) return;
-    const newContent = update.new_content as { _: string; text?: { text: string }; caption?: { text: string } } | undefined;
+    const newContent = update.new_content as { _: string; text?: { text: string }; caption?: { text: string }; link_preview?: { url?: string; title?: string; description?: string; site_name?: string } } | undefined;
     if (!newContent) return;
     const chat = this.chats.get(chatId);
-    broadcast({
+    const payload: Record<string, unknown> = {
       event: 'messageContentUpdated',
       chat_id: chatId,
       message_id: messageId,
       chat_title: chat ? chat.title : 'Unknown',
       text: extractText(newContent),
       type: newContent._,
-    });
+    };
+    const lp = newContent.link_preview;
+    if (lp?.url) {
+      payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
+    }
+    if (lp?.url) {
+      payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
+    }
+    broadcast(payload);
   }
 
   async handleDeleteMessages(update: TdUpdate) {

@@ -218,6 +218,7 @@ local function flush_msg_queue()
 				readDate = msg.readDate,
 				reactions = msg.reactions,
 				editDate = msg.editDate,
+				linkPreview = msg.linkPreview,
 				_unread = should_count_unread,
 				})
 			else
@@ -371,6 +372,7 @@ local function finish_init()
 								readDate = msg.readDate,
 								reactions = msg.reactions,
 								editDate = msg.editDate,
+								linkPreview = msg.linkPreview,
 							}
 							ui.render()
 							break
@@ -406,6 +408,7 @@ local function finish_init()
 							m.text = msg.text or ""
 						end
 						m.type = msg.type or m.type
+						m.linkPreview = msg.linkPreview
 						ui.render()
 						break
 					end
