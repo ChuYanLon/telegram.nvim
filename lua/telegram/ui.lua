@@ -250,6 +250,7 @@ M.show_user_actions = groups.show_user_actions
 M.ban_sender = groups.ban_sender
 M.show_help = help.show_help
 M.open_editor = editor.open_editor
+M.close_editor = editor.close_editor
 M.show_reaction_picker = reactions.show_reaction_picker
 M.toggle_reaction_on = reactions.toggle_reaction_on
 M.destroy_title_float = title.destroy_title_float
@@ -267,6 +268,7 @@ local function open_split()
 end
 
 local function hide_chat()
+	editor.close_editor(true)
 	state.buf = nil
 	title.destroy_title_float()
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
@@ -277,6 +279,7 @@ local function hide_chat()
 end
 
 function M.toggle_off()
+	editor.close_editor(true)
 	if state.chat_id then
 		state.last_group = { id = state.chat_id, title = state.chat_title }
 	end
@@ -314,10 +317,11 @@ local function setup_chat_keymaps()
 			vim.notify("No permission to send messages", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		editor.open_editor("Send", "", function(text)
+		editor.open_editor("Send", state.editor_draft or "", function(text)
 			if not text then return end
 			local msg = server.send_message(state.chat_id, text)
 			if msg then
+				state.editor_draft = nil
 				table.insert(state.messages, msg)
 				render()
 			end
@@ -559,9 +563,13 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		return
 	end
 	if state.chat_id then
+		if state.chat_id ~= chat_id then
+			state.editor_draft = nil
+		end
 		server.close_chat(state.chat_id)
 		state.typing_users[state.chat_id] = nil
 	end
+	editor.close_editor()
 	state.chat_id = chat_id
 	state.chat_title = chat_title
 	state.unread = 0

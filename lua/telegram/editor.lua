@@ -3,12 +3,39 @@ local server = require("telegram.server")
 local config = require("telegram.config")
 
 local M = {}
+local editor_buf = nil
+local editor_win = nil
+local editor_typing_chat_id = nil
+local editor_input_start = nil
+local editor_title = nil
 
-function M.open_editor(title, default_text, callback, context)
+function M.close_editor(save_draft)
+	if save_draft and editor_title == "Send" and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
+		local lines = vim.api.nvim_buf_get_lines(editor_buf, editor_input_start or 0, -1, false)
+		local text = table.concat(lines, "\n"):gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
+		state.editor_draft = #text > 0 and text or nil
+	end
+	if editor_win and vim.api.nvim_win_is_valid(editor_win) then
+		pcall(vim.api.nvim_win_close, editor_win, true)
+	end
+	editor_win = nil
+	if editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
+		pcall(vim.api.nvim_buf_delete, editor_buf, { force = true })
+	end
+	editor_buf = nil
 	if state._typing_timer then
 		vim.fn.timer_stop(state._typing_timer)
+		state._typing_timer = nil
 	end
-	state._typing_timer = nil
+	if editor_typing_chat_id then
+		server.send_chat_action_async(editor_typing_chat_id, "chatActionCancel")
+		editor_typing_chat_id = nil
+	end
+end
+
+function M.open_editor(title, default_text, callback, context)
+	M.close_editor()
+	editor_title = title
 	local typing_ticks = 0
 	local typing_chat_id = state.chat_id
 	if typing_chat_id then
@@ -49,16 +76,11 @@ function M.open_editor(title, default_text, callback, context)
 		border = "none",
 	})
 	vim.wo[win].winhighlight = "Normal:TgNoBg"
+	editor_buf = buf
+	editor_win = win
+	editor_typing_chat_id = typing_chat_id
 	local function close()
-		if state._typing_timer then
-			vim.fn.timer_stop(state._typing_timer)
-			state._typing_timer = nil
-		end
-		if typing_chat_id then
-			server.send_chat_action_async(typing_chat_id, "chatActionCancel")
-		end
-		pcall(vim.api.nvim_win_close, win, true)
-		pcall(vim.api.nvim_buf_delete, buf, { force = true })
+		M.close_editor()
 	end
 	local content = vim.split(default_text or "", "\n")
 	if #content == 0 then content = { "" } end
@@ -78,6 +100,7 @@ function M.open_editor(title, default_text, callback, context)
 		end
 	end
 	local input_start = #context_lines > 0 and (#context_lines + 2) or 1
+	editor_input_start = input_start
 	pcall(vim.api.nvim_win_set_cursor, win, { input_start + 1, 0 })
 	if #context_lines > 0 then
 		vim.keymap.set("i", "<BS>", function()
@@ -113,6 +136,11 @@ function M.open_editor(title, default_text, callback, context)
 		local k = config.key("editor_cancel")
 		if k then
 			vim.keymap.set("n", k, function()
+				if title == "Send" then
+					local lines = vim.api.nvim_buf_get_lines(buf, input_start, -1, false)
+					local text = table.concat(lines, "\n"):gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
+					state.editor_draft = #text > 0 and text or nil
+				end
 				close()
 				callback(nil)
 			end, { buffer = buf, nowait = true })
