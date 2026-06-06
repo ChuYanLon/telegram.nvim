@@ -363,6 +363,7 @@ local function setup_chat_keymaps()
 			local edited = server.edit_message(state.chat_id, target.id, input)
 			if edited then
 				target.text = edited.text or input
+				if edited.editDate then target.editDate = edited.editDate end
 				state._pending_edit = state._pending_edit or {}
 				local key = tostring(target.id)
 				state._pending_edit[key] = (state._pending_edit[key] or 0) + 1
