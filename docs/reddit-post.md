@@ -26,6 +26,10 @@ It uses TDLib via a TypeScript backend + Lua frontend, communicating over HTTP a
 - Read receipts on outgoing private messages
 - Edited indicator with [edited] footer
 - Copy message text to clipboard (yy key)
+- Link previews — shows site name + title with clickable URL
+- Forwarded from labels — ↳ name on forwarded messages
+- Connection status indicator in title bar
+- Input editor with markdown highlighting (bottom panel, context preview)
 - HD media download (@refreshmedia)
 
 **Tech stack:**

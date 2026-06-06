@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Input editor redesign** — bottom-panel style with context preview for reply/edit modes; markdown syntax highlighting while typing
+- **Connection status indicator** — title bar shows red dot when TDLib reports disconnected/connecting state
+- **Link previews** — messages with URLs show `[site — title](url)` preview below the link
+- **Forwarded from label** — forwarded messages show `↳ name` above the content
 - **Edited indicator** — edited messages show `[edited]` in the message footer alongside views and reactions; `editDate` field propagated through TypeScript backend and Lua state
 - **Copy message text** — press `yy` in the chat window to copy the current message's text to the system clipboard
 - **Favorites (Saved Messages)** — dedicated chat always present in group list with 📌 icon; press `s` to forward current message to Favorites with confirmation dialog

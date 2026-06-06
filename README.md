@@ -76,9 +76,11 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Favorites (Saved Messages) — dedicated chat with 📌 icon in picker; press `s` on any message to save with confirmation
 - [x] View counts — channel messages show `👀 N` footer with k/M formatting; real-time update via WebSocket
 - [x] Read receipts — outgoing private messages show `(read HH:MM)` in header when read by recipient
-- [x] Edited indicator — edited messages show `[edited]` footer; `@edithistory` tool shows all previous versions
+- [x] Edited indicator — edited messages show `[edited]` footer
 - [x] Copy message text — press `yy` to copy message text to system clipboard
 - [x] Toggle title bar — `@toggleheader` shows/hides the floating title bar; configurable via `hide_title` option
+- [x] Connection status — title bar shows red dot when disconnected from Telegram
+- [x] Input editor redesign — bottom panel with context preview; markdown syntax highlighting while typing
 - [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
 - [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
