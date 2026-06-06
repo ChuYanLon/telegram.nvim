@@ -36,6 +36,8 @@ function M.open_editor(title, default_text, callback, context)
 	local row = editor_row and (editor_row[1] + vim.api.nvim_win_get_height(state.win) - height) or (vim.o.lines - height)
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[buf].buftype = "acwrite"
+	pcall(vim.treesitter.language.register, "markdown", "telegram")
+	vim.bo[buf].filetype = "telegram"
 	local win = vim.api.nvim_open_win(buf, true, {
 		relative = "editor",
 		width = width,
