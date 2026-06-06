@@ -100,7 +100,7 @@ M.register("send", {
 				table.insert(ui.state.messages, msg)
 				ui.render()
 			end
-		end)
+		end, "[Send]")
 	end,
 })
 

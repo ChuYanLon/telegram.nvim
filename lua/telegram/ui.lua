@@ -321,7 +321,7 @@ local function setup_chat_keymaps()
 				table.insert(state.messages, msg)
 				render()
 			end
-		end)
+		end, "[Send]")
 	end)
 	set("reply", function()
 		local target = curr_msg()
@@ -334,6 +334,8 @@ local function setup_chat_keymaps()
 		end
 		state.reply_to = target.id
 		apply_highlights()
+		local ctx = target.sender and ("[Reply] " .. target.sender.name .. ": " .. (target.text or "")) or nil
+		if ctx then ctx = ctx:gsub("\n", " "):sub(1, 70) end
 		editor.open_editor("Reply", "", function(input)
 			state.reply_to = nil
 			apply_highlights()
@@ -343,7 +345,7 @@ local function setup_chat_keymaps()
 				table.insert(state.messages, msg)
 				render()
 			end
-		end)
+		end, ctx)
 	end, { nowait = false })
 	set("edit", function()
 		local target = curr_msg()
@@ -362,19 +364,19 @@ local function setup_chat_keymaps()
 			if edited then
 				target.text = edited.text or input
 				state._pending_edit = state._pending_edit or {}
-					local key = tostring(target.id)
-					state._pending_edit[key] = (state._pending_edit[key] or 0) + 1
-					local seq = state._pending_edit[key]
-					vim.defer_fn(function()
-						if state._pending_edit and state._pending_edit[key] == seq then
-						state._pending_edit[key] = nil
-						end
-					end, 3000)
+				local key = tostring(target.id)
+				state._pending_edit[key] = (state._pending_edit[key] or 0) + 1
+				local seq = state._pending_edit[key]
+				vim.defer_fn(function()
+					if state._pending_edit and state._pending_edit[key] == seq then
+					state._pending_edit[key] = nil
+					end
+				end, 3000)
 				render()
 			else
 				vim.notify("Failed to edit message", vim.log.levels.WARN, { title = "tg" })
 			end
-		end)
+		end, "[Edit]")
 	end)
 	set("delete", function()
 		local target = curr_msg()
