@@ -52,7 +52,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] URLs are highlighted and clickable
 - [x] Code blocks (backtick) are detected and formatted
 - [x] Single-panel chat layout with floating input popup
-- [x] Adjustable panel position — respects `splitright`; width via `g:telegram_width`
+- [x] Adjustable panel position — `panel_position` option (`"right"`, `"left"`, `"bottom"`, `"top"`); width via `g:telegram_width` (default 50), height via `g:telegram_height` (default 15)
 - [x] `?` opens a help popup with all keybindings
 - [x] Target line highlighting (reply/edit/delete/forward) using theme's `Diff*` colors
 - [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
@@ -82,6 +82,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - [x] Connection status — title bar shows red dot when disconnected from Telegram
 - [x] Input editor redesign — bottom panel with context preview; markdown syntax highlighting while typing
 - [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
+- [x] Configurable panel position — `panel_position = "right" | "left" | "bottom" | "top"`
 - [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
 
 ### What doesn't work yet
@@ -316,6 +317,7 @@ require("telegram").setup({
   -- ws_port = 8081,                        -- WebSocket server port
   -- notify_chat_types = { "private", "mention" },  -- types: "private", "group", "channel"; add "mention" for @mentions
   -- hide_title = false,  -- start with floating title bar hidden
+  -- panel_position = "right",  -- "right" | "left" | "bottom" | "top"
 })
 ```
 

@@ -259,12 +259,47 @@ M.trim_oldest = st.trim_oldest
 
 -- ─── Basic window operations ────────────────────────────────────────────
 
+local function panel_pos()
+	return config.config.panel_position or "right"
+end
+
+local function is_vertical_split()
+	local p = panel_pos()
+	return p == "right" or p == "left"
+end
+
 local function open_split()
-	if vim.o.splitright then
+	local p = panel_pos()
+	if p == "right" then
 		vim.cmd("botright vsplit")
-	else
+	elseif p == "left" then
 		vim.cmd("topleft vsplit")
+	elseif p == "bottom" then
+		vim.cmd("botright split")
+	elseif p == "top" then
+		vim.cmd("topleft split")
 	end
+end
+
+local function panel_resize_cmd()
+	if is_vertical_split() then
+		return "vertical resize " .. (vim.g.telegram_width or 50)
+	else
+		return "resize " .. (vim.g.telegram_height or 15)
+	end
+end
+
+local function apply_panel_winopts(win)
+	vim.wo[win].wrap = true
+	if is_vertical_split() then
+		vim.wo[win].winfixwidth = true
+	else
+		vim.wo[win].winfixheight = true
+	end
+	vim.wo[win].number = false
+	vim.wo[win].relativenumber = false
+	vim.wo[win].signcolumn = "no"
+	vim.wo[win].foldcolumn = "0"
 end
 
 local function hide_chat()
@@ -550,15 +585,10 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			return
 		end
 		open_split()
-		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+		vim.cmd(panel_resize_cmd())
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
-		vim.wo[state.win].wrap = true
-		vim.wo[state.win].winfixwidth = true
-		vim.wo[state.win].number = false
-		vim.wo[state.win].relativenumber = false
-		vim.wo[state.win].signcolumn = "no"
-		vim.wo[state.win].foldcolumn = "0"
+		apply_panel_winopts(state.win)
 		title.update_title()
 		return
 	end
@@ -595,15 +625,10 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		pcall(vim.diagnostic.disable, state.buf)
 		pcall(vim.diagnostic.reset, state.buf)
 		open_split()
-		vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+		vim.cmd(panel_resize_cmd())
 		state.win = vim.api.nvim_get_current_win()
 		vim.api.nvim_win_set_buf(state.win, state.buf)
-		vim.wo[state.win].wrap = true
-		vim.wo[state.win].winfixwidth = true
-		vim.wo[state.win].number = false
-		vim.wo[state.win].relativenumber = false
-		vim.wo[state.win].signcolumn = "no"
-		vim.wo[state.win].foldcolumn = "0"
+		apply_panel_winopts(state.win)
 		vim.api.nvim_create_autocmd("BufWriteCmd", {
 			group = vim.api.nvim_create_augroup("TgBufWrite", { clear = true }),
 			buffer = state.buf,
@@ -629,7 +654,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						local wins2 = vim.api.nvim_list_wins()
 						if #wins2 > 1 then return end
 						open_split()
-						vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+						vim.cmd(panel_resize_cmd())
 						vim.api.nvim_set_current_win(state.win)
 						title.update_title()
 					end
@@ -759,7 +784,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			group = vim.api.nvim_create_augroup("TgResizeVim", { clear = true }),
 			callback = function()
 				if state.win and vim.api.nvim_win_is_valid(state.win) then
-					vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+					vim.cmd(panel_resize_cmd())
 					debounced_title_update()
 				end
 			end,
@@ -781,15 +806,11 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	else
 		if not state.win or not vim.api.nvim_win_is_valid(state.win) then
 			open_split()
-			vim.cmd("vertical resize " .. (vim.g.telegram_width or 50))
+			vim.cmd(panel_resize_cmd())
 			state.win = vim.api.nvim_get_current_win()
 			vim.api.nvim_win_set_buf(state.win, state.buf)
 		end
-		vim.wo[state.win].wrap = true
-		vim.wo[state.win].number = false
-		vim.wo[state.win].relativenumber = false
-		vim.wo[state.win].signcolumn = "no"
-		vim.wo[state.win].foldcolumn = "0"
+		apply_panel_winopts(state.win)
 	end
 	pcall(vim.api.nvim_buf_set_name, state.buf, "tg")
 	do

@@ -39,6 +39,7 @@ M.config = {
 	keys = {},
 	notify_chat_types = { "private", "mention" },
 	hide_title = false,
+	panel_position = "right",
 }
 
 local function hl_fg(name)
