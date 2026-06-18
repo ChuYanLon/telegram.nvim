@@ -34,6 +34,10 @@ local function hide_title_float()
 		pcall(vim.api.nvim_win_close, state.title_win, true)
 	end
 	state.title_win = nil
+	if state.title_buf and vim.api.nvim_buf_is_valid(state.title_buf) then
+		pcall(vim.api.nvim_buf_delete, state.title_buf, { force = true })
+	end
+	state.title_buf = nil
 end
 
 local function destroy_title_float()

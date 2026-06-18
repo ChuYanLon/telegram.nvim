@@ -286,7 +286,7 @@ local function queue_msg(msg)
 	if msg_timer then
 		vim.fn.timer_stop(msg_timer)
 	end
-	msg_timer = vim.fn.timer_start(100, flush_msg_queue, { ["repeat"] = 1 })
+	msg_timer = vim.fn.timer_start(20, flush_msg_queue, { ["repeat"] = 1 })
 end
 
 local refresh_timer = nil
@@ -302,7 +302,9 @@ local function refresh_groups_list()
 	end
 	refresh_timer = vim.fn.timer_start(500, function()
 		refresh_timer = nil
+		if not initialized then return end
 		server.get_chats_async(function(chats)
+			if not initialized then return end
 			if chats then
 				local saved = server.get_saved_chat()
 				if saved then
@@ -327,6 +329,7 @@ end
 
 local function finish_init()
 	ws.ws_start(function(msg)
+		local ok_ws, err_ws = pcall(function()
 		if msg.event == "newMessage" then
 			queue_msg(msg)
 		elseif msg.event == "userAction" then
@@ -357,7 +360,7 @@ local function finish_init()
 				vim.schedule(function()
 					if snd_chat_id and ui.state.chat_id ~= snd_chat_id then return end
 					for i, m in ipairs(ui.state.messages) do
-						if tonumber(m.id) == tonumber(old_id) then
+						if tostring(m.id) == tostring(old_id) then
 							ui.state.messages[i] = {
 								id = msg.id,
 								type = msg.type,
@@ -389,7 +392,7 @@ local function finish_init()
 				vim.schedule(function()
 					if fail_chat_id and ui.state.chat_id ~= fail_chat_id then return end
 					for i, m in ipairs(ui.state.messages) do
-						if tonumber(m.id) == tonumber(old_id) then
+						if tostring(m.id) == tostring(old_id) then
 							table.remove(ui.state.messages, i)
 							ui.render()
 							break
@@ -693,6 +696,10 @@ local function finish_init()
 				initialized = false
 				vim.notify("Session closed from another device", vim.log.levels.WARN, { title = "tg" })
 			end
+		end
+		end)
+		if not ok_ws then
+			vim.notify("WS handler error: " .. tostring(err_ws), vim.log.levels.WARN, { title = "tg" })
 		end
 	end)
 	ui.state.hide_title = config.config.hide_title

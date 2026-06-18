@@ -14,7 +14,28 @@ local function current_branch()
 	return out[1]
 end
 
+local function detect_repo()
+	local out = git("remote get-url origin")
+	if vim.v.shell_error == 0 and #out > 0 then
+		local url = out[1]
+		local repo = url:match("github%.com[:/](.+)%.git$") or url:match("github%.com[:/](.+)$")
+		if repo then return repo end
+	end
+	return "ChuYanLon/telegram.nvim"
+end
+
+local function open_url(url)
+	if vim.fn.has("mac") == 1 then
+		vim.fn.jobstart({ "open", url })
+	elseif vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
+		vim.fn.jobstart({ "cmd", "/c", "start", url })
+	else
+		vim.fn.jobstart({ "xdg-open", url })
+	end
+end
+
 vim.api.nvim_create_user_command("TgPr", function()
+	local repo = detect_repo()
 	if vim.fn.executable("gh") ~= 1 then
 		vim.notify(
 			"gh (GitHub CLI) not found. Install it first:\n  sudo pacman -S github-cli  # Arch\n  brew install gh            # macOS",
@@ -30,7 +51,7 @@ vim.api.nvim_create_user_command("TgPr", function()
 
 	local function check_perm(cb)
 		vim.notify("Checking permissions...", vim.log.levels.INFO, { title = "tg" })
-		vim.fn.jobstart({ "gh", "api", "repos/ChuYanLon/telegram.nvim", "-q", ".permissions.admin" }, {
+		vim.fn.jobstart({ "gh", "api", "repos/" .. repo, "-q", ".permissions.admin" }, {
 			stdout_buffered = true,
 			on_stdout = function(_, d)
 				can_merge_main = d and d[1] and d[1]:match("true")
@@ -44,7 +65,7 @@ vim.api.nvim_create_user_command("TgPr", function()
 	local function pick_title()
 		vim.ui.input({ prompt = "PR title (optional): " }, function(t)
 			title = t or ""
-			local args = { "pr", "create", "--base", dst, "--head", src, "--repo", "ChuYanLon/telegram.nvim" }
+			local args = { "pr", "create", "--base", dst, "--head", src, "--repo", repo }
 			if title and #title > 0 then
 				vim.list_extend(args, { "--title", title, "--fill" })
 			else
@@ -94,7 +115,7 @@ vim.api.nvim_create_user_command("TgPr", function()
 										"merge",
 										pr_num,
 										"--repo",
-										"ChuYanLon/telegram.nvim",
+										repo,
 										flag,
 										"--admin",
 										"--delete-branch",
@@ -155,6 +176,7 @@ vim.api.nvim_create_user_command("TgPr", function()
 end, {})
 
 vim.api.nvim_create_user_command("TgIssue", function()
+	local repo = detect_repo()
 	if vim.fn.executable("gh") ~= 1 then
 		vim.notify("gh (GitHub CLI) not found", vim.log.levels.ERROR, { title = "tg" })
 		return
@@ -173,7 +195,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 			vim.notify("Fetching issues...", vim.log.levels.INFO, { title = "tg" })
 			local git_root = vim.fn.shellescape(config.plugin_root)
 			local is_admin = false
-			vim.fn.jobstart({ "gh", "api", "repos/ChuYanLon/telegram.nvim", "-q", ".permissions.admin" }, {
+			vim.fn.jobstart({ "gh", "api", "repos/" .. repo, "-q", ".permissions.admin" }, {
 				stdout_buffered = true,
 				on_stdout = function(_, d)
 					is_admin = d and d[1] and d[1]:match("true")
@@ -186,7 +208,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 							"issue",
 							"list",
 							"--repo",
-							"ChuYanLon/telegram.nvim",
+							repo,
 							"--assignee",
 							"@me",
 							"--limit",
@@ -315,15 +337,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 													)
 												end)
 											elseif action:match("Open") then
-												vim.fn.jobstart({
-													"sh",
-													"-c",
-													'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/'
-														.. issue.num
-														.. '" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/'
-														.. issue.num
-														.. '" 2>/dev/null || true',
-												})
+												open_url("https://github.com/" .. repo .. "/issues/" .. issue.num)
 											elseif action:match("Close") then
 												vim.fn.jobstart({
 													"gh",
@@ -331,7 +345,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 													"close",
 													tostring(issue.num),
 													"--repo",
-													"ChuYanLon/telegram.nvim",
+													repo,
 												}, {
 													on_exit = function()
 														vim.schedule(function()
@@ -353,11 +367,7 @@ vim.api.nvim_create_user_command("TgIssue", function()
 				end,
 			})
 		elseif choice:match("Create") then
-			vim.fn.jobstart({
-				"sh",
-				"-c",
-				'xdg-open "https://github.com/ChuYanLon/telegram.nvim/issues/new/choose" 2>/dev/null || open "https://github.com/ChuYanLon/telegram.nvim/issues/new/choose" 2>/dev/null || true',
-			})
+			open_url("https://github.com/" .. repo .. "/issues/new/choose")
 		end
 	end)
 end, {})

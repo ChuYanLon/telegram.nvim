@@ -8,6 +8,12 @@ local type_labels = {
 	messageGame = "[Game]",
 	messageCall = "[Call]",
 	messageAnimatedEmoji = "",
+	messageInvoice = "[Invoice]",
+	messageGiveaway = "[Giveaway]",
+	messagePremiumGiveaway = "[Premium Giveaway]",
+	messageForumTopicCreated = "[Topic Created]",
+	messageExpiredPhoto = "[Expired Photo]",
+	messageExpiredVideo = "[Expired Video]",
 }
 
 function M.render(msg)

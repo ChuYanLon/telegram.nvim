@@ -164,6 +164,7 @@ local function render()
 				if m._unread then unread_idx = i; break end
 			end
 		end
+	end
 	if #state.messages == 0 then
 		if state.loading then
 			table.insert(lines, "[~ Loading...]")
@@ -173,7 +174,6 @@ local function render()
 	end
 	if state.loading and #state.messages > 0 then
 		table.insert(lines, "[~ Loading older messages...]")
-	end
 	end
 	for i, msg in ipairs(state.messages) do
 		local date_key = os.date("%Y%m%d", msg.date)

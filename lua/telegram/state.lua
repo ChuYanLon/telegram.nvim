@@ -28,8 +28,6 @@ local state = {
 	loading_newer = false,
 	exhausted_forward = false,
 
-	separator_line = "────────────────────",
-	_input_start = 0,
 
 	group_cursor = 1,
 	permissions = {},
