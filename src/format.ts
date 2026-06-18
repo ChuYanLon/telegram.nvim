@@ -122,6 +122,11 @@ export class MessageFormatter {
       if (emoji) formatted.text = emoji;
     }
 
+    if (msg.content?._ === 'messageSticker') {
+      const sticker = (msg.content as any).sticker as { emoji?: string } | undefined;
+      if (sticker?.emoji) formatted.text = sticker.emoji;
+    }
+
     if (msg.content?._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
       formatted.memberUserIds = msg.content.member_user_ids;
       formatted.addedMemberNames = await Promise.all(

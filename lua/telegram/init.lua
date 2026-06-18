@@ -138,6 +138,24 @@ local function flush_msg_queue()
 						end
 					end
 				end
+				if not exists and msg.own and msg.type ~= "messageText" then
+					local sid = msg.sender and msg.sender.id
+					for _, lst in ipairs({ st.messages, current_msgs }) do
+						for _, m in ipairs(lst) do
+							if m.own and m.type == msg.type and sid and m.sender and m.sender.id == sid then
+								exists = true
+								m.id = msg.id
+								m.text = msg.text
+								m.filePath = msg.filePath
+								m.mediaPath = msg.mediaPath
+								m.mimeType = msg.mimeType
+								m.date = msg.date
+								break
+							end
+						end
+						if exists then break end
+					end
+				end
 				if not exists then
 					table.insert(current_msgs, msg)
 				end
@@ -361,6 +379,7 @@ local function finish_init()
 					if snd_chat_id and ui.state.chat_id ~= snd_chat_id then return end
 					for i, m in ipairs(ui.state.messages) do
 						if tostring(m.id) == tostring(old_id) then
+							local old_text = m.text
 							ui.state.messages[i] = {
 								id = msg.id,
 								type = msg.type,
@@ -379,6 +398,9 @@ local function finish_init()
 								linkPreview = msg.linkPreview,
 								forwardInfo = msg.forwardInfo,
 							}
+							if ui.state.messages[i].type == "messageSticker" and (not ui.state.messages[i].text or #ui.state.messages[i].text == 0) and old_text and #old_text > 0 then
+								ui.state.messages[i].text = old_text
+							end
 							ui.render()
 							break
 						end
@@ -409,6 +431,7 @@ local function finish_init()
 				local pending = ui.state._pending_edit and ui.state._pending_edit[mid]
 				for _, m in ipairs(ui.state.messages) do
 					if tostring(m.id) == mid then
+						local old_text = m.text
 						if not pending then
 							m.text = msg.text or ""
 						end
@@ -417,6 +440,9 @@ local function finish_init()
 						if msg.filePath ~= nil then m.filePath = msg.filePath end
 						if msg.mediaPath ~= nil then m.mediaPath = msg.mediaPath end
 						if msg.mimeType ~= nil then m.mimeType = msg.mimeType end
+						if m.type == "messageSticker" and (not m.text or #m.text == 0) and old_text and #old_text > 0 then
+							m.text = old_text
+						end
 						ui.render()
 						break
 					end

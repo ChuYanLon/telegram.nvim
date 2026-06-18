@@ -597,6 +597,60 @@ function M.send_media_async(chat_id, file_path, caption, reply_to, on_ok)
 	end)
 end
 
+---@param on_ok fun(data: table)|nil
+function M.get_installed_sticker_sets_async(on_ok)
+	request_async({ url = base_url() .. "/stickers/installed" }, function(data, err)
+		if err then
+			vim.schedule(function()
+				vim.notify("Failed to get sticker sets: " .. err, vim.log.levels.WARN, { title = "tg" })
+			end)
+		elseif on_ok then
+			vim.schedule(function() on_ok(data) end)
+		end
+	end)
+end
+
+---@param emoji string
+---@param on_ok fun(data: table)|nil
+function M.search_stickers_async(emoji, on_ok)
+	request_async({ url = base_url() .. "/stickers/search?emoji=" .. vim.uri_encode(emoji, "RFC3986") }, function(data, err)
+		if err then
+			vim.schedule(function()
+				vim.notify("Sticker search error: " .. err, vim.log.levels.WARN, { title = "tg" })
+			end)
+		elseif on_ok then
+			vim.schedule(function() on_ok(data) end)
+		end
+	end)
+end
+
+---@param set_id number
+---@param on_ok fun(data: table)|nil
+function M.get_sticker_set_async(set_id, on_ok)
+	request_async({ url = base_url() .. "/stickers/set?setId=" .. set_id }, function(data, err)
+		if not err and on_ok then vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param sticker_file_id number|string
+---@param emoji? string
+---@param on_ok fun(msg: table)|nil
+function M.send_sticker_async(chat_id, sticker_file_id, emoji, on_ok)
+	if type(emoji) == "function" then on_ok = emoji; emoji = nil end
+	local body = { chatId = chat_id, stickerFileId = sticker_file_id }
+	if emoji then body.emoji = emoji end
+	request_async({ url = base_url() .. "/sendSticker", body = vim.json.encode(body) }, function(data, err)
+		if err then
+			vim.schedule(function()
+				vim.notify("Failed to send sticker: " .. err, vim.log.levels.ERROR, { title = "tg" })
+			end)
+		elseif data and data.message and on_ok then
+			vim.schedule(function() on_ok(data.message) end)
+		end
+	end)
+end
+
 ---@param from_chat_id any
 ---@param message_ids any|any[]
 ---@param to_chat_id any

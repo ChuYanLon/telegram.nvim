@@ -437,6 +437,82 @@ export class TelegramLSPClient {
     return msg;
   }
 
+  async searchStickers(emoji: string, limit = 20): Promise<{ setId: number | string; fileId: number | string; emoji: string; width: number; height: number; isAnimated?: boolean; thumbnail?: { fileId: number | string } }[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const raw = await this.client.invoke({ _: 'searchStickers', emoji, limit });
+    const result = raw as { stickers?: { set_id: number | string; sticker: { id: number | string; width: number; height: number; emoji: string; thumbnail?: { file: { id: number | string } }; is_animated?: boolean; is_video?: boolean } }[] };
+    if (!result?.stickers || !Array.isArray(result.stickers)) return [];
+    return result.stickers.map((s) => ({
+      setId: s.set_id,
+      fileId: s.sticker.id,
+      emoji: s.sticker.emoji,
+      width: s.sticker.width,
+      height: s.sticker.height,
+      isAnimated: s.sticker.is_animated,
+      thumbnail: s.sticker.thumbnail ? { fileId: s.sticker.thumbnail.file.id } : undefined,
+    }));
+  }
+
+  async getInstalledStickerSets(isAnimated = false, isVideo = false): Promise<{ id: number | string; title: string; thumbnail?: { fileId: number | string } }[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const raw = await this.client.invoke({ _: 'getInstalledStickerSets', is_animated: isAnimated, is_video: isVideo });
+    const result = raw as { sets: { id: number; title: string; thumbnail?: { file: { id: number } } }[] };
+    if (!result?.sets || !Array.isArray(result.sets)) return [];
+    return result.sets.map((s) => ({
+      id: s.id,
+      title: s.title,
+      thumbnail: s.thumbnail ? { fileId: s.thumbnail.file.id } : undefined,
+    }));
+  }
+
+  async getStickerSet(setId: number | string): Promise<{ id: number | string; title: string; name: string; stickers: { setId: number | string; fileId: number | string; stickerFileId: number; emoji: string; width: number; height: number }[] } | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const raw = await this.client.invoke({ _: 'getStickerSet', set_id: setId });
+    const result = raw as { id: number | string; title: string; name: string; stickers: { id: number; width: number; height: number; emoji: string; sticker: { id: number } }[] };
+    if (!result) return null;
+    return {
+      id: result.id,
+      title: result.title,
+      name: result.name,
+      stickers: result.stickers.map((s) => ({
+        setId: result.id,
+        fileId: s.id,
+        stickerFileId: s.sticker?.id || 0,
+        emoji: s.emoji,
+        width: s.width,
+        height: s.height,
+      })),
+    };
+  }
+
+  async sendSticker(chatId: number, stickerFileId: number | string, emoji?: string, replyTo?: number): Promise<FormattedMessage | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({ _: 'downloadFile', file_id: stickerFileId, priority: 1 }).catch(() => {});
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      const fi = await this.client.invoke({ _: 'getFile', file_id: stickerFileId }).catch(() => null) as Record<string, unknown> | null;
+      const local = fi?.['local'] as Record<string, unknown> | undefined;
+      const localPath = local?.['path'] as string | undefined;
+      if (localPath && (local?.['is_downloading_completed'] as boolean)) {
+        const params: Record<string, unknown> = {
+          _: 'sendMessage',
+          chat_id: chatId,
+          input_message_content: {
+            _: 'inputMessageSticker',
+            sticker: { _: 'inputFileLocal', path: localPath },
+          },
+        };
+        if (replyTo) params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
+        const result = await this.client.invoke(params).catch(() => null) as RawTdMessage | null;
+        if (!result) return null;
+        const msg = await this.formatter.format(result);
+        if (msg && emoji) msg.text = emoji;
+        return msg;
+      }
+    }
+    throw new Error('Sticker download timed out');
+  }
+
   async editMessage(chatId: number, messageId: number, text: string): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const formatted = await this._parseMD(text);

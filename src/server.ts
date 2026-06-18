@@ -276,6 +276,41 @@ app.post('/sendMedia', async (req, res) => {
   }
 });
 
+app.get('/stickers/installed', async (req, res) => {
+  try {
+    const sets = await tgClient.getInstalledStickerSets();
+    res.json({ sets });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/stickers/search', async (req, res) => {
+  try {
+    const { emoji, limit } = req.query;
+    if (!emoji) { res.status(400).json({ error: 'emoji is required' }); return; }
+    const stickers = await tgClient.searchStickers(emoji as string, limit ? Number(limit) : 20);
+    res.json({ stickers });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/stickers/set', async (req, res) => {
+  try {
+    const { setId } = req.query;
+    if (!setId) { res.status(400).json({ error: 'setId is required' }); return; }
+    const id = String(setId).match(/^\d+$/) ? setId : Number(setId);
+    const set = await tgClient.getStickerSet(id as any);
+    res.json(set);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/sendSticker', async (req, res) => {
+  try {
+    const { chatId, stickerFileId, emoji, replyTo } = req.body;
+    if (!chatId || !stickerFileId) { res.status(400).json({ error: 'chatId and stickerFileId are required' }); return; }
+    const msg = await tgClient.sendSticker(Number(chatId), stickerFileId, emoji, replyTo ? Number(replyTo) : undefined);
+    res.json({ ok: true, message: msg });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.post('/editMessage', async (req, res) => {
   try {
     const { chatId, messageId, text } = req.body;

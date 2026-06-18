@@ -358,8 +358,15 @@ local function setup_chat_keymaps()
 				state.editor_draft = nil
 				server.send_media_async(state.chat_id, attachment, text or "", nil, function(msg)
 					if msg then
-						table.insert(state.messages, msg)
-						render()
+						local id = tostring(msg.id)
+						local dup = false
+						for _, m in ipairs(state.messages) do
+							if tostring(m.id) == id then dup = true; break end
+						end
+						if not dup then
+							table.insert(state.messages, msg)
+							render()
+						end
 					end
 				end)
 			else
@@ -392,8 +399,15 @@ local function setup_chat_keymaps()
 			if attachment then
 				server.send_media_async(state.chat_id, attachment, input or "", target.id, function(msg)
 					if msg then
-						table.insert(state.messages, msg)
-						render()
+						local id = tostring(msg.id)
+						local dup = false
+						for _, m in ipairs(state.messages) do
+							if tostring(m.id) == id then dup = true; break end
+						end
+						if not dup then
+							table.insert(state.messages, msg)
+							render()
+						end
 					end
 				end)
 			else

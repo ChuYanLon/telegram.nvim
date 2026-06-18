@@ -173,6 +173,25 @@ export interface TdUpdate {
   [key: string]: unknown;
 }
 
+export interface StickerInfo {
+  setId: number | string;
+  fileId: number | string;
+  emoji: string;
+  width: number;
+  height: number;
+  isAnimated?: boolean;
+  isVideo?: boolean;
+  thumbnail?: { fileId: number | string; width: number; height: number };
+}
+
+export interface StickerSetInfo {
+  id: number | string;
+  title: string;
+  name: string;
+  thumbnail?: { fileId: number | string };
+  stickers: StickerInfo[];
+}
+
 export type BroadcastFn = (data: unknown) => void;
 
 declare global {

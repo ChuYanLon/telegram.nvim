@@ -17,7 +17,12 @@ function M.render(msg)
 	local file_path = msg.filePath
 
 	local parts = {}
-	if file_path and #file_path > 0 then
+	if msg.type == "messageSticker" then
+		if msg.text and #msg.text > 0 then
+			return { msg.text }
+		end
+		return { "[Sticker]" }
+	elseif file_path and #file_path > 0 then
 		table.insert(parts, "![" .. label .. "](" .. file_path .. ")")
 	else
 		table.insert(parts, "[" .. label .. "]")

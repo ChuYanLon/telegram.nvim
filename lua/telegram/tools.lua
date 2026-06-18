@@ -170,6 +170,16 @@ M.register("reaction", {
 	end,
 })
 
+M.register("sticker", {
+	description = "Search and send a sticker",
+	condition = function()
+		return ui.state.chat_id ~= nil and ui.state.permissions.can_send_messages == true
+	end,
+	callback = function()
+		require("telegram.stickers").show_picker()
+	end,
+})
+
 M.register("openlink", {
 	description = "Open URL or media file under cursor",
 	condition = function()
