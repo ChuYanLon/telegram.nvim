@@ -158,8 +158,8 @@ function M.open_editor(title, default_text, callback, context)
 		for _, l in ipairs(context_lines) do table.insert(buf_lines, l) end
 		table.insert(buf_lines, sep)
 	end
-	editor_attach_line = #buf_lines
 	table.insert(buf_lines, "")
+	editor_attach_line = #buf_lines
 	for _, l in ipairs(content) do table.insert(buf_lines, l) end
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
 	pcall(vim.api.nvim_buf_add_highlight, buf, -1, "TgBorder", 0, 0, -1)
