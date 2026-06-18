@@ -262,6 +262,20 @@ app.post('/sendMessage', async (req, res) => {
   }
 });
 
+app.post('/sendMedia', async (req, res) => {
+  try {
+    const { chatId, filePath, caption, replyTo } = req.body;
+    if (!chatId || !filePath) {
+      res.status(400).json({ error: 'chatId and filePath are required' });
+      return;
+    }
+    const msg = await tgClient.sendMedia(Number(chatId), filePath, caption || '', replyTo ? Number(replyTo) : undefined);
+    res.json({ ok: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.post('/editMessage', async (req, res) => {
   try {
     const { chatId, messageId, text } = req.body;

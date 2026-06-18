@@ -385,6 +385,17 @@ export class TelegramLSPClient {
     return { _: 'formattedText', text, entities: [] };
   }
 
+  private _mediaType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.heic', '.heif']);
+    const videoExts = new Set(['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.3gp']);
+    const audioExts = new Set(['.mp3', '.ogg', '.wav', '.flac', '.m4a', '.opus', '.aac', '.wma']);
+    if (imageExts.has(ext)) return 'inputMessagePhoto';
+    if (videoExts.has(ext)) return 'inputMessageVideo';
+    if (audioExts.has(ext)) return 'inputMessageAudio';
+    return 'inputMessageDocument';
+  }
+
   async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const formatted = await this._parseMD(text);
@@ -400,6 +411,29 @@ export class TelegramLSPClient {
     const result = await this.client.invoke(params) as RawTdMessage;
     const msg = await this.formatter.format(result);
     if (msg && text !== msg.text) msg.text = text;
+    return msg;
+  }
+
+  async sendMedia(chatId: number, filePath: string, caption?: string, replyTo?: number): Promise<FormattedMessage | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const mediaType = this._mediaType(filePath);
+    const formatted = caption ? await this._parseMD(caption) : undefined;
+    const content: Record<string, unknown> = {
+      _: mediaType,
+      [mediaType === 'inputMessagePhoto' ? 'photo' : mediaType === 'inputMessageVideo' ? 'video' : mediaType === 'inputMessageAudio' ? 'audio' : 'document']: { _: 'inputFileLocal', path: filePath },
+    };
+    if (formatted) content.caption = formatted;
+    const params: Record<string, unknown> = {
+      _: 'sendMessage',
+      chat_id: chatId,
+      input_message_content: content,
+    };
+    if (replyTo) params.reply_to = { _: 'inputMessageReplyToMessage', message_id: replyTo };
+    const result = await this.client.invoke(params) as RawTdMessage;
+    const msg = await this.formatter.format(result);
+    if (msg && caption) {
+      msg.text = caption;
+    }
     return msg;
   }
 
@@ -1258,14 +1292,19 @@ export class TelegramLSPClient {
           const fi = await this.client.invoke({ _: 'getFile', file_id: targetId }).catch(() => null) as Record<string, unknown> | null;
           const local = fi?.['local'] as Record<string, unknown> | undefined;
           const path = local?.['path'] as string | undefined;
-          if (path) return { path };
+          if (path) {
+            const dataDir = process.env.TG_DATA_DIR || process.cwd();
+            const managedPrefixes = [dataDir + '/tdlib_files/', dataDir + '/tdlib_db/'];
+            const isManaged = managedPrefixes.some((prefix) => path.startsWith(prefix));
+            if (isManaged) return { path };
+          }
         }
       }
 
-      const formatted = await this.formatter.format(msg);
-      if (formatted?.filePath) {
-        const result: { path: string; mediaPath?: string } = { path: formatted.filePath };
-        if (formatted.mediaPath) result.mediaPath = formatted.mediaPath;
+      const fileInfo = this.formatter.getFileInfo(msg.content);
+      if (fileInfo?.path) {
+        const result: { path: string; mediaPath?: string } = { path: fileInfo.path };
+        if (fileInfo.mediaPath) result.mediaPath = fileInfo.mediaPath;
         return result;
       }
       return { path: '' };

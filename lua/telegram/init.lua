@@ -414,6 +414,9 @@ local function finish_init()
 						end
 						m.type = msg.type or m.type
 						m.linkPreview = msg.linkPreview
+						if msg.filePath ~= nil then m.filePath = msg.filePath end
+						if msg.mediaPath ~= nil then m.mediaPath = msg.mediaPath end
+						if msg.mimeType ~= nil then m.mimeType = msg.mimeType end
 						ui.render()
 						break
 					end

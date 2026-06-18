@@ -1,3 +1,4 @@
+import path from 'path';
 import type { RawTdMessage, FormattedMessage, SenderInfo, Reaction } from './types';
 import type { Resolver } from './resolve';
 
@@ -52,6 +53,22 @@ export class MessageFormatter {
   private _adminTitles = new Map<number, Map<number, string>>();
 
   constructor(private resolver: Resolver, private invoke: (q: unknown) => Promise<unknown>) {}
+
+  getFileInfo(content: Record<string, unknown> | null | undefined): { path: string; mediaPath?: string; mimeType: string; fileId: number; priorityFileId?: number } | null {
+    const info = this._extractFileInfo(content);
+    if (!info) return null;
+    const dataDir = process.env.TG_DATA_DIR || process.cwd();
+    const tdlibPrefixes = [path.join(dataDir, 'tdlib_files'), path.join(dataDir, 'tdlib_db')];
+    const isManaged = (p: string) => tdlibPrefixes.some((prefix) => p.startsWith(prefix));
+    const result: { path: string; mediaPath?: string; mimeType: string; fileId: number; priorityFileId?: number } = {
+      path: info.path && isManaged(info.path) ? info.path : '',
+      mimeType: info.mimeType,
+      fileId: info.fileId,
+      priorityFileId: info.priorityFileId,
+    };
+    if (info.mediaPath && isManaged(info.mediaPath)) result.mediaPath = info.mediaPath;
+    return result;
+  }
 
   async preloadAdminTitles(chatId: number) {
     if (this._adminTitles.has(chatId)) return;
@@ -168,7 +185,7 @@ export class MessageFormatter {
     const replyTo = await this._formatReplyTo(msg);
     if (replyTo) formatted.replyTo = replyTo;
 
-    const fileInfo = this._extractFileInfo(msg.content);
+    const fileInfo = this.getFileInfo(msg.content);
     if (fileInfo) {
       formatted.filePath = fileInfo.path;
       if (fileInfo.mediaPath) formatted.mediaPath = fileInfo.mediaPath;

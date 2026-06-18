@@ -2,6 +2,18 @@ local config = require("telegram.config")
 
 local M = {}
 
+local log_file = nil
+local function log(msg)
+	if not config.config.debug then return end
+	if not log_file then
+		local ok, f = pcall(io.open, vim.fn.stdpath("data") .. "/tg-debug.log", "a")
+		if not ok then return end
+		log_file = f
+	end
+	log_file:write(os.date("%H:%M:%S") .. " " .. msg .. "\n")
+	log_file:flush()
+end
+
 do
 	local existing = vim.env.NO_PROXY or ""
 	if not existing:find("localhost") then
@@ -138,11 +150,18 @@ local function request_curl(opts, callback)
 		table.insert(args, "-d"); table.insert(args, opts.body)
 	end
 	table.insert(args, opts.url)
+	log("curl: " .. table.concat(args, " "))
 	local stdout = {}
+	local stderr = {}
 	vim.fn.jobstart(args, {
 		stdout_buffered = true,
+		stderr_buffered = true,
 		on_stdout = function(_, data) stdout = data end,
+		on_stderr = function(_, data) stderr = data end,
 		on_exit = function(_, code)
+			log("curl exit: " .. code)
+			log("curl stderr: " .. (stderr and table.concat(stderr, " ") or "nil"))
+			log("curl stdout: " .. (stdout and table.concat(stdout, " ") or "nil"))
 			if code ~= 0 then callback(nil, "curl exit " .. code) return end
 			local ok, data = pcall(vim.json.decode, table.concat(stdout))
 			if not ok then callback(nil, "Invalid JSON response") return end
@@ -153,46 +172,8 @@ local function request_curl(opts, callback)
 end
 
 local function request_async(opts, callback)
-	if vim.net and vim.net.request then
-		local ok2, result = pcall(vim.net.request, opts.url, {
-			method = opts.body and "POST" or "GET",
-			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
-			body = opts.body,
-			timeout = 15000,
-		}, function(...)
-			local args = { ... }
-			if args[1] then
-				callback(nil, args[1])
-				return
-			end
-			local data, status = args[2], args[3]
-			if type(data) == "table" and data.body then
-				status = data.status or status
-				local ok, d = pcall(vim.json.decode, data.body)
-				if ok then data = d end
-			end
-			if type(data) == "string" then
-				local ok, d = pcall(vim.json.decode, data)
-				if ok then data = d end
-			end
-			if type(data) ~= "table" then
-				callback(nil, "invalid response: " .. tostring(data))
-				return
-			end
-			status = tonumber(status) or 200
-			if status >= 400 or data.error then
-				callback(nil, data.error or ("HTTP " .. tostring(status)))
-				return
-			end
-			callback(data, nil)
-		end)
-		if not ok2 then
-			vim.notify("vim.net.request call failed: " .. tostring(result), vim.log.levels.ERROR, { title = "tg" })
-			request_curl(opts, callback)
-		end
-	else
-		request_curl(opts, callback)
-	end
+	log("request_async: curl " .. opts.url)
+	request_curl(opts, callback)
 end
 
 ---@return table|nil
@@ -589,6 +570,31 @@ end
 ---@return boolean
 function M.delete_message(chat_id, message_id, revoke)
 	return http_post("/deleteMessage", { chatId = chat_id, messageId = message_id, revoke = revoke })
+end
+
+---@param chat_id any
+---@param file_path string
+---@param caption string|nil
+---@param reply_to any|nil
+---@param on_ok fun(msg: table)|nil
+function M.send_media_async(chat_id, file_path, caption, reply_to, on_ok)
+	local body = { chatId = chat_id, filePath = file_path }
+	if caption and #caption > 0 then body.caption = caption end
+	if reply_to then body.replyTo = reply_to end
+	local url = base_url() .. "/sendMedia"
+	log("send_media url: " .. url)
+	log("send_media body: " .. vim.json.encode(body))
+	request_async({ url = url, body = vim.json.encode(body) }, function(data, err)
+		if err then
+			log("send_media err: " .. tostring(err))
+			vim.schedule(function()
+				vim.notify("Failed to send media: " .. err, vim.log.levels.ERROR, { title = "tg" })
+			end)
+		elseif data and data.message and on_ok then
+			log("send_media ok: " .. vim.json.encode(data))
+			vim.schedule(function() on_ok(data.message) end)
+		end
+	end)
 end
 
 ---@param from_chat_id any

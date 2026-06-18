@@ -352,13 +352,23 @@ local function setup_chat_keymaps()
 			vim.notify("No permission to send messages", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		editor.open_editor("Send", state.editor_draft or "", function(text)
-			if not text then return end
-			local msg = server.send_message(state.chat_id, text)
-			if msg then
+		editor.open_editor("Send", state.editor_draft or "", function(text, attachment)
+			if not text and not attachment then return end
+			if attachment then
 				state.editor_draft = nil
-				table.insert(state.messages, msg)
-				render()
+				server.send_media_async(state.chat_id, attachment, text or "", nil, function(msg)
+					if msg then
+						table.insert(state.messages, msg)
+						render()
+					end
+				end)
+			else
+				local msg = server.send_message(state.chat_id, text)
+				if msg then
+					state.editor_draft = nil
+					table.insert(state.messages, msg)
+					render()
+				end
 			end
 		end, "[Send]")
 	end)
@@ -375,14 +385,23 @@ local function setup_chat_keymaps()
 		apply_highlights()
 		local ctx = target.sender and ("[Reply] " .. target.sender.name .. ": " .. (target.text or "")) or nil
 		if ctx then ctx = ctx:gsub("\n", " "):sub(1, 70) end
-		editor.open_editor("Reply", "", function(input)
+		editor.open_editor("Reply", "", function(input, attachment)
 			state.reply_to = nil
 			apply_highlights()
-			if not input then return end
-			local msg = server.send_message(state.chat_id, input, target.id)
-			if msg then
-				table.insert(state.messages, msg)
-				render()
+			if not input and not attachment then return end
+			if attachment then
+				server.send_media_async(state.chat_id, attachment, input or "", target.id, function(msg)
+					if msg then
+						table.insert(state.messages, msg)
+						render()
+					end
+				end)
+			else
+				local msg = server.send_message(state.chat_id, input, target.id)
+				if msg then
+					table.insert(state.messages, msg)
+					render()
+				end
 			end
 		end, ctx)
 	end, { nowait = false })

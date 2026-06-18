@@ -40,6 +40,7 @@ M.config = {
 	notify_chat_types = { "private", "mention" },
 	hide_title = false,
 	panel_position = "right",
+	debug = false,
 }
 
 local function hl_fg(name)

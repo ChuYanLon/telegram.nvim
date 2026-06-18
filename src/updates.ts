@@ -251,10 +251,13 @@ export class UpdateDispatcher {
       text: extractText(newContent),
       type: newContent._,
     };
-    const lp = newContent.link_preview;
-    if (lp?.url) {
-      payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
+    const fileInfo = this.formatter.getFileInfo(newContent as Record<string, unknown>);
+    if (fileInfo) {
+      if (fileInfo.path) payload.filePath = fileInfo.path;
+      if (fileInfo.mediaPath) payload.mediaPath = fileInfo.mediaPath;
+      if (fileInfo.mimeType) payload.mimeType = fileInfo.mimeType;
     }
+    const lp = newContent.link_preview;
     if (lp?.url) {
       payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
     }
