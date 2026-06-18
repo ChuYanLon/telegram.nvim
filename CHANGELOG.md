@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0] - 2026-06-18
+
+### Added
+
+- **Send media files** — press `<C-f>` in the input editor to attach photos, videos, audio, or documents; auto-detects type from file extension; sends as `inputMessagePhoto`/`Video`/`Audio`/`Document`
+- **File attachment UI** — `<C-f>` opens a file browser (zenity/kdialog/osascript with manual path fallback); attachment shown as `📎 filename` line in editor; submitted together with text caption
+- **Sticker picker** — `@sticker` tool browses installed sticker packs via `getInstalledStickerSets`, lists stickers by emoji; downloads and sends via `inputFileLocal`
+- **Sticker display** — sent and received stickers show their emoji (e.g. `😘`) instead of `![Sticker](path)`; formatter extracts `sticker.emoji` for all sticker messages (old messages now show emoji too)
+- **Debug logging** — `setup({ debug = true })` writes HTTP request/response logs to `stdpath("data")/tg-debug.log`; disabled by default
+
+### Fixed
+
+- **Sticker duplicate rendering** — `media.lua` returns early for stickers, preventing emoji from being rendered twice
+- **Message duplication for own non-text messages** — `flush_msg_queue` detects duplicate `newMessage` events by (sender + type) for non-text messages, updates in-place instead of inserting
+- **Sticker emoji persistence** — `messageContentUpdated` and `messageSendSucceeded` handlers preserve emoji text when server response has empty text
+- **Local file path leak** — `getFileInfo()` now filters out paths not in `tdlib_files/` or `tdlib_db/`; applied in `format()`, `getMessageMedia()`, and `messageContentUpdate` WS event
+- **`vim.net.request` POST bug** — all HTTP requests now forced through curl; `vim.net.request` path removed due to Neovim version bug where all POST requests returned 404
+
 ## [0.6.0] - 2026-06-08
 
 ### Added

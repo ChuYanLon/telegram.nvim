@@ -30,6 +30,7 @@ require("telegram").setup({
 | `keys` | `table?` | all defaults | Custom keymaps — see [Keymaps](#keymaps) below |
 | `notify_chat_types` | `table?` | `{"private", "mention"}` | Chat types that trigger `vim.notify` on new messages (`"private"`, `"group"`, `"channel"`). Include `"mention"` for @mentions |
 | `hide_title` | `boolean?` | `false` | Start with floating title bar hidden |
+| `debug` | `boolean?` | `false` | Write HTTP request/response logs to `stdpath("data")/tg-debug.log` |
 
 ## Keymaps
 

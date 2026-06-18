@@ -7,6 +7,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 |-----|--------|
 | `?` | Show help popup |
 | `i` | Focus input editor |
+| `<C-f>` | Attach a file (in input editor) — opens file browser |
 | `<CR>` | Reply to message / jump to original message |
 | `e` | Edit own message (highlighted in blue) |
 | `d` | Delete / revoke message (highlighted in red) |
@@ -24,6 +25,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 
 | Tool | Description |
 |------|-------------|
+| **sticker** | Browse installed sticker packs and send a sticker |
 | **chats** | Switch to another chat (Snacks picker, falls back to `vim.ui.select`) |
 | **refresh** | Refresh current chat messages |
 | **send** | Send a message to current chat |

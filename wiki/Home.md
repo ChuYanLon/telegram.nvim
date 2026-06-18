@@ -13,6 +13,9 @@ A Telegram chat client inside Neovim.
 
 - Chat UI with virtual scrolling, cursor position memory per chat
 - Real-time message push via WebSocket (sync edits, deletions, group info changes from other clients)
+- Send text, media files (photos, videos, audio, documents), and stickers
+- Attach files via `<C-f>` in the input editor (system file dialog or built-in browser)
+- Browse and send stickers from installed packs via `@sticker` tool
 - Send, edit, delete/recall, forward messages
 - Reply with context preview, highlighted reply/edit/delete/forward targets
 - React to messages with 40+ verified emojis (`r` key), synced across devices in real-time
