@@ -762,7 +762,7 @@ M.register("userinfo", {
 						for off in hint:gmatch("()%[%w%]") do
 							local k = hint:sub(off + 1, off + 1)
 							local hl = key_colors[k] or "TgTitleKey"
-							table.insert(keys, { pad + off - 1, pad + off + 1, hl })
+							table.insert(keys, { pad + off, pad + off + 1, hl })
 						end
 					r.key_hls = keys
 				end
