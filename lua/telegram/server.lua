@@ -825,15 +825,17 @@ end
 
 ---@param user_id number
 ---@param callback function(profile: table|nil)
-function M.get_user_profile_async(user_id, callback)
-	request_async({ url = base_url() .. "/user-profile?userId=" .. user_id }, function(data, err)
-		if err or not data then
-			callback(nil)
-			return
-		end
-		callback(data)
-	end)
-end
+	function M.get_user_profile_async(user_id, callback)
+		request_async({ url = base_url() .. "/user-profile?userId=" .. user_id }, function(data, err)
+			vim.schedule(function()
+				if err or not data then
+					callback(nil)
+					return
+				end
+				callback(data)
+			end)
+		end)
+	end
 
 -- ─── Message Link ───────────────────────────────────────────────────────
 
