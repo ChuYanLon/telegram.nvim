@@ -285,6 +285,81 @@ M.register("toggleheader", {
 	end,
 })
 
+M.register("archive", {
+	description = "Archive current chat (move to archive list)",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		local chat_title = ui.state.chat_title
+		vim.ui.select({ "Archive", "Cancel" }, {
+			prompt = "Archive " .. (chat_title or "chat") .. "?",
+		}, function(choice)
+			if choice ~= "Archive" then return end
+			if server.archive_chat(chat_id) then
+				vim.notify("Archived: " .. (chat_title or ""), vim.log.levels.INFO, { title = "tg" })
+				if ui.state.groups[chat_id] then
+					ui.state.groups[chat_id] = nil
+					for i, id in ipairs(ui.state.group_ids) do
+						if id == chat_id then
+							table.remove(ui.state.group_ids, i)
+							break
+						end
+					end
+				end
+				ui.destroy_chat()
+			else
+				vim.notify("Failed to archive chat", vim.log.levels.WARN, { title = "tg" })
+			end
+		end)
+	end,
+})
+
+M.register("showarchived", {
+	description = "Toggle archived chats in picker",
+	callback = function()
+		local st = require("telegram.state").state
+		st.show_archived = not st.show_archived
+		if st.show_archived then
+			vim.notify("Loading archived chats...", vim.log.levels.INFO, { title = "tg" })
+			local srv = require("telegram.server")
+			srv.get_archived_chats_async(function(chats)
+				if not st.show_archived then return end
+				if not chats or #chats == 0 then
+					vim.notify("No archived chats", vim.log.levels.INFO, { title = "tg" })
+					st.show_archived = false
+					return
+				end
+				local items = {}
+				for _, g in ipairs(chats) do
+					table.insert(items, {
+						id = g.id,
+						title = g.title,
+						type = g.type or "group",
+						unread = g.unreadCount or 0,
+						is_saved = g.isSaved or false,
+						is_archived = true,
+					})
+				end
+				ui.show_groups_picker(function(item)
+					st.show_archived = false
+					if item then
+						local st = require("telegram.state").state
+						st.current_chat_archived = true
+						require("telegram").open_chat(item.id, item.title)
+					end
+				end, items)
+				vim.notify("Showing archived chats (" .. #chats .. ")", vim.log.levels.INFO, { title = "tg" })
+			end)
+		else
+			vim.notify("Showing main chat list", vim.log.levels.INFO, { title = "tg" })
+		end
+	end,
+})
+
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
 	condition = function()

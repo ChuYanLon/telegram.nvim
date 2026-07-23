@@ -123,6 +123,15 @@ app.get('/groups', async (_req, res) => {
   }
 });
 
+app.get('/chats/archived', async (_req, res) => {
+  try {
+    const chats = await tgClient.getArchivedChats();
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.post('/chat/viewMessages', async (req, res) => {
   try {
     const { chatId, messageId } = req.body;
@@ -490,6 +499,26 @@ app.post('/chat/revoke-invite-link', async (req, res) => {
     const { chatId, inviteLink } = req.body;
     if (!chatId || !inviteLink) { res.status(400).json({ error: 'chatId and inviteLink are required' }); return; }
     const result = await tgClient.revokeChatInviteLink(Number(chatId), inviteLink);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Archive ─────────────────────────────────────────────────────────
+
+app.post('/chat/archive', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.archiveChat(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/unarchive', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.unarchiveChat(Number(chatId));
     res.json(result);
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });

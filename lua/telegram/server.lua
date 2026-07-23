@@ -729,6 +729,28 @@ function M.delete_chat_history(chat_id)
 	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
 end
 
+-- ─── Archive ──────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@return boolean
+function M.archive_chat(chat_id)
+	return http_post("/chat/archive", { chatId = chat_id }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.unarchive_chat(chat_id)
+	return http_post("/chat/unarchive", { chatId = chat_id }) ~= nil
+end
+
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_archived_chats_async(on_ok, on_err)
+	request_async({ url = base_url() .. "/chats/archived" }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
 -- ─── Reactions ──────────────────────────────────────────────────────────
 
 ---@param chat_id any

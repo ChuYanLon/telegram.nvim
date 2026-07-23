@@ -371,6 +371,67 @@ export class TelegramLSPClient {
     return enriched.filter(Boolean) as GroupInfo[];
   }
 
+  async getArchivedChats(): Promise<ChatInfo[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const archived: RawTdChat[] = [];
+
+    let offsetOrder = '9223372036854775807';
+    let offsetChatId = 0;
+    const limit = 100;
+    const MAX_ITERATIONS = 100;
+
+    for (let iterations = 0; iterations < MAX_ITERATIONS; iterations++) {
+      const result = await this.client.invoke({
+        _: 'getChats',
+        chat_list: { _: 'chatListArchive' },
+        offset_order: offsetOrder,
+        offset_chat_id: offsetChatId,
+        limit,
+      }) as { chat_ids: number[] };
+      const chatIds = result.chat_ids;
+      if (!chatIds || chatIds.length === 0) break;
+
+      for (const id of chatIds) {
+        const chat = await this.client.invoke({ _: 'getChat', chat_id: id }) as RawTdChat;
+        const inArchive = (chat.positions || []).some(p => p.list && p.list._ === 'chatListArchive');
+        if (!inArchive) continue;
+        archived.push(chat);
+      }
+
+      if (chatIds.length < limit) break;
+      const prevOrder = offsetOrder;
+      const prevChatId = offsetChatId;
+      offsetChatId = chatIds[chatIds.length - 1];
+      const lastChat = archived.find(c => c.id === offsetChatId);
+      if (lastChat) {
+        const pos = (lastChat.positions || []).find(p => p.list && p.list._ === 'chatListArchive');
+        if (pos) offsetOrder = String(pos.order);
+      }
+      if (offsetOrder === prevOrder || offsetChatId === prevChatId) break;
+    }
+
+    const results = archived.map(async (chat) => {
+      const t = chat.type._;
+      if (t === 'chatTypeBasicGroup' || t === 'chatTypeSupergroup') {
+        const g = await this._enrichGroup(chat);
+        if (!g) return null;
+        return {
+          ...g,
+          type: (t === 'chatTypeSupergroup' && chat.type.is_channel) ? 'channel' as const : 'group' as const,
+          isArchived: true,
+        };
+      }
+      if (t === 'chatTypePrivate' || t === 'chatTypeSecret') {
+        const info = await this._enrichPrivate(chat);
+        if (info) return { ...info, isArchived: true };
+      }
+      return null;
+    });
+
+    const enriched = await Promise.all(results);
+    return enriched.filter(Boolean) as ChatInfo[];
+  }
+
   private async _parseMD(text: string): Promise<{ _: string; text: string; entities: unknown[] }> {
     try {
       const parsed = await this.client.invoke({
@@ -547,6 +608,26 @@ export class TelegramLSPClient {
       defaultPermissions,
       pinnedMessageId: pinnedId,
     };
+  }
+
+  async archiveChat(chatId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'addChatToList',
+      chat_id: chatId,
+      chat_list: { _: 'chatListArchive' },
+    });
+    return { ok: true };
+  }
+
+  async unarchiveChat(chatId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'addChatToList',
+      chat_id: chatId,
+      chat_list: { _: 'chatListMain' },
+    });
+    return { ok: true };
   }
 
   async viewMessages(chatId: number, messageId?: number) {

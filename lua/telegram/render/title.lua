@@ -107,7 +107,7 @@ function M.update_title()
 	local lines = {}
 
 	local conn_map = { connectionStateReady = "", connectionStateConnecting = " ●", connectionStateWaitingForNetwork = " ●" }
-	lines[#lines + 1] = title .. (conn_map[state.connection_state] or " ●")
+	lines[#lines + 1] = title .. (conn_map[state.connection_state] or " ●") .. (state.current_chat_archived and "  \xF0\x9F\x93\xA6" or "")
 
 	local online = state.online_count or 0
 	if has_typing then

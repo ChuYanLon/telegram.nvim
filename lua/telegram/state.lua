@@ -50,6 +50,8 @@ local state = {
 	hide_title = false,
 	editor_draft = nil,
 	connection_state = "connectionStateReady",
+	show_archived = false,
+	current_chat_archived = false,
 }
 
 M.state = state

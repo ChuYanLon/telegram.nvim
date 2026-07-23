@@ -534,6 +534,31 @@ local function setup_chat_keymaps()
 		end)
 	end)
 	set("ban", function() groups.ban_sender() end)
+	set("archive", function()
+		if not state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = state.chat_id
+		local action = state.current_chat_archived and "Unarchive" or "Archive"
+		vim.ui.select({ action, "Cancel" }, {
+			prompt = action .. " " .. (state.chat_title or "chat") .. "?",
+		}, function(choice)
+			if choice == "Cancel" then return end
+			if state.current_chat_archived then
+				if server.unarchive_chat(chat_id) then
+					vim.notify("Unarchived: " .. (state.chat_title or ""), vim.log.levels.INFO, { title = "tg" })
+					state.current_chat_archived = false
+					require("telegram.render.title").update_title()
+				end
+			else
+				if server.archive_chat(chat_id) then
+					vim.notify("Archived: " .. (state.chat_title or ""), vim.log.levels.INFO, { title = "tg" })
+					M.destroy_chat()
+				end
+			end
+		end)
+	end)
 	set("reaction", function() reactions.show_reaction_picker() end)
 	set("open_dm", function()
 		local target = curr_msg()

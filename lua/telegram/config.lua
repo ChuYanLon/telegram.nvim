@@ -22,6 +22,7 @@ M.default_keys = {
 	help_close = "<Esc>",
 	help_close_q = "q",
 	reaction = "r",
+	archive = "a",
 	perms_down = "j",
 	perms_up = "k",
 	perms_toggle = "<Tab>",

@@ -34,6 +34,7 @@ function M.set_groups(groups)
 			user_id = g.userId,
 			last_msg = existing and existing.last_msg,
 			is_saved = g.isSaved or false,
+			is_archived = g.isArchived or false,
 		}
 		table.insert(new_ids, g.id)
 	end
@@ -98,18 +99,29 @@ function M.refresh_pinned_message(chat_id, pinned_message_id)
 	end)
 end
 
-local function show_groups_picker(on_select)
+--[[
+---@param on_select fun(item: table|nil)
+---@param custom_items table|nil  Optional: show these items instead of state groups
+]]
+local function show_groups_picker(on_select, custom_items)
 	local items = {}
-	for _, id in ipairs(state.group_ids) do
-		local g = state.groups[id]
-		if g then
-			table.insert(items, {
-				id = g.id,
-				title = g.title,
-				type = g.type or "group",
-				unread = g.unread_count or 0,
-				is_saved = g.is_saved or false,
-			})
+	if custom_items then
+		for _, item in ipairs(custom_items) do
+			table.insert(items, item)
+		end
+	else
+		for _, id in ipairs(state.group_ids) do
+			local g = state.groups[id]
+			if g then
+				table.insert(items, {
+					id = g.id,
+					title = g.title,
+					type = g.type or "group",
+					unread = g.unread_count or 0,
+					is_saved = g.is_saved or false,
+					is_archived = g.is_archived or false,
+				})
+			end
 		end
 	end
 	if #items == 0 then

@@ -148,6 +148,7 @@ export interface ChatInfo {
   description?: string;
   userId?: number;
   isSaved?: boolean;
+  isArchived?: boolean;
 }
 
 export interface AuthState {
