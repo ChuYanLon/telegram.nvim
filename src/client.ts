@@ -718,14 +718,19 @@ export class TelegramLSPClient {
     } catch (e) { console.warn('sendChatAction failed:', (e as Error).message); }
   }
 
-  async searchMessages(chatId: number, query: string, limit = 50) {
+  async searchMessages(chatId: number, query: string, limit = 50, filter?: string) {
     if (!this._ready) throw new Error('Client not ready yet');
-    const result = await this.client.invoke({
+    const params: Record<string, unknown> = {
       _: 'searchChatMessages',
       chat_id: chatId,
+      topic_id: 0,
       query,
       limit,
-    }) as { messages?: RawTdMessage[] };
+      from_message_id: 0,
+      offset: 0,
+    };
+    if (filter) params.filter = { _: filter };
+    const result = await this.client.invoke(params) as { messages?: RawTdMessage[] };
     const chat = this._chats.get(chatId);
     return {
       chat: { id: chatId, title: chat ? chat.title : 'Unknown group' },

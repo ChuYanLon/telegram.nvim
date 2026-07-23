@@ -203,12 +203,16 @@ app.get('/message', async (req, res) => {
 
 app.get('/searchMessages', async (req, res) => {
   try {
-    const { chatId, query, limit } = req.query;
-    if (!chatId || !query) {
-      res.status(400).json({ error: 'chatId and query are required' });
+    const { chatId, query, limit, filter } = req.query;
+    if (!chatId) {
+      res.status(400).json({ error: 'chatId is required' });
       return;
     }
-    const result = await tgClient.searchMessages(Number(chatId), query as string, limit ? Number(limit) : 50);
+    if (!query && !filter) {
+      res.status(400).json({ error: 'query or filter is required' });
+      return;
+    }
+    const result = await tgClient.searchMessages(Number(chatId), query as string, limit ? Number(limit) : 50, filter as string | undefined);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

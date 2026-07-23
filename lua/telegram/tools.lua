@@ -373,6 +373,111 @@ M.register("mute", {
 		end
 	end,
 })
+
+M.register("mentions", {
+	description = "Search @mentions in current chat",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		vim.notify("Searching mentions...", vim.log.levels.INFO, { title = "tg" })
+		server.search_messages_filtered_async(chat_id, "", "searchMessagesFilterMention", function(data)
+			if not data or not data.messages or #data.messages == 0 then
+				vim.notify("No mentions found", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, m in ipairs(data.messages) do
+				local name = m.sender and m.sender.name or "?"
+				local preview = (m.text or ""):gsub("\n", " "):sub(1, 80)
+				table.insert(items, { id = m.id, label = name .. ": " .. preview })
+			end
+			vim.ui.select(items, {
+				prompt = "Mentions",
+				format_item = function(item) return item.label end,
+			}, function(choice)
+				if choice then ui.jump_to_message(choice.id) end
+			end)
+		end, function()
+			vim.notify("Search failed", vim.log.levels.ERROR, { title = "tg" })
+		end)
+	end,
+})
+
+M.register("saved", {
+	description = "Open Saved Messages",
+	callback = function()
+		local sid = ui.state.saved_chat_id
+		if not sid then
+			vim.notify("Saved Messages not loaded yet", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		require("telegram").open_chat(sid, "Favorites")
+	end,
+})
+
+M.register("groups", {
+	description = "Switch to a group (filtered)",
+	callback = function()
+		local items = {}
+		for _, id in ipairs(ui.state.group_ids) do
+			local g = ui.state.groups[id]
+			if g and g.type == "group" then
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+			end
+		end
+		if #items == 0 then
+			vim.notify("No groups", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		ui.show_groups_picker(function(item)
+			if item then require("telegram").open_chat(item.id, item.title) end
+		end, items)
+	end,
+})
+
+M.register("channels", {
+	description = "Switch to a channel (filtered)",
+	callback = function()
+		local items = {}
+		for _, id in ipairs(ui.state.group_ids) do
+			local g = ui.state.groups[id]
+			if g and g.type == "channel" then
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+			end
+		end
+		if #items == 0 then
+			vim.notify("No channels", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		ui.show_groups_picker(function(item)
+			if item then require("telegram").open_chat(item.id, item.title) end
+		end, items)
+	end,
+})
+
+M.register("dm", {
+	description = "Switch to a private chat (filtered)",
+	callback = function()
+		local items = {}
+		for _, id in ipairs(ui.state.group_ids) do
+			local g = ui.state.groups[id]
+			if g and g.type == "private" then
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+			end
+		end
+		if #items == 0 then
+			vim.notify("No private chats", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		ui.show_groups_picker(function(item)
+			if item then require("telegram").open_chat(item.id, item.title) end
+		end, items)
+	end,
+})
 M.register("showarchived", {
 	description = "Toggle archived chats in picker",
 	callback = function()

@@ -464,7 +464,20 @@ end
 ---@param on_ok fun(data: table)
 ---@param on_err fun()|nil
 function M.search_messages_async(chat_id, query, on_ok, on_err)
-	request_async({ url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986") }, function(data, err)
+	local url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986")
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param query string
+---@param filter string  TDLib SearchMessagesFilter type, e.g. "searchMessagesFilterMention"
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.search_messages_filtered_async(chat_id, query, filter, on_ok, on_err)
+	local url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986") .. "&filter=" .. vim.uri_encode(filter, "RFC3986")
+	request_async({ url = url }, function(data, err)
 		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
