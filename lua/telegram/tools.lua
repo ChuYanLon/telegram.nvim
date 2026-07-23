@@ -701,10 +701,10 @@ M.register("userinfo", {
 					return
 				end
 				local groups = server.get_groups_in_common(user_id)
-				if not groups or #groups == 0 then
+				if not groups or groups.error or #groups == 0 then
 					retries = retries + 1
 					if retries < max_retries then
-						vim.defer_fn(try_load_groups, 200 * retries)
+						vim.defer_fn(try_load_groups, 500 * retries)
 					end
 					return
 				end

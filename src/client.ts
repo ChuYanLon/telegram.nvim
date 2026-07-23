@@ -1427,8 +1427,8 @@ export class TelegramLSPClient {
   }
 
   async getGroupsInCommon(userId: number): Promise<{ id: number; title: string }[]> {
-    if (!this._ready) throw new Error('Client not ready yet');
     try {
+      if (!this._ready) return [];
       const result = await this.client.invoke({
         _: 'getGroupsInCommon',
         user_id: userId,
