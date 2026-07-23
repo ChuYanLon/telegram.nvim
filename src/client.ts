@@ -692,8 +692,9 @@ export class TelegramLSPClient {
       }) as { text?: string };
       return result.text || null;
     } catch (e) {
-      console.warn('translateText failed:', (e as Error).message);
-      return null;
+      const msg = (e as Error).message;
+      console.warn('translateText failed:', msg);
+      throw new Error('Translation failed: ' + msg);
     }
   }
 
@@ -703,7 +704,7 @@ export class TelegramLSPClient {
       await this.client.invoke({
         _: 'setChatDraftMessage',
         chat_id: chatId,
-        topic_id: 0,
+        topic_id: null,
         draft_message: text.length > 0 ? {
           _: 'draftMessage',
           reply_to: null,
@@ -711,7 +712,7 @@ export class TelegramLSPClient {
           content: {
             _: 'draftMessageContentText',
             text: { _: 'formattedText', text, entities: [] },
-            link_preview_options: null,
+            link_preview_options: { _: 'linkPreviewOptions', is_disabled: true, url: '', force_small_media: false, force_large_media: false, show_above_text: false },
           },
           effect_id: 0,
           suggested_post_info: null,
@@ -719,8 +720,9 @@ export class TelegramLSPClient {
       });
       return true;
     } catch (e) {
-      console.warn('setChatDraftMessage failed:', (e as Error).message);
-      return false;
+      const msg = (e as Error).message;
+      console.warn('setChatDraftMessage failed:', msg);
+      throw new Error('Draft save failed: ' + msg);
     }
   }
 
