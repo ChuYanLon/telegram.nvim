@@ -728,7 +728,7 @@ M.register("userinfo", {
 				row("  Blocked", "DiagnosticError")
 			end
 			row("")
-			row("  [m] DM | [b] Block | [c] Contact", "Comment")
+			row("", "TgWinbarTitle")
 			row("")
 
 			-- Window sizing
@@ -747,6 +747,15 @@ M.register("userinfo", {
 			for _, r in ipairs(rows) do
 				if r.hl == "TgDateSeparator" then
 					r.text = "  " .. sep_str
+				end
+			end
+			-- Center hint row
+			for _, r in ipairs(rows) do
+				if r.hl == "TgWinbarTitle" and r.text == "" then
+					local hint = "[m] DM  [b] Block  [c] Contact"
+					local hint_w = vim.fn.strdisplaywidth(hint)
+					local pad = math.max(2, math.floor((width - hint_w) / 2))
+					r.text = string.rep(" ", pad) .. hint
 				end
 			end
 			local lines = {}
