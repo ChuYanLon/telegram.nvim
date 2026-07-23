@@ -286,7 +286,7 @@ M.register("toggleheader", {
 })
 
 M.register("archive", {
-	description = "Archive current chat (move to archive list)",
+	description = "Archive/unarchive current chat",
 	condition = function() return ui.state.chat_id ~= nil end,
 	callback = function()
 		if not ui.state.chat_id then
@@ -295,24 +295,34 @@ M.register("archive", {
 		end
 		local chat_id = ui.state.chat_id
 		local chat_title = ui.state.chat_title
-		vim.ui.select({ "Archive", "Cancel" }, {
-			prompt = "Archive " .. (chat_title or "chat") .. "?",
+		local is_archived = ui.state.current_chat_archived
+		local action = is_archived and "Unarchive" or "Archive"
+		vim.ui.select({ action, "Cancel" }, {
+			prompt = action .. " " .. (chat_title or "chat") .. "?",
 		}, function(choice)
-			if choice ~= "Archive" then return end
-			if server.archive_chat(chat_id) then
-				vim.notify("Archived: " .. (chat_title or ""), vim.log.levels.INFO, { title = "tg" })
-				if ui.state.groups[chat_id] then
-					ui.state.groups[chat_id] = nil
-					for i, id in ipairs(ui.state.group_ids) do
-						if id == chat_id then
-							table.remove(ui.state.group_ids, i)
-							break
+			if choice ~= action then return end
+			if is_archived then
+				if server.unarchive_chat(chat_id) then
+					vim.notify("Unarchived: " .. (chat_title or ""), vim.log.levels.INFO, { title = "tg" })
+					ui.state.current_chat_archived = false
+					require("telegram.render.title").update_title()
+				end
+			else
+				if server.archive_chat(chat_id) then
+					vim.notify("Archived: " .. (chat_title or ""), vim.log.levels.INFO, { title = "tg" })
+					if ui.state.groups[chat_id] then
+						ui.state.groups[chat_id] = nil
+						for i, id in ipairs(ui.state.group_ids) do
+							if id == chat_id then
+								table.remove(ui.state.group_ids, i)
+								break
+							end
 						end
 					end
+					ui.destroy_chat()
+				else
+					vim.notify("Failed to archive chat", vim.log.levels.WARN, { title = "tg" })
 				end
-				ui.destroy_chat()
-			else
-				vim.notify("Failed to archive chat", vim.log.levels.WARN, { title = "tg" })
 			end
 		end)
 	end,

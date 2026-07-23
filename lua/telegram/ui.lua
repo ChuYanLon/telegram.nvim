@@ -544,7 +544,7 @@ local function setup_chat_keymaps()
 		vim.ui.select({ action, "Cancel" }, {
 			prompt = action .. " " .. (state.chat_title or "chat") .. "?",
 		}, function(choice)
-			if choice == "Cancel" then return end
+			if choice ~= action then return end
 			if state.current_chat_archived then
 				if server.unarchive_chat(chat_id) then
 					vim.notify("Unarchived: " .. (state.chat_title or ""), vim.log.levels.INFO, { title = "tg" })
