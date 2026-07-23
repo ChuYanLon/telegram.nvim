@@ -30,7 +30,7 @@ function M.show_help()
 	local lines = {}
 
 	table.insert(lines, "-- Messages --")
-	local msg_keys = { "input_editor", "reply", "edit", "delete", "forward", "pin", "refresh", "ban", "open_dm", "reaction", "save", "copy", "archive", "mark_unread", "mute", "message_link" }
+	local msg_keys = { "input_editor", "reply", "edit", "delete", "forward", "pin", "refresh", "ban", "open_dm", "reaction", "save", "copy", "archive", "mark_unread", "mute", "message_link", "user_profile" }
 	for _, name in ipairs(msg_keys) do
 		local l = key_line(name)
 		if l then table.insert(lines, l) end
