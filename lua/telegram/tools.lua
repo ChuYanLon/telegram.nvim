@@ -652,6 +652,11 @@ M.register("userinfo", {
 
 		local sep = string.rep("\xe2\x94\x80", 22)
 
+		-- Helper to pad a label to N chars for alignment
+		local function lbl(text, val, hl)
+			row("  " .. text .. string.rep(" ", 10 - #text) .. val, hl)
+		end
+
 		-- Build rows with highlight annotations
 		local rows = {}
 		local function row(t, hl)
@@ -664,53 +669,60 @@ M.register("userinfo", {
 			row("      " .. username, "Comment")
 		end
 
-		-- Info section 1: phone, status, birthday
-		local has_section1 = false
+		-- Info: phone, status, birthday
+		local has_info = false
 		if profile.phone and #profile.phone > 0 then
-			row("  \xf0\x9f\x93\xb1  " .. profile.phone)
-			has_section1 = true
+			lbl("Phone", profile.phone); has_info = true
 		end
 		if status_str then
 			local hl = status_str == "online" and "DiagnosticOk" or nil
-			row("  \xf0\x9f\x95\x90  " .. status_str, hl)
-			has_section1 = true
+			lbl("Seen", status_str, hl); has_info = true
 		end
 		if birth_str then
-			row("  \xf0\x9f\x8e\x82  " .. birth_str)
-			has_section1 = true
+			lbl("Birthday", birth_str); has_info = true
 		end
-		if has_section1 then
+		if has_info then
 			row("")
 		end
 
-		-- Bio section (support multi-line)
+		-- Bio
 		if profile.bio and #profile.bio > 0 then
+			local first = true
 			for b in profile.bio:gmatch("[^\n]+") do
-				row("  \xf0\x9f\x93\x9d  " .. b)
+				if first then
+					lbl("Bio", b); first = false
+				else
+					lbl("", b)
+				end
 			end
 			row("")
 		end
 
-		-- Groups in common (names included in profile response)
+		-- Groups in common
 		if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
-			row("  \xf0\x9f\x91\xa5  " .. #profile.commonGroups .. " groups in common")
+			local first = true
 			for _, g in ipairs(profile.commonGroups) do
 				local gn = g.title or ("Group " .. g.id)
-				row("  \xe2\x94\x80 " .. gn)
+				if first then
+					lbl("Groups", gn); first = false
+				else
+					lbl("", "  \xe2\x94\x80 " .. gn)
+				end
 			end
+			row("")
 		end
 
-		-- Separator + bottom section
+		-- Separator + bottom info
 		local has_bottom = profile.id or (profile.isContact ~= nil)
 		if has_bottom then
 			row("    " .. sep)
 		end
 		if profile.id then
-			row("  \xf0\x9f\x86\x94  " .. profile.id)
+			lbl("ID", tostring(profile.id))
 		end
 		if profile.isContact ~= nil then
 			local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
-			row("  \xf0\x9f\xa4\x9d  " .. contact_icon,
+			lbl("Contact", contact_icon,
 					profile.isContact and "DiagnosticOk" or "DiagnosticError")
 		end
 		row("")
