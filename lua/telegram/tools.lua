@@ -582,201 +582,202 @@ M.register("userinfo", {
 			vim.notify("Cannot identify sender", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		local profile = server.get_user_profile(user_id)
-		if not profile then
-			vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
-			return
-		end
+		server.get_user_profile_async(user_id, function(profile)
+			if not profile then
+				vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
+				return
+			end
 
-		local buf = vim.api.nvim_create_buf(false, true)
-		vim.bo[buf].buftype = "nofile"
-		vim.bo[buf].bufhidden = "wipe"
+			local buf = vim.api.nvim_create_buf(false, true)
+			vim.bo[buf].buftype = "nofile"
+			vim.bo[buf].bufhidden = "wipe"
 
-		local name = profile.firstName or ""
-		if profile.lastName and #profile.lastName > 0 then
-			name = name .. " " .. profile.lastName
-		end
-		local badge = profile.isPremium and " \xe2\xad\x90" or ""
-		local username = (profile.username and #profile.username > 0) and "@" .. profile.username or ""
+			local name = profile.firstName or ""
+			if profile.lastName and #profile.lastName > 0 then
+				name = name .. " " .. profile.lastName
+			end
+			local badge = profile.isPremium and " \xe2\xad\x90" or ""
+			local username = (profile.username and #profile.username > 0) and "@" .. profile.username or ""
 
-		-- Format "last seen" from status
-		local status_str = nil
-		if profile.status and #profile.status > 0 then
-			if profile.status == "online" then
-				status_str = "online"
-			elseif profile.status == "recently" then
-				status_str = "was recently"
-			elseif profile.status == "last_week" then
-				status_str = "was last week"
-			elseif profile.status == "last_month" then
-				status_str = "was last month"
-			else
-				local _, _, ts = profile.status:find("^offline:(%d+)$")
-				if ts then
-					local was_online = tonumber(ts)
-					if was_online and was_online > 0 then
-						local now = os.time()
-						local diff = now - was_online
-						if diff < 60 then
-							status_str = "just now"
-						elseif diff < 3600 then
-							status_str = math.floor(diff / 60) .. " min ago"
-						elseif diff < 86400 then
-							local h = math.floor(diff / 3600)
-							local m = math.floor((diff % 3600) / 60)
-							status_str = h .. "h" .. (m > 0 and " " .. m .. "m" or "") .. " ago"
-						else
-							local days = math.floor(diff / 86400)
-							status_str = days .. (days > 1 and " days ago" or " day ago")
+			-- Format "last seen" from status
+			local status_str = nil
+			if profile.status and #profile.status > 0 then
+				if profile.status == "online" then
+					status_str = "online"
+				elseif profile.status == "recently" then
+					status_str = "was recently"
+				elseif profile.status == "last_week" then
+					status_str = "was last week"
+				elseif profile.status == "last_month" then
+					status_str = "was last month"
+				else
+					local _, _, ts = profile.status:find("^offline:(%d+)$")
+					if ts then
+						local was_online = tonumber(ts)
+						if was_online and was_online > 0 then
+							local now = os.time()
+							local diff = now - was_online
+							if diff < 60 then
+								status_str = "just now"
+							elseif diff < 3600 then
+								status_str = math.floor(diff / 60) .. " min ago"
+							elseif diff < 86400 then
+								local h = math.floor(diff / 3600)
+								local m = math.floor((diff % 3600) / 60)
+								status_str = h .. "h" .. (m > 0 and " " .. m .. "m" or "") .. " ago"
+							else
+								local days = math.floor(diff / 86400)
+								status_str = days .. (days > 1 and " days ago" or " day ago")
+							end
 						end
 					end
 				end
 			end
-		end
 
-		-- Format birthdate
-		local birth_str = nil
-		if profile.birthdate and type(profile.birthdate) == "table" then
-			local month_names = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
-			local day = profile.birthdate.day
-			local month = profile.birthdate.month
-			local year = profile.birthdate.year
-			if day and month and day > 0 and month > 0 then
-				local mname = month_names[month] or month
-				birth_str = day .. " " .. mname
-				if year and year > 0 then
-					birth_str = birth_str .. " " .. year
+			-- Format birthdate
+			local birth_str = nil
+			if profile.birthdate and type(profile.birthdate) == "table" then
+				local month_names = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
+				local day = profile.birthdate.day
+				local month = profile.birthdate.month
+				local year = profile.birthdate.year
+				if day and month and day > 0 and month > 0 then
+					local mname = month_names[month] or month
+					birth_str = day .. " " .. mname
+					if year and year > 0 then
+						birth_str = birth_str .. " " .. year
+					end
 				end
 			end
-		end
 
-		local sep = string.rep("\xe2\x94\x80", 22)
+			local sep = string.rep("\xe2\x94\x80", 22)
 
-		-- Build rows with highlight annotations
-		local rows = {}
-		local function row(t, hl)
-			table.insert(rows, { text = t, hl = hl })
-		end
-		local function lbl(text, val, hl)
-			local value_col = 2 + 10  -- margin + padded label width
-			local r = { text = "  " .. text .. string.rep(" ", 10 - #text) .. val, value_col = value_col }
-			if hl then r.hl = hl end
-			table.insert(rows, r)
-		end
-		row("  " .. name .. badge, "TgWinbarTitle")
-		if #username > 0 then
-			row("  " .. username, "Comment")
-		end
-		row("  " .. sep, "TgDateSeparator")
-
-		-- Info: phone, status, birthday
-		local has_info = false
-		if profile.phone and #profile.phone > 0 then
-			lbl("Phone", profile.phone); has_info = true
-		end
-		if status_str then
-			local hl = status_str == "online" and "DiagnosticOk" or nil
-			lbl("Seen", status_str, hl); has_info = true
-		end
-		if birth_str then
-			lbl("Birthday", birth_str); has_info = true
-		end
-		if has_info then
-			row("")
-		end
-
-		-- Bio
-		if profile.bio and #profile.bio > 0 then
-			local first = true
-			for b in profile.bio:gmatch("[^\n]+") do
-				if first then
-					lbl("Bio", b); first = false
-				else
-					lbl("", b)
-				end
+			-- Build rows with highlight annotations
+			local rows = {}
+			local function row(t, hl)
+				table.insert(rows, { text = t, hl = hl })
 			end
-			row("")
-		end
-
-		-- Groups in common
-		if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
-			lbl("Groups", #profile.commonGroups .. " in common")
-			local group_indent = string.rep(" ", 12)
-			for _, g in ipairs(profile.commonGroups) do
-				local gn = g.title or ("Group " .. g.id)
-				row(group_indent .. "\xe2\x94\x80\xe2\x94\x80 " .. gn, "Comment")
+			local function lbl(text, val, hl)
+				local value_col = 2 + 10  -- margin + padded label width
+				local r = { text = "  " .. text .. string.rep(" ", 10 - #text) .. val, value_col = value_col }
+				if hl then r.hl = hl end
+				table.insert(rows, r)
 			end
-			row("")
-		end
-		-- Separator + bottom info
-		local has_bottom = profile.id or (profile.isContact ~= nil)
-		if has_bottom then
+			row("  " .. name .. badge, "TgWinbarTitle")
+			if #username > 0 then
+				row("  " .. username, "Comment")
+			end
 			row("  " .. sep, "TgDateSeparator")
-		end
-		if profile.id then
-			lbl("ID", tostring(profile.id))
-		end
-		if profile.isContact ~= nil then
-			local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
-			lbl("Contact", contact_icon,
-					profile.isContact and "DiagnosticOk" or "DiagnosticError")
-		end
-		row("")
 
-		-- Window sizing
-		local height = #rows + 2
-		local width = 36
-		for _, r in ipairs(rows) do
-			local w = vim.fn.strdisplaywidth(r.text)
-			if w + 4 > width then
-				width = w + 4
+			-- Info: phone, status, birthday
+			local has_info = false
+			if profile.phone and #profile.phone > 0 then
+				lbl("Phone", profile.phone); has_info = true
 			end
-		end
-		width = math.min(width, 54)
-		height = math.min(height, 28)
-		-- Resize separators to match window width
-		local sep_str = string.rep("\xe2\x94\x80", math.max(8, width - 4))
-		for _, r in ipairs(rows) do
-			if r.hl == "TgDateSeparator" then
-				r.text = "  " .. sep_str
+			if status_str then
+				local hl = status_str == "online" and "DiagnosticOk" or nil
+				lbl("Seen", status_str, hl); has_info = true
 			end
-		end
-		local lines = {}
-		for _, r in ipairs(rows) do
-			table.insert(lines, r.text)
-		end
+			if birth_str then
+				lbl("Birthday", birth_str); has_info = true
+			end
+			if has_info then
+				row("")
+			end
 
-		local win = vim.api.nvim_open_win(buf, true, {
-			relative = "editor",
-			width = width,
-			height = height,
-			row = math.max(0, (vim.o.lines - height) / 2 - 1),
-			col = math.max(0, (vim.o.columns - width) / 2),
-			zindex = 200,
-			style = "minimal",
-			border = "rounded",
-			title = " User Info ",
-			title_pos = "center",
-		})
-		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
-		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-		for i, r in ipairs(rows) do
-			if r.value_col then
-				if r.hl then
-					pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, r.value_col, -1)
-				else
-					pcall(vim.api.nvim_buf_add_highlight, buf, -1, "Comment", i - 1, r.value_col, -1)
+			-- Bio
+			if profile.bio and #profile.bio > 0 then
+				local first = true
+				for b in profile.bio:gmatch("[^\n]+") do
+					if first then
+						lbl("Bio", b); first = false
+					else
+						lbl("", b)
+					end
 				end
-			elseif r.hl then
-				pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, 0, -1)
+				row("")
 			end
-		end
-		vim.keymap.set("n", "q", function()
-			pcall(vim.api.nvim_win_close, win, true)
-		end, { buffer = buf, nowait = true })
-		vim.keymap.set("n", "<Esc>", function()
-			pcall(vim.api.nvim_win_close, win, true)
-		end, { buffer = buf, nowait = true })
+
+			-- Groups in common
+			if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
+				lbl("Groups", #profile.commonGroups .. " in common")
+				local group_indent = string.rep(" ", 12)
+				for _, g in ipairs(profile.commonGroups) do
+					local gn = g.title or ("Group " .. g.id)
+					row(group_indent .. "\xe2\x94\x80\xe2\x94\x80 " .. gn, "Comment")
+				end
+				row("")
+			end
+			-- Separator + bottom info
+			local has_bottom = profile.id or (profile.isContact ~= nil)
+			if has_bottom then
+				row("  " .. sep, "TgDateSeparator")
+			end
+			if profile.id then
+				lbl("ID", tostring(profile.id))
+			end
+			if profile.isContact ~= nil then
+				local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
+				lbl("Contact", contact_icon,
+						profile.isContact and "DiagnosticOk" or "DiagnosticError")
+			end
+			row("")
+
+			-- Window sizing
+			local height = #rows + 2
+			local width = 36
+			for _, r in ipairs(rows) do
+				local w = vim.fn.strdisplaywidth(r.text)
+				if w + 4 > width then
+					width = w + 4
+				end
+			end
+			width = math.min(width, 54)
+			height = math.min(height, 28)
+			-- Resize separators to match window width
+			local sep_str = string.rep("\xe2\x94\x80", math.max(8, width - 4))
+			for _, r in ipairs(rows) do
+				if r.hl == "TgDateSeparator" then
+					r.text = "  " .. sep_str
+				end
+			end
+			local lines = {}
+			for _, r in ipairs(rows) do
+				table.insert(lines, r.text)
+			end
+
+			local win = vim.api.nvim_open_win(buf, true, {
+				relative = "editor",
+				width = width,
+				height = height,
+				row = math.max(0, (vim.o.lines - height) / 2 - 1),
+				col = math.max(0, (vim.o.columns - width) / 2),
+				zindex = 200,
+				style = "minimal",
+				border = "rounded",
+				title = " User Info ",
+				title_pos = "center",
+			})
+			vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
+			vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+			for i, r in ipairs(rows) do
+				if r.value_col then
+					if r.hl then
+						pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, r.value_col, -1)
+					else
+						pcall(vim.api.nvim_buf_add_highlight, buf, -1, "Comment", i - 1, r.value_col, -1)
+					end
+				elseif r.hl then
+					pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, 0, -1)
+				end
+			end
+			vim.keymap.set("n", "q", function()
+				pcall(vim.api.nvim_win_close, win, true)
+			end, { buffer = buf, nowait = true })
+			vim.keymap.set("n", "<Esc>", function()
+				pcall(vim.api.nvim_win_close, win, true)
+			end, { buffer = buf, nowait = true })
+		end)
 	end,
 })
 
