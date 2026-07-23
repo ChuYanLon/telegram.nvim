@@ -755,6 +755,8 @@ M.register("userinfo", {
 			zindex = 200,
 			style = "minimal",
 			border = "rounded",
+			title = " User Info ",
+			title_pos = "center",
 		})
 		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
