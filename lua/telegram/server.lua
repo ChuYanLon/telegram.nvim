@@ -809,6 +809,14 @@ function M.set_draft(chat_id, text)
 	if res.error then return nil, res.error end
 	return res.ok ~= false
 end
+-- ─── User Profile ────────────────────────────────────────────────────────
+
+---@param user_id number
+---@return table|nil
+function M.get_user_profile(user_id)
+	return http_get("/user-profile?userId=" .. user_id)
+end
+
 -- ─── Message Link ───────────────────────────────────────────────────────
 
 ---@param chat_id any
