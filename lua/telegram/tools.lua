@@ -694,12 +694,18 @@ M.register("userinfo", {
 		-- Groups in common -- show count now, async-load names later
 		if profile.groupInCommon and profile.groupInCommon > 0 then
 			row("  \xf0\x9f\x91\xa5  " .. profile.groupInCommon .. " groups in common")
-			vim.defer_fn(function()
+			local retries = 0
+			local max_retries = 3
+			local function try_load_groups()
 				if not vim.api.nvim_buf_is_valid(buf) then
 					return
 				end
 				local groups = server.get_groups_in_common(user_id)
 				if not groups or #groups == 0 then
+					retries = retries + 1
+					if retries < max_retries then
+						vim.defer_fn(try_load_groups, 200 * retries)
+					end
 					return
 				end
 				local new_lines = {}
@@ -729,7 +735,7 @@ M.register("userinfo", {
 						vim.api.nvim_win_set_config(win, { height = new_h })
 					end
 				end
-			end, 50)
+			end
 		end
 
 		-- Separator + bottom section
