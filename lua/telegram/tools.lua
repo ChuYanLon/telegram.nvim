@@ -700,7 +700,7 @@ M.register("userinfo", {
 
 			-- Groups in common
 			if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
-				lbl("Groups", #profile.commonGroups .. " in common")
+				row("  Groups(" .. #profile.commonGroups .. ")")
 				local group_indent = string.rep(" ", 12)
 				for _, g in ipairs(profile.commonGroups) do
 					local gn = g.title or ("Group " .. g.id)
