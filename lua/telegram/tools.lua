@@ -652,15 +652,13 @@ M.register("userinfo", {
 
 		local sep = string.rep("\xe2\x94\x80", 22)
 
-		-- Helper to pad a label to N chars for alignment
-		local function lbl(text, val, hl)
-			row("  " .. text .. string.rep(" ", 10 - #text) .. val, hl)
-		end
-
 		-- Build rows with highlight annotations
 		local rows = {}
 		local function row(t, hl)
 			table.insert(rows, { text = t, hl = hl })
+		end
+		local function lbl(text, val, hl)
+			row("  " .. text .. string.rep(" ", 10 - #text) .. val, hl)
 		end
 
 		row("")
