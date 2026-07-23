@@ -592,28 +592,36 @@ M.register("userinfo", {
 		vim.bo[buf].buftype = "nofile"
 		vim.bo[buf].bufhidden = "wipe"
 
-		local lines = {}
 		local name = profile.firstName or ""
 		if profile.lastName and #profile.lastName > 0 then
 			name = name .. " " .. profile.lastName
 		end
-		local has_premium = profile.isPremium and "\xe2\xad\x90" or ""
-		table.insert(lines, " " .. name .. " " .. has_premium)
+		local badge = profile.isPremium and " \xe2\xad\x90" or ""
+		local username = (profile.username and #profile.username > 0) and "@" .. profile.username or ""
+		local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
+		local sep = string.rep("\xe2\x94\x80", 24)
+
+		local lines = {}
 		table.insert(lines, "")
-		if profile.username and #profile.username > 0 then
-			table.insert(lines, " @" .. profile.username)
+		table.insert(lines, "  " .. name .. badge)
+		if #username > 0 then
+			table.insert(lines, "  " .. username)
 		end
+		table.insert(lines, "  " .. sep)
 		if profile.phone and #profile.phone > 0 then
-			table.insert(lines, " \xf0\x9f\x93\xb1 " .. profile.phone)
+			table.insert(lines, "  \xf0\x9f\x93\xb1  " .. profile.phone)
 		end
 		if profile.bio and #profile.bio > 0 then
-			table.insert(lines, " \xf0\x9f\x93\x9d " .. profile.bio)
+			for b in profile.bio:gmatch("[^\n]+") do
+				table.insert(lines, "  \xf0\x9f\x93\x9d  " .. b)
+			end
 		end
 		if profile.groupInCommon and profile.groupInCommon > 0 then
-			table.insert(lines, " \xf0\x9f\x91\xa5 " .. profile.groupInCommon .. " groups in common")
+			table.insert(lines, "  \xf0\x9f\x91\xa5  " .. profile.groupInCommon .. " groups in common")
 		end
+		table.insert(lines, "  " .. sep)
+		table.insert(lines, "  Contact: " .. contact_icon)
 		table.insert(lines, "")
-		table.insert(lines, " Contact: " .. (profile.isContact and "\xe2\x9c\x85" or "\xe2\x9d\x8c"))
 
 		local height = #lines + 2
 		local width = 36
@@ -621,7 +629,7 @@ M.register("userinfo", {
 			local w = vim.fn.strdisplaywidth(l)
 			if w + 4 > width then width = w + 4 end
 		end
-		width = math.min(width, 50)
+		width = math.min(width, 52)
 		height = math.min(height, 24)
 
 		local win = vim.api.nvim_open_win(buf, true, {
@@ -633,11 +641,12 @@ M.register("userinfo", {
 			zindex = 200,
 			style = "minimal",
 			border = "rounded",
-			title = " User Info ",
+			title = " " .. name .. " ",
 			title_pos = "center",
 		})
 		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+		vim.api.nvim_buf_add_highlight(buf, -1, "TgWinbarTitle", 1, 0, -1)
 		vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf, nowait = true })
 		vim.keymap.set("n", "<Esc>", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf, nowait = true })
 	end,
