@@ -879,13 +879,13 @@ function M.get_message_link(chat_id, message_id)
 end
 
 ---@param url string
----@param callback fun(info: table|nil)
+---@param callback fun(info: table|nil, err: string|nil)
 function M.get_message_link_info_async(url, callback)
 	local encoded = vim.json.encode({ url = url })
 	request_async({ url = base_url() .. "/messageLinkInfo", body = encoded }, function(data, err)
 		vim.schedule(function()
 			if err or not data or not data.chat_id or not data.message_id then
-				callback(nil)
+				callback(nil, err or "Invalid response")
 			else
 				callback(data)
 			end

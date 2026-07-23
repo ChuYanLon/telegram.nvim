@@ -694,10 +694,11 @@ app.post('/messageLinkInfo', async (req, res) => {
     const { url } = req.body;
     if (!url) { res.status(400).json({ error: 'url is required' }); return; }
     const info = await tgClient.getMessageLinkInfo(url);
-    if (info) {
-      res.json(info);
+    if (info && info.chat_id && info.message_id) {
+      res.json({ chat_id: info.chat_id, message_id: info.message_id });
     } else {
-      res.status(400).json({ error: 'Failed to resolve link' });
+      const reason = info?.errMsg || 'Failed to resolve link';
+      res.status(400).json({ error: reason });
     }
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });

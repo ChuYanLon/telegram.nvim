@@ -1544,20 +1544,31 @@ export class TelegramLSPClient {
     }
   }
 
-  async getMessageLinkInfo(url: string): Promise<{ chat_id: number; message_id: number } | null> {
+  /**
+   * Resolve a t.me message link to chat + message IDs.
+   * Returns null on failure (caller can check errMsg for details).
+   */
+  async getMessageLinkInfo(url: string): Promise<{ chat_id: number; message_id: number; errMsg?: string } | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     try {
       const result = await this.client.invoke({
         _: 'getMessageLinkInfo',
         url: url,
-      }) as { chat_id?: number; message?: { id?: number } };
-      if (result && result.chat_id && result.message && result.message.id) {
-        return { chat_id: result.chat_id, message_id: result.message.id };
+      }) as Record<string, unknown>;
+      // TDLib error object
+      if (!result || result._ === 'error') {
+        const msg = (result as { message?: string }).message || 'Unknown TDLib error';
+        return { chat_id: 0, message_id: 0, errMsg: msg };
       }
-      return null;
+      // Success
+      if (typeof result.chat_id === 'number' && result.message && typeof (result.message as Record<string, unknown>).id === 'number') {
+        return { chat_id: result.chat_id, message_id: (result.message as Record<string, unknown>).id as number };
+      }
+      // Unexpected format
+      return { chat_id: 0, message_id: 0, errMsg: `Unexpected response: ${JSON.stringify(result).slice(0, 200)}` };
     } catch (e) {
-      console.warn('getMessageLinkInfo failed:', (e as Error).message);
-      return null;
+      const msg = (e as Error).message;
+      return { chat_id: 0, message_id: 0, errMsg: msg };
     }
   }
 
