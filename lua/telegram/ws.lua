@@ -31,7 +31,7 @@ local function start_ws_job(on_msg)
 		on_stderr = function(_, data)
 			if data then
 				for _, line in ipairs(data) do
-					if line and #line > 0 then
+					if line and #line > 0 and not line:find("^npm notice") then
 						vim.notify(line, vim.log.levels.WARN, { title = "tg-ws" })
 					end
 				end
