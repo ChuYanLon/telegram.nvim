@@ -721,14 +721,13 @@ M.register("userinfo", {
 					end
 					vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
 					-- Resize window to fit expanded groups
-					if vim.api.nvim_win_is_valid(win) then
+					if type(win) == "number" and vim.api.nvim_win_is_valid(win) then
 						local new_total = vim.api.nvim_buf_line_count(buf)
 						local new_h = math.min(new_total, 28)
 						vim.api.nvim_win_set_config(win, { height = new_h })
 					end
 				end
 			end, 50)
-		end
 
 		-- Separator + bottom section
 		local has_bottom = profile.id or (profile.isContact ~= nil)
