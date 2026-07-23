@@ -658,10 +658,11 @@ M.register("userinfo", {
 			table.insert(rows, { text = t, hl = hl })
 		end
 		local function lbl(text, val, hl)
-			row("  " .. text .. string.rep(" ", 10 - #text) .. val, hl)
+			local value_col = 2 + 10  -- margin + padded label width
+			local r = { text = "  " .. text .. string.rep(" ", 10 - #text) .. val, value_col = value_col }
+			if hl then r.hl = hl end
+			table.insert(rows, r)
 		end
-
-		row("")
 		row("    " .. name .. badge, "TgWinbarTitle")
 		if #username > 0 then
 			row("    " .. username, "Comment")
@@ -750,7 +751,13 @@ M.register("userinfo", {
 		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 		for i, r in ipairs(rows) do
-			if r.hl then
+			if r.value_col then
+				if r.hl then
+					pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, r.value_col, -1)
+				else
+					pcall(vim.api.nvim_buf_add_highlight, buf, -1, "Comment", i - 1, r.value_col, -1)
+				end
+			elseif r.hl then
 				pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, 0, -1)
 			end
 		end
