@@ -723,7 +723,7 @@ M.register("userinfo", {
 					-- Resize window to fit expanded groups
 					if vim.api.nvim_win_is_valid(win) then
 						local new_total = vim.api.nvim_buf_line_count(buf)
-						local new_h = math.min(new_total + 1, 28)
+						local new_h = math.min(new_total, 28)
 						vim.api.nvim_win_set_config(win, { height = new_h })
 					end
 				end
