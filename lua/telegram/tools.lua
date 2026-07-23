@@ -667,7 +667,8 @@ M.register("userinfo", {
 		-- Info section 1: phone, status, birthday
 		local has_section1 = false
 		if profile.phone and #profile.phone > 0 then
-			row("  \xf0\x9f\x93\xb1  " .. profile.phone); has_section1 = true
+			row("  \xf0\x9f\x93\xb1  " .. profile.phone)
+			has_section1 = true
 		end
 		if status_str then
 			local hl = status_str == "online" and "DiagnosticOk" or nil
@@ -675,7 +676,8 @@ M.register("userinfo", {
 			has_section1 = true
 		end
 		if birth_str then
-			row("  \xf0\x9f\x8e\x82  " .. birth_str); has_section1 = true
+			row("  \xf0\x9f\x8e\x82  " .. birth_str)
+			has_section1 = true
 		end
 		if has_section1 then
 			row("")
@@ -689,27 +691,28 @@ M.register("userinfo", {
 			row("")
 		end
 
-		-- Groups in common — show count now, async-load names later
-		local groups_inserted = false
+		-- Groups in common -- show count now, async-load names later
 		if profile.groupInCommon and profile.groupInCommon > 0 then
 			row("  \xf0\x9f\x91\xa5  " .. profile.groupInCommon .. " groups in common")
-			local gc_row_idx = #rows
 			vim.defer_fn(function()
-				if not vim.api.nvim_buf_is_valid(buf) then return end
+				if not vim.api.nvim_buf_is_valid(buf) then
+					return
+				end
 				local groups = server.get_groups_in_common(user_id)
-				if not groups or #groups == 0 then return end
+				if not groups or #groups == 0 then
+					return
+				end
 				local new_lines = {}
 				table.insert(new_lines, "  \xf0\x9f\x91\xa5  " .. #groups .. " groups in common")
 				for _, g in ipairs(groups) do
 					local gn = g.title or ("Group " .. g.id)
 					table.insert(new_lines, "  \xe2\x94\x80 " .. gn)
 				end
-				-- Replace from groups row (0-indexed) to the end of the groups block
 				local buflines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 				local start = nil
 				for i, bl in ipairs(buflines) do
 					if bl:find("\xf0\x9f\x91\xa5") then
-						start = i - 1  -- 0-indexed
+						start = i - 1
 						break
 					end
 				end
@@ -720,7 +723,6 @@ M.register("userinfo", {
 						end_i = end_i + 1
 					end
 					vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
-					-- Resize window to fit expanded groups
 					if type(win) == "number" and vim.api.nvim_win_is_valid(win) then
 						local new_total = vim.api.nvim_buf_line_count(buf)
 						local new_h = math.min(new_total, 28)
@@ -728,6 +730,7 @@ M.register("userinfo", {
 					end
 				end
 			end, 50)
+		end
 
 		-- Separator + bottom section
 		local has_bottom = profile.id or (profile.isContact ~= nil)
@@ -751,7 +754,9 @@ M.register("userinfo", {
 		for _, r in ipairs(rows) do
 			table.insert(lines, r.text)
 			local w = vim.fn.strdisplaywidth(r.text)
-			if w + 4 > width then width = w + 4 end
+			if w + 4 > width then
+				width = w + 4
+			end
 		end
 		width = math.min(width, 54)
 		height = math.min(height, 28)
@@ -770,7 +775,6 @@ M.register("userinfo", {
 		})
 		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-		-- Apply highlights
 		for i, r in ipairs(rows) do
 			if r.hl then
 				pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, 0, -1)
