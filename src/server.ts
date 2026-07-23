@@ -631,6 +631,15 @@ app.get('/user-profile', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.get('/groups-in-common', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const groups = await tgClient.getGroupsInCommon(Number(userId));
+    res.json(groups);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageLink', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

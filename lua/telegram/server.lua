@@ -817,6 +817,12 @@ function M.get_user_profile(user_id)
 	return http_get("/user-profile?userId=" .. user_id)
 end
 
+---@param user_id number
+---@return table|nil
+function M.get_groups_in_common(user_id)
+	return http_get("/groups-in-common?userId=" .. user_id)
+end
+
 -- ─── Message Link ───────────────────────────────────────────────────────
 
 ---@param chat_id any

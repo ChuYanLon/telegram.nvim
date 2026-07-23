@@ -1383,6 +1383,29 @@ export class TelegramLSPClient {
         this.client.invoke({ _: 'getUserFullInfo', user_id: userId }).catch(() => null) as Promise<any>,
       ]);
       if (!user) return null;
+      // Resolve user status for "last seen"
+      let status = '';
+      if (user.status) {
+        switch (user.status._) {
+          case 'userStatusOnline':
+            status = 'online';
+            break;
+          case 'userStatusOffline':
+            status = 'offline:' + (user.status.was_online || 0);
+            break;
+          case 'userStatusRecently':
+            status = 'recently';
+            break;
+          case 'userStatusLastWeek':
+            status = 'last_week';
+            break;
+          case 'userStatusLastMonth':
+            status = 'last_month';
+            break;
+          default:
+            status = '';
+        }
+      }
       return {
         id: user.id,
         firstName: user.first_name || '',
@@ -1394,10 +1417,33 @@ export class TelegramLSPClient {
         isContact: !!user.is_contact,
         bio: fullInfo?.bio?.text || '',
         groupInCommon: fullInfo?.group_in_common_count || 0,
+        status,
+        birthdate: fullInfo?.birthdate || null,
       };
     } catch (e) {
       console.warn('getUserProfile failed:', (e as Error).message);
       return null;
+    }
+  }
+
+  async getGroupsInCommon(userId: number): Promise<{ id: number; title: string }[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'getGroupsInCommon',
+        user_id: userId,
+        offset_chat_id: 0,
+        limit: 100,
+      }) as { chat_ids?: number[] };
+      if (!result?.chat_ids) return [];
+      const groups = await Promise.all(result.chat_ids.map(async (id: number) => {
+        const chat = await this.client.invoke({ _: 'getChat', chat_id: id }) as { id: number; title: string };
+        return { id: chat.id, title: chat.title };
+      }));
+      return groups;
+    } catch (e) {
+      console.warn('getGroupsInCommon failed:', (e as Error).message);
+      return [];
     }
   }
 

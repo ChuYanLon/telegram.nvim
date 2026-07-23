@@ -471,75 +471,7 @@ local function setup_chat_keymaps()
 		end)
 	end)
 	set("user_profile", function()
-		local target = curr_msg()
-		if not target or not target.sender or not target.sender.id then
-			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
-			return
-		end
-		if target.own then
-			vim.notify("That is you", vim.log.levels.INFO, { title = "tg" })
-			return
-		end
-		local user_id = tonumber(target.sender.id)
-		if not user_id then
-			vim.notify("Cannot identify sender", vim.log.levels.WARN, { title = "tg" })
-			return
-		end
-		vim.notify("Loading profile...", vim.log.levels.INFO, { title = "tg" })
-		local profile = server.get_user_profile(user_id)
-		if not profile then
-			vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
-			return
-		end
-		local buf = vim.api.nvim_create_buf(false, true)
-		vim.bo[buf].buftype = "nofile"
-		vim.bo[buf].bufhidden = "wipe"
-		local lines = {}
-		local name = profile.firstName or ""
-		if profile.lastName and #profile.lastName > 0 then
-			name = name .. " " .. profile.lastName
-		end
-		local has_premium = profile.isPremium and "\xe2\xad\x90" or ""
-		table.insert(lines, " " .. name .. " " .. has_premium)
-		table.insert(lines, "")
-		if profile.username and #profile.username > 0 then
-			table.insert(lines, " @" .. profile.username)
-		end
-		if profile.phone and #profile.phone > 0 then
-			table.insert(lines, " \xf0\x9f\x93\xb1 " .. profile.phone)
-		end
-		if profile.bio and #profile.bio > 0 then
-			table.insert(lines, " \xf0\x9f\x93\x9d " .. profile.bio)
-		end
-		if profile.groupInCommon and profile.groupInCommon > 0 then
-			table.insert(lines, " \xf0\x9f\x91\xa5 " .. profile.groupInCommon .. " groups in common")
-		end
-		table.insert(lines, "")
-		table.insert(lines, " Contact: " .. (profile.isContact and "\xe2\x9c\x85" or "\xe2\x9d\x8c"))
-		local height = #lines + 2
-		local width = 36
-		for _, l in ipairs(lines) do
-			local w = vim.fn.strdisplaywidth(l)
-			if w + 4 > width then width = w + 4 end
-		end
-		width = math.min(width, 50)
-		height = math.min(height, 24)
-		local win = vim.api.nvim_open_win(buf, true, {
-			relative = "editor",
-			width = width,
-			height = height,
-			row = math.max(0, (vim.o.lines - height) / 2 - 2),
-			col = math.max(0, (vim.o.columns - width) / 2),
-			zindex = 200,
-			style = "minimal",
-			border = "rounded",
-			title = " User Info ",
-			title_pos = "center",
-		})
-		vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
-		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-		vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf, nowait = true })
-		vim.keymap.set("n", "<Esc>", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf, nowait = true })
+		require("telegram.tools").run("userinfo")
 	end)
 	set("message_link", function()
 		local target = curr_msg()
