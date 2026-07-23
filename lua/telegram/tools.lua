@@ -667,7 +667,7 @@ M.register("userinfo", {
 		if #username > 0 then
 			row("  " .. username, "Comment")
 		end
-		row("  " .. sep)
+		row("  " .. sep, "TgDateSeparator")
 
 		-- Info: phone, status, birthday
 		local has_info = false
@@ -711,7 +711,7 @@ M.register("userinfo", {
 		-- Separator + bottom info
 		local has_bottom = profile.id or (profile.isContact ~= nil)
 		if has_bottom then
-			row("  " .. sep)
+			row("  " .. sep, "TgDateSeparator")
 		end
 		if profile.id then
 			lbl("ID", tostring(profile.id))
