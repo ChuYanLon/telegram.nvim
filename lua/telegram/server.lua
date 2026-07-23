@@ -164,9 +164,10 @@ local function request_curl(opts, callback)
 end
 
 local function request_async(opts, callback)
-	if vim.net and vim.net.request then
+	-- vim.net.request only supports GET — always fall through to curl for POST
+	if vim.net and vim.net.request and not opts.body then
 		local ok2, result = pcall(vim.net.request, opts.url, {
-			method = opts.body and "POST" or "GET",
+			method = "GET",
 			headers = opts.body and { ["Content-Type"] = "application/json" } or nil,
 			body = opts.body,
 			timeout = 15000,
