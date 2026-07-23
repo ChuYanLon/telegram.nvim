@@ -691,50 +691,12 @@ M.register("userinfo", {
 			row("")
 		end
 
-		-- Groups in common -- show count now, async-load names later
-		if profile.groupInCommon and profile.groupInCommon > 0 then
-			row("  \xf0\x9f\x91\xa5  " .. profile.groupInCommon .. " groups in common")
-			local retries = 0
-			local max_retries = 3
-			local function try_load_groups()
-				if not vim.api.nvim_buf_is_valid(buf) then
-					return
-				end
-				local groups = server.get_groups_in_common(user_id)
-				if not groups or groups.error or #groups == 0 then
-					retries = retries + 1
-					if retries < max_retries then
-						vim.defer_fn(try_load_groups, 500 * retries)
-					end
-					return
-				end
-				local new_lines = {}
-				table.insert(new_lines, "  \xf0\x9f\x91\xa5  " .. #groups .. " groups in common")
-				for _, g in ipairs(groups) do
-					local gn = g.title or ("Group " .. g.id)
-					table.insert(new_lines, "  \xe2\x94\x80 " .. gn)
-				end
-				local buflines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-				local start = nil
-				for i, bl in ipairs(buflines) do
-					if bl:find("\xf0\x9f\x91\xa5") then
-						start = i - 1
-						break
-					end
-				end
-				if start then
-					local end_i = start + 1
-					while end_i <= #buflines and #buflines[end_i] > 0
-							and not buflines[end_i]:match("^\xe2\x94\x80+$") do
-						end_i = end_i + 1
-					end
-					vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
-					if type(win) == "number" and vim.api.nvim_win_is_valid(win) then
-						local new_total = vim.api.nvim_buf_line_count(buf)
-						local new_h = math.min(new_total, 28)
-						vim.api.nvim_win_set_config(win, { height = new_h })
-					end
-				end
+		-- Groups in common (names included in profile response)
+		if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
+			row("  \xf0\x9f\x91\xa5  " .. #profile.commonGroups .. " groups in common")
+			for _, g in ipairs(profile.commonGroups) do
+				local gn = g.title or ("Group " .. g.id)
+				row("  \xe2\x94\x80 " .. gn)
 			end
 		end
 

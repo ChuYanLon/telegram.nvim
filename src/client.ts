@@ -1406,7 +1406,8 @@ export class TelegramLSPClient {
             status = '';
         }
       }
-      return {
+      const gic = fullInfo?.group_in_common_count || 0;
+      const profile: Record<string, unknown> = {
         id: user.id,
         firstName: user.first_name || '',
         lastName: user.last_name || '',
@@ -1416,10 +1417,18 @@ export class TelegramLSPClient {
         isSupport: !!user.is_support,
         isContact: !!user.is_contact,
         bio: fullInfo?.bio?.text || '',
-        groupInCommon: fullInfo?.group_in_common_count || 0,
+        groupInCommon: gic,
         status,
         birthdate: fullInfo?.birthdate || null,
       };
+      // Include common group names in the profile response
+      if (gic > 0) {
+        try {
+          const groups = await this.getGroupsInCommon(userId);
+          profile.commonGroups = groups;
+        } catch (_) { /* non-critical */ }
+      }
+      return profile;
     } catch (e) {
       console.warn('getUserProfile failed:', (e as Error).message);
       return null;
@@ -1436,10 +1445,13 @@ export class TelegramLSPClient {
         limit: 100,
       }) as { chat_ids?: number[] };
       if (!result?.chat_ids) return [];
-      const groups = await Promise.all(result.chat_ids.map(async (id: number) => {
+      const results = await Promise.allSettled(result.chat_ids.map(async (id: number) => {
         const chat = await this.client.invoke({ _: 'getChat', chat_id: id }) as { id: number; title: string };
         return { id: chat.id, title: chat.title };
       }));
+      const groups = results
+        .filter((r): r is PromiseFulfilledResult<{ id: number; title: string }> => r.status === 'fulfilled')
+        .map(r => r.value);
       return groups;
     } catch (e) {
       console.warn('getGroupsInCommon failed:', (e as Error).message);
