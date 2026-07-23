@@ -727,7 +727,6 @@ M.register("userinfo", {
 			if profile.isBlocked then
 				row("  Blocked", "DiagnosticError")
 			end
-			row("")
 			row("", "TgWinbarTitle")
 			row("")
 
