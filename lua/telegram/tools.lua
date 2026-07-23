@@ -663,9 +663,9 @@ M.register("userinfo", {
 			if hl then r.hl = hl end
 			table.insert(rows, r)
 		end
-		row(name .. badge, "TgWinbarTitle")
+		row("  " .. name .. badge, "TgWinbarTitle")
 		if #username > 0 then
-			row(username, "Comment")
+			row("  " .. username, "Comment")
 		end
 		row("  " .. sep)
 
