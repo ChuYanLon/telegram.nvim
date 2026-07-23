@@ -728,6 +728,8 @@ M.register("userinfo", {
 				row("  Blocked", "DiagnosticError")
 			end
 			row("")
+			row("  [m] DM | [b] Block | [c] Contact", "Comment")
+			row("")
 
 			-- Window sizing
 			local height = #rows + 2
