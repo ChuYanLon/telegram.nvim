@@ -322,6 +322,7 @@ M.register("archive", {
 					ui.destroy_chat()
 				else
 					vim.notify("Failed to archive chat", vim.log.levels.WARN, { title = "tg" })
+				end
 			end
 		end)
 	end,
@@ -525,7 +526,6 @@ M.register("draft", {
 					vim.notify("Draft saved to server", vim.log.levels.INFO, { title = "tg" })
 				else
 					vim.notify("Draft save failed: " .. (err or "unknown"), vim.log.levels.WARN, { title = "tg" })
-				end
 				end
 			elseif choice:find("Clear") then
 				local ok, err = server.set_draft(chat_id, "")
