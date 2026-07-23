@@ -402,9 +402,9 @@ M.register("showarchived", {
 				ui.show_groups_picker(function(item)
 					st.show_archived = false
 					if item then
+						require("telegram").open_chat(item.id, item.title)
 						local st = require("telegram.state").state
 						st.current_chat_archived = true
-						require("telegram").open_chat(item.id, item.title)
 					end
 				end, items)
 				vim.notify("Showing archived chats (" .. #chats .. ")", vim.log.levels.INFO, { title = "tg" })
