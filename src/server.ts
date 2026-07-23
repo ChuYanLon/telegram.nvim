@@ -689,6 +689,19 @@ app.get('/messageLink', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.post('/messageLinkInfo', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) { res.status(400).json({ error: 'url is required' }); return; }
+    const info = await tgClient.getMessageLinkInfo(url);
+    if (info) {
+      res.json(info);
+    } else {
+      res.status(400).json({ error: 'Failed to resolve link' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageMedia', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

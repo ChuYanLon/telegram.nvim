@@ -1544,6 +1544,23 @@ export class TelegramLSPClient {
     }
   }
 
+  async getMessageLinkInfo(url: string): Promise<{ chat_id: number; message_id: number } | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'getMessageLinkInfo',
+        url: url,
+      }) as { chat_id?: number; message?: { id?: number } };
+      if (result && result.chat_id && result.message && result.message.id) {
+        return { chat_id: result.chat_id, message_id: result.message.id };
+      }
+      return null;
+    } catch (e) {
+      console.warn('getMessageLinkInfo failed:', (e as Error).message);
+      return null;
+    }
+  }
+
   async getMessageMedia(chatId: number, messageId: number): Promise<{ path: string; mediaPath?: string } | null> {
     try {
       const msg = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;

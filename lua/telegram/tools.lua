@@ -196,6 +196,20 @@ M.register("openlink", {
 			url = url:gsub("[%]%)>%.%,%;%!%?:;'\"]+$", "")
 		end
 		if url then
+			-- Resolve t.me links in-app instead of opening in browser
+			if url:match("^https?://t%.me/") then
+				vim.notify("Resolving message link...", vim.log.levels.INFO, { title = "tg" })
+				server.get_message_link_info_async(url, function(info)
+					if info and info.chat_id and info.message_id then
+						ui.state._jump_to_msg = info.message_id
+						ui.open_chat(info.chat_id, "Message link")
+					else
+						vim.notify("Could not resolve link, opening in browser", vim.log.levels.WARN, { title = "tg" })
+						open_target(url)
+					end
+				end)
+				return
+			end
 			vim.notify("Opening: " .. url, vim.log.levels.INFO, { title = "tg" })
 			open_target(url)
 			return

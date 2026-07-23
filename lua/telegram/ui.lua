@@ -656,6 +656,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 		and state.buf
 		and vim.api.nvim_buf_is_valid(state.buf)
 		and vim.bo[state.buf].filetype == "telegram"
+		and not state._jump_to_msg
 	then
 		if state.win and vim.api.nvim_win_is_valid(state.win) then
 			vim.api.nvim_set_current_win(state.win)
@@ -944,7 +945,31 @@ function M.open_chat(chat_id, chat_title, chat_type)
 
 		if pending == 0 then
 			title.update_title()
-			if saved_id then
+			if state._jump_to_msg then
+				local jump_id = state._jump_to_msg
+				state._jump_to_msg = nil
+				state.messages = {}
+				state.exhausted = false
+				state.exhausted_forward = false
+				render()
+				server.get_messages_around_async(state.chat_id, jump_id, 31, function(data)
+					if state.chat_id == cid then
+						state.messages = data.messages or {}
+						table.sort(state.messages, function(a, b)
+							if a.date ~= b.date then return a.date < b.date end
+							return a.id < b.id
+						end)
+						count_unread()
+						render()
+						title.update_title()
+						local target_idx
+						for i, m in ipairs(state.messages) do
+							if m.id == jump_id then target_idx = i; break end
+						end
+						set_cursor_to_idx(target_idx or #state.messages)
+					end
+				end)
+			elseif saved_id then
 				state.messages = {}
 				state.exhausted = false
 				state.exhausted_forward = false
