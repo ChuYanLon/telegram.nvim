@@ -744,7 +744,7 @@ M.register("userinfo", {
 			row("    " .. sep)
 		end
 		if profile.id then
-			row("  \xf0\x9f\x86\xb4  " .. profile.id)
+			row("  \xf0\x9f\x86\x94  " .. profile.id)
 		end
 		if profile.isContact ~= nil then
 			local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
