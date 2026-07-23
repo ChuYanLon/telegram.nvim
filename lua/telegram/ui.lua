@@ -964,7 +964,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 						title.update_title()
 						local target_idx
 						for i, m in ipairs(state.messages) do
-							if m.id == jump_id then target_idx = i; break end
+							if tostring(m.id) == tostring(jump_id) then target_idx = i; break end
 						end
 						set_cursor_to_idx(target_idx or #state.messages)
 					end
