@@ -806,7 +806,10 @@ end
 ---@param text string  Empty string to clear draft
 ---@return boolean
 function M.set_draft(chat_id, text)
-	return http_post("/chat/draft", { chatId = chat_id, text = text or "" }) ~= nil
+	local res = http_post("/chat/draft", { chatId = chat_id, text = text or "" })
+	if not res then return nil, "request failed" end
+	if res.error then return nil, res.error end
+	return res.ok ~= false
 end
 -- ─── Reactions ──────────────────────────────────────────────────────────
 

@@ -495,10 +495,11 @@ M.register("translate", {
 			if not lang or #lang == 0 then return end
 			vim.notify("Translating...", vim.log.levels.INFO, { title = "tg" })
 			server.translate_text_async(msg.text, lang, function(data)
-				if data and data.text then
+				if data and data.text and #data.text > 0 then
 					vim.notify(data.text, vim.log.levels.INFO, { title = "Translation" })
 				else
-					vim.notify("Translation failed", vim.log.levels.ERROR, { title = "tg" })
+					local reason = data and data.error or "unknown error"
+					vim.notify("Translation failed: " .. reason, vim.log.levels.ERROR, { title = "tg" })
 				end
 			end)
 		end)
@@ -520,13 +521,21 @@ M.register("draft", {
 		vim.ui.select(choices, { prompt = has_draft and "Draft: " .. draft:sub(1, 40) or "No draft" }, function(choice)
 			if not choice or choice == "Cancel" then return end
 			if choice:find("Save") then
-				if server.set_draft(chat_id, draft) then
+				local ok, err = server.set_draft(chat_id, draft)
+				if ok then
 					vim.notify("Draft saved to server", vim.log.levels.INFO, { title = "tg" })
+				else
+					vim.notify("Draft save failed: " .. (err or "unknown"), vim.log.levels.WARN, { title = "tg" })
+				end
 				end
 			elseif choice:find("Clear") then
-				if server.set_draft(chat_id, "") then
+				local ok, err = server.set_draft(chat_id, "")
+				if ok then
 					ui.state.editor_draft = nil
 					vim.notify("Draft cleared", vim.log.levels.INFO, { title = "tg" })
+				else
+					vim.notify("Draft clear failed: " .. (err or "unknown"), vim.log.levels.WARN, { title = "tg" })
+				end
 				end
 			end
 		end)

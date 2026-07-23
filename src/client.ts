@@ -711,7 +711,7 @@ export class TelegramLSPClient {
           content: {
             _: 'draftMessageContentText',
             text: { _: 'formattedText', text, entities: [] },
-            link_preview_options: { _: 'linkPreviewOptions', is_disabled: true, url: '', prefer_small_media: false, prefer_large_media: false, show_above_text: false },
+            link_preview_options: null,
           },
           effect_id: 0,
           suggested_post_info: null,
