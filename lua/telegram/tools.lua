@@ -637,7 +637,7 @@ M.register("userinfo", {
 
 		-- Format birthdate
 		local birth_str = nil
-		if profile.birthdate then
+		if profile.birthdate and type(profile.birthdate) == "table" then
 			local month_names = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
 			local day = profile.birthdate.day
 			local month = profile.birthdate.month
