@@ -662,9 +662,9 @@ M.register("userinfo", {
 		end
 
 		row("")
-		row("      " .. name .. badge, "TgWinbarTitle")
+		row("    " .. name .. badge, "TgWinbarTitle")
 		if #username > 0 then
-			row("      " .. username, "Comment")
+			row("    " .. username, "Comment")
 		end
 
 		-- Info: phone, status, birthday
@@ -698,22 +698,17 @@ M.register("userinfo", {
 
 		-- Groups in common
 		if profile.groupInCommon and profile.groupInCommon > 0 and profile.commonGroups then
-			local first = true
+			lbl("Groups", #profile.commonGroups .. " in common")
 			for _, g in ipairs(profile.commonGroups) do
 				local gn = g.title or ("Group " .. g.id)
-				if first then
-					lbl("Groups", gn); first = false
-				else
-					lbl("", "  \xe2\x94\x80 " .. gn)
-				end
+				lbl("", "  \xe2\x94\x80 " .. gn)
 			end
 			row("")
 		end
-
 		-- Separator + bottom info
 		local has_bottom = profile.id or (profile.isContact ~= nil)
 		if has_bottom then
-			row("    " .. sep)
+			row("  " .. sep)
 		end
 		if profile.id then
 			lbl("ID", tostring(profile.id))
