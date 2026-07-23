@@ -703,7 +703,7 @@ M.register("userinfo", {
 			local group_indent = string.rep(" ", 12)
 			for _, g in ipairs(profile.commonGroups) do
 				local gn = g.title or ("Group " .. g.id)
-				row(group_indent .. "\xe2\x94\x80\xe2\x94\x80 " .. gn)
+				row(group_indent .. "\xe2\x94\x80\xe2\x94\x80 " .. gn, "Comment")
 			end
 			row("")
 		end
