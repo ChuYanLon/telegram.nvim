@@ -582,7 +582,6 @@ M.register("userinfo", {
 			vim.notify("Cannot identify sender", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		vim.notify("Loading profile...", vim.log.levels.INFO, { title = "tg" })
 		local profile = server.get_user_profile(user_id)
 		if not profile then
 			vim.notify("User not found", vim.log.levels.ERROR, { title = "tg" })
@@ -714,14 +713,20 @@ M.register("userinfo", {
 						break
 					end
 				end
-					if start then
-						local end_i = start + 1
-						while end_i <= #buflines and #buflines[end_i] > 0
-								and not buflines[end_i]:match("^─+$") do
-							end_i = end_i + 1
-						end
-						vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
+				if start then
+					local end_i = start + 1
+					while end_i <= #buflines and #buflines[end_i] > 0
+							and not buflines[end_i]:match("^\xe2\x94\x80+$") do
+						end_i = end_i + 1
 					end
+					vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
+					-- Resize window to fit expanded groups
+					if vim.api.nvim_win_is_valid(win) then
+						local new_total = vim.api.nvim_buf_line_count(buf)
+						local new_h = math.min(new_total + 1, 28)
+						vim.api.nvim_win_set_config(win, { height = new_h })
+					end
+				end
 			end, 50)
 		end
 
