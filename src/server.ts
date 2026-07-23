@@ -640,6 +640,42 @@ app.get('/groups-in-common', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.post('/user/block', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const ok = await tgClient.blockUser(Number(userId));
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/user/unblock', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const ok = await tgClient.unblockUser(Number(userId));
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/user/add-contact', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const ok = await tgClient.addContact(Number(userId));
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/user/delete-contact', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const ok = await tgClient.deleteContact(Number(userId));
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageLink', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

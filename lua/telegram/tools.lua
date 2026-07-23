@@ -663,7 +663,7 @@ M.register("userinfo", {
 				if hl then r.hl = hl end
 				table.insert(rows, r)
 			end
-			row("  " .. name .. badge, "TgWinbarTitle")
+			row("  " .. name .. badge .. (profile.isBot and " \xf0\x9f\xa4\x96" or ""), "TgWinbarTitle")
 			if #username > 0 then
 				row("  " .. username, "Comment")
 			end
@@ -683,6 +683,9 @@ M.register("userinfo", {
 			end
 			if has_info then
 				row("")
+			end
+			if profile.canBeCalled then
+				lbl("Call", "available")
 			end
 
 			-- Bio
@@ -720,6 +723,9 @@ M.register("userinfo", {
 				local contact_icon = profile.isContact and "\xe2\x9c\x93" or "\xe2\x9c\x97"
 				lbl("Contact", contact_icon,
 						profile.isContact and "DiagnosticOk" or "DiagnosticError")
+			end
+			if profile.isBlocked then
+				row("  Blocked", "DiagnosticError")
 			end
 			row("")
 
@@ -776,6 +782,35 @@ M.register("userinfo", {
 			end, { buffer = buf, nowait = true })
 			vim.keymap.set("n", "<Esc>", function()
 				pcall(vim.api.nvim_win_close, win, true)
+			end, { buffer = buf, nowait = true })
+			vim.keymap.set("n", "m", function()
+				pcall(vim.api.nvim_win_close, win, true)
+				local chat = require("telegram.server").open_private_chat(profile.id)
+				if chat then
+					require("telegram").open_chat(chat.id, chat.title, chat.type)
+				else
+					vim.notify("Cannot open DM", vim.log.levels.WARN, { title = "tg" })
+				end
+			end, { buffer = buf, nowait = true })
+			vim.keymap.set("n", "b", function()
+				pcall(vim.api.nvim_win_close, win, true)
+				if profile.isBlocked then
+					require("telegram.server").unblock_user(profile.id)
+					vim.notify("Unblocked", vim.log.levels.INFO, { title = "tg" })
+				else
+					require("telegram.server").block_user(profile.id)
+					vim.notify("Blocked", vim.log.levels.INFO, { title = "tg" })
+				end
+			end, { buffer = buf, nowait = true })
+			vim.keymap.set("n", "c", function()
+				pcall(vim.api.nvim_win_close, win, true)
+				if profile.isContact then
+					require("telegram.server").delete_contact(profile.id)
+					vim.notify("Contact deleted", vim.log.levels.INFO, { title = "tg" })
+				else
+					require("telegram.server").add_contact(profile.id)
+					vim.notify("Contact added", vim.log.levels.INFO, { title = "tg" })
+				end
 			end, { buffer = buf, nowait = true })
 		end)
 	end,

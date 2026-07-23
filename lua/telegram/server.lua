@@ -837,6 +837,36 @@ end
 		end)
 	end
 
+-- ─── User Actions ─────────────────────────────────────────────────────
+
+---@param user_id number
+---@return boolean
+function M.block_user(user_id)
+	local res = http_post("/user/block", { userId = user_id })
+	return res and res.ok == true
+end
+
+---@param user_id number
+---@return boolean
+function M.unblock_user(user_id)
+	local res = http_post("/user/unblock", { userId = user_id })
+	return res and res.ok == true
+end
+
+---@param user_id number
+---@return boolean
+function M.add_contact(user_id)
+	local res = http_post("/user/add-contact", { userId = user_id })
+	return res and res.ok == true
+end
+
+---@param user_id number
+---@return boolean
+function M.delete_contact(user_id)
+	local res = http_post("/user/delete-contact", { userId = user_id })
+	return res and res.ok == true
+end
+
 -- ─── Message Link ───────────────────────────────────────────────────────
 
 ---@param chat_id any

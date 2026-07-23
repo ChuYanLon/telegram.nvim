@@ -1416,6 +1416,11 @@ export class TelegramLSPClient {
         isPremium: !!user.is_premium,
         isSupport: !!user.is_support,
         isContact: !!user.is_contact,
+        isBot: user.type?._ === 'userTypeBot',
+        isScam: !!user.is_scam,
+        isFake: !!user.is_fake,
+        isBlocked: !!fullInfo?.block_list,
+        canBeCalled: !!fullInfo?.can_be_called,
         bio: fullInfo?.bio?.text || '',
         groupInCommon: gic,
         status,
@@ -1456,6 +1461,66 @@ export class TelegramLSPClient {
     } catch (e) {
       console.warn('getGroupsInCommon failed:', (e as Error).message);
       return [];
+    }
+  }
+
+  async blockUser(userId: number): Promise<boolean> {
+    try {
+      if (!this._ready) return false;
+      await this.client.invoke({
+        _: 'setMessageSenderBlockList',
+        sender_id: { _: 'messageSenderUser', user_id: userId },
+        block_list: { _: 'blockListMain' },
+      });
+      return true;
+    } catch (e) {
+      console.warn('blockUser failed:', (e as Error).message);
+      return false;
+    }
+  }
+
+  async unblockUser(userId: number): Promise<boolean> {
+    try {
+      if (!this._ready) return false;
+      await this.client.invoke({
+        _: 'setMessageSenderBlockList',
+        sender_id: { _: 'messageSenderUser', user_id: userId },
+        block_list: null,
+      });
+      return true;
+    } catch (e) {
+      console.warn('unblockUser failed:', (e as Error).message);
+      return false;
+    }
+  }
+
+  async addContact(userId: number): Promise<boolean> {
+    try {
+      if (!this._ready) return false;
+      await this.client.invoke({
+        _: 'addContact',
+        user_id: userId,
+        contact: { _: 'importedContact', phone_number: '', first_name: '', last_name: '', vcard: '' },
+        share_phone_number: false,
+      });
+      return true;
+    } catch (e) {
+      console.warn('addContact failed:', (e as Error).message);
+      return false;
+    }
+  }
+
+  async deleteContact(userId: number): Promise<boolean> {
+    try {
+      if (!this._ready) return false;
+      await this.client.invoke({
+        _: 'deleteContacts',
+        user_ids: [userId],
+      });
+      return true;
+    } catch (e) {
+      console.warn('deleteContact failed:', (e as Error).message);
+      return false;
     }
   }
 
