@@ -726,9 +726,7 @@ M.register("userinfo", {
 		-- Window sizing
 		local height = #rows + 2
 		local width = 36
-		local lines = {}
 		for _, r in ipairs(rows) do
-			table.insert(lines, r.text)
 			local w = vim.fn.strdisplaywidth(r.text)
 			if w + 4 > width then
 				width = w + 4
@@ -736,6 +734,17 @@ M.register("userinfo", {
 		end
 		width = math.min(width, 54)
 		height = math.min(height, 28)
+		-- Resize separators to match window width
+		local sep_str = string.rep("\xe2\x94\x80", math.max(8, width - 4))
+		for _, r in ipairs(rows) do
+			if r.hl == "TgDateSeparator" then
+				r.text = "  " .. sep_str
+			end
+		end
+		local lines = {}
+		for _, r in ipairs(rows) do
+			table.insert(lines, r.text)
+		end
 
 		local win = vim.api.nvim_open_win(buf, true, {
 			relative = "editor",
