@@ -470,6 +470,20 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end)
+	set("message_link", function()
+		local target = curr_msg()
+		if not target or not target.id then
+			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local link = server.get_message_link(state.chat_id, target.id)
+		if link then
+			vim.fn.setreg("+", link)
+			vim.notify("Link copied: " .. link, vim.log.levels.INFO, { title = "tg" })
+		else
+			vim.notify("No link available for this message", vim.log.levels.WARN, { title = "tg" })
+		end
+	end)
 	set("copy", function()
 		local target = curr_msg()
 		if not target or not target.text then return end
