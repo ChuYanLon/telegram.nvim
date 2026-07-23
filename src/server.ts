@@ -618,6 +618,19 @@ app.post('/message/reaction/remove', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.get('/user-profile', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) { res.status(400).json({ error: 'userId is required' }); return; }
+    const profile = await tgClient.getUserProfile(Number(userId));
+    if (profile) {
+      res.json(profile);
+    } else {
+      res.status(400).json({ error: 'User not found' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageLink', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

@@ -1375,6 +1375,32 @@ export class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
 
+  async getUserProfile(userId: number): Promise<Record<string, unknown> | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const [user, fullInfo] = await Promise.all([
+        this.client.invoke({ _: 'getUser', user_id: userId }) as Promise<any>,
+        this.client.invoke({ _: 'getUserFullInfo', user_id: userId }).catch(() => null) as Promise<any>,
+      ]);
+      if (!user) return null;
+      return {
+        id: user.id,
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        username: user.usernames?.editable_username || user.usernames?.active_usernames?.[0] || '',
+        phone: user.phone_number || '',
+        isPremium: !!user.is_premium,
+        isSupport: !!user.is_support,
+        isContact: !!user.is_contact,
+        bio: fullInfo?.bio?.text || '',
+        groupInCommon: fullInfo?.group_in_common_count || 0,
+      };
+    } catch (e) {
+      console.warn('getUserProfile failed:', (e as Error).message);
+      return null;
+    }
+  }
+
   async getMessageLink(chatId: number, messageId: number): Promise<string | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     try {
