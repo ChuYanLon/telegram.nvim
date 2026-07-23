@@ -149,7 +149,7 @@ function M.open_editor(title, default_text, callback, context)
 					local lines = vim.api.nvim_buf_get_lines(buf, input_start, -1, false)
 					local text = table.concat(lines, "\n"):gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
 					state.editor_draft = #text > 0 and text or nil
-					if state.chat_id and #text > 0 then
+					if state.chat_id then
 						pcall(server.set_draft, state.chat_id, text)
 					end
 				end
