@@ -749,13 +749,22 @@ M.register("userinfo", {
 					r.text = "  " .. sep_str
 				end
 			end
-			-- Center hint row
+			-- Center hint row with key highlights
 			for _, r in ipairs(rows) do
 				if r.hl == "TgWinbarTitle" and r.text == "" then
 					local hint = "[m] DM  [b] Block  [c] Contact"
 					local hint_w = vim.fn.strdisplaywidth(hint)
 					local pad = math.max(2, math.floor((width - hint_w) / 2))
 					r.text = string.rep(" ", pad) .. hint
+					-- Store key highlight positions: { start_col, end_col, hl_group }
+						local key_colors = { m = "DiagnosticOk", b = "DiagnosticError", c = "DiagnosticInfo" }
+						local keys = {}
+						for off in hint:gmatch("()%[%w%]") do
+							local k = hint:sub(off + 1, off + 1)
+							local hl = key_colors[k] or "TgTitleKey"
+							table.insert(keys, { pad + off - 1, pad + off + 1, hl })
+						end
+					r.key_hls = keys
 				end
 			end
 			local lines = {}
@@ -786,6 +795,11 @@ M.register("userinfo", {
 					end
 				elseif r.hl then
 					pcall(vim.api.nvim_buf_add_highlight, buf, -1, r.hl, i - 1, 0, -1)
+				end
+				if r.key_hls then
+					for _, kh in ipairs(r.key_hls) do
+						pcall(vim.api.nvim_buf_add_highlight, buf, -1, kh[3], i - 1, kh[1], kh[2])
+					end
 				end
 			end
 			vim.keymap.set("n", "q", function()
