@@ -732,7 +732,7 @@ M.register("userinfo", {
 			row("")
 
 			-- Window sizing
-			local height = #rows + 2
+			local height = #rows
 			local width = 36
 			for _, r in ipairs(rows) do
 				local w = vim.fn.strdisplaywidth(r.text)
