@@ -714,13 +714,14 @@ M.register("userinfo", {
 						break
 					end
 				end
-				if start then
-					local end_i = start + 1
-					while end_i <= #buflines and #buflines[end_i] > 0 do
-						end_i = end_i + 1
+					if start then
+						local end_i = start + 1
+						while end_i <= #buflines and #buflines[end_i] > 0
+								and not buflines[end_i]:match("^─+$") do
+							end_i = end_i + 1
+						end
+						vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
 					end
-					vim.api.nvim_buf_set_lines(buf, start, end_i, false, new_lines)
-				end
 			end, 50)
 		end
 
