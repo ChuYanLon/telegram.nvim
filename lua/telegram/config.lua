@@ -31,6 +31,25 @@ M.default_keys = {
 	perms_discard = "<Esc>",
 }
 
+M.key_labels = {
+	input_editor = "open input editor",
+	reply = "reply / jump to original",
+	edit = "edit own message",
+	delete = "delete / revoke",
+	forward = "forward message",
+	pin = "pin / unpin message",
+	refresh = "refresh + jump to bottom",
+	ban = "ban message sender",
+	open_dm = "open DM with message sender",
+	reaction = "react to message",
+	save = "save to Favorites",
+	copy = "copy message text",
+	archive = "archive/unarchive chat",
+	help = "toggle this help",
+	tool_picker = "open tool picker",
+	help_close = "close this help",
+}
+
 M.config = {
 	data_dir = plugin_root,
 	tdlib_path = nil,

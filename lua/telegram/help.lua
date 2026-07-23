@@ -11,32 +11,14 @@ local function close_help()
 	end
 end
 
-local key_actions = {
-	{ key = "input_editor", label = "open input editor" },
-	{ key = "reply", label = "reply / jump to original" },
-	{ key = "edit", label = "edit own message" },
-	{ key = "delete", label = "delete / revoke" },
-	{ key = "forward", label = "forward message" },
-	{ key = "pin", label = "pin / unpin message" },
-	{ key = "refresh", label = "refresh + jump to bottom" },
-	{ key = "ban", label = "ban message sender" },
-	{ key = "open_dm", label = "open DM with message sender" },
-	{ key = "reaction", label = "react to message" },
-	{ key = "save", label = "save to Favorites" },
-	{ key = "copy", label = "copy message text" },
-}
-
-local general_actions = {
-	{ key = "help", label = "toggle this help" },
-	{ key = "tool_picker", label = "open tool picker" },
-	{ key = "help_close", label = "close this help" },
-}
-
-local function key_line(action)
-	local k = config.key(action.key)
+-- Look up label from config.key_labels; if the key is disabled, skip it
+local function key_line(key_name)
+	local k = config.key(key_name)
 	if not k then return nil end
+	local label = config.key_labels[key_name]
+	if not label then return nil end
 	local padding = math.max(1, 11 - (1 + #k))
-	return " " .. k .. string.rep(" ", padding) .. action.label
+	return " " .. k .. string.rep(" ", padding) .. label
 end
 
 function M.show_help()
@@ -48,8 +30,9 @@ function M.show_help()
 	local lines = {}
 
 	table.insert(lines, "-- Messages --")
-	for _, a in ipairs(key_actions) do
-		local l = key_line(a)
+	local msg_keys = { "input_editor", "reply", "edit", "delete", "forward", "pin", "refresh", "ban", "open_dm", "reaction", "save", "copy", "archive" }
+	for _, name in ipairs(msg_keys) do
+		local l = key_line(name)
 		if l then table.insert(lines, l) end
 	end
 
@@ -72,8 +55,8 @@ function M.show_help()
 
 	table.insert(lines, "")
 	table.insert(lines, "-- General --")
-	for _, a in ipairs(general_actions) do
-		local l = key_line(a)
+	for _, name in ipairs({ "help", "tool_picker", "help_close" }) do
+		local l = key_line(name)
 		if l then table.insert(lines, l) end
 	end
 	table.insert(lines, " :Tg        close chat / quit")
