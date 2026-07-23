@@ -751,6 +751,30 @@ function M.get_archived_chats_async(on_ok, on_err)
 	end)
 end
 
+-- ─── Mark Unread ─────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param is_unread boolean
+---@return boolean
+function M.mark_chat_unread(chat_id, is_unread)
+	return http_post("/chat/mark-unread", { chatId = chat_id, isMarkedAsUnread = is_unread }) ~= nil
+end
+
+-- ─── Mute ──────────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param mute_for integer|nil  Seconds to mute (default: forever)
+---@return boolean
+function M.mute_chat(chat_id, mute_for)
+	return http_post("/chat/mute", { chatId = chat_id, muteFor = mute_for }) ~= nil
+end
+
+---@param chat_id any
+---@return boolean
+function M.unmute_chat(chat_id)
+	return http_post("/chat/unmute", { chatId = chat_id }) ~= nil
+end
+
 -- ─── Reactions ──────────────────────────────────────────────────────────
 
 ---@param chat_id any

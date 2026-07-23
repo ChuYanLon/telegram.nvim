@@ -35,6 +35,8 @@ function M.set_groups(groups)
 			last_msg = existing and existing.last_msg,
 			is_saved = g.isSaved or false,
 			is_archived = g.isArchived or false,
+			is_muted = (existing and existing.is_muted) or false,
+			is_marked_unread = (existing and existing.is_marked_unread) or false,
 		}
 		table.insert(new_ids, g.id)
 	end

@@ -586,6 +586,41 @@ local function setup_chat_keymaps()
 		end)
 	end)
 	set("help", help.show_help)
+	set("mark_unread", function()
+		if not state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = state.chat_id
+		local is_unread = state.groups[chat_id] and state.groups[chat_id].is_marked_unread
+		if server.mark_chat_unread(chat_id, not is_unread) then
+			state.groups[chat_id] = state.groups[chat_id] or {}
+			state.groups[chat_id].is_marked_unread = not is_unread
+			vim.notify((is_unread and "Marked as read" or "Marked as unread"), vim.log.levels.INFO, { title = "tg" })
+			vim.cmd("redrawstatus")
+		end
+	end)
+	set("mute", function()
+		if not state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = state.chat_id
+		local is_muted = state.groups[chat_id] and state.groups[chat_id].is_muted
+		if is_muted then
+			if server.unmute_chat(chat_id) then
+				state.groups[chat_id] = state.groups[chat_id] or {}
+				state.groups[chat_id].is_muted = false
+				vim.notify("Unmuted chat", vim.log.levels.INFO, { title = "tg" })
+			end
+		else
+			if server.mute_chat(chat_id) then
+				state.groups[chat_id] = state.groups[chat_id] or {}
+				state.groups[chat_id].is_muted = true
+				vim.notify("Muted chat (forever)", vim.log.levels.INFO, { title = "tg" })
+			end
+		end
+	end)
 end
 
 local function show_group_selector()
@@ -598,6 +633,7 @@ end
 
 function M.open_chat(chat_id, chat_title, chat_type)
 	chat_title = chat_title or "Chat"
+	state.current_chat_archived = false
 	if
 		state.chat_id == chat_id
 		and state.buf

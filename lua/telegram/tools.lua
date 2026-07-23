@@ -328,6 +328,51 @@ M.register("archive", {
 	end,
 })
 
+
+M.register("markunread", {
+	description = "Mark current chat as unread / read",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		local is_unread = ui.state.groups[chat_id] and ui.state.groups[chat_id].is_marked_unread
+		if server.mark_chat_unread(chat_id, not is_unread) then
+			ui.state.groups[chat_id] = ui.state.groups[chat_id] or {}
+			ui.state.groups[chat_id].is_marked_unread = not is_unread
+			vim.notify((is_unread and "Marked as read" or "Marked as unread"), vim.log.levels.INFO, { title = "tg" })
+			vim.cmd("redrawstatus")
+		end
+	end,
+})
+
+M.register("mute", {
+	description = "Mute / unmute current chat",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		local is_muted = ui.state.groups[chat_id] and ui.state.groups[chat_id].is_muted
+		if is_muted then
+			if server.unmute_chat(chat_id) then
+				ui.state.groups[chat_id] = ui.state.groups[chat_id] or {}
+				ui.state.groups[chat_id].is_muted = false
+				vim.notify("Unmuted chat", vim.log.levels.INFO, { title = "tg" })
+			end
+		else
+			if server.mute_chat(chat_id) then
+				ui.state.groups[chat_id] = ui.state.groups[chat_id] or {}
+				ui.state.groups[chat_id].is_muted = true
+				vim.notify("Muted chat (forever)", vim.log.levels.INFO, { title = "tg" })
+			end
+		end
+	end,
+})
 M.register("showarchived", {
 	description = "Toggle archived chats in picker",
 	callback = function()

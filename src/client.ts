@@ -630,6 +630,57 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
+  async toggleChatIsMarkedAsUnread(chatId: number, isMarkedAsUnread: boolean): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'toggleChatIsMarkedAsUnread',
+      chat_id: chatId,
+      is_marked_as_unread: isMarkedAsUnread,
+    });
+    return { ok: true };
+  }
+
+  async muteChat(chatId: number, muteFor: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatNotificationSettings',
+      chat_id: chatId,
+      notification_settings: {
+        _: 'chatNotificationSettings',
+        use_default_mute_for: false,
+        mute_for: muteFor,
+        use_default_sound: true,
+        use_default_show_preview: true,
+        use_default_mute_stories: true,
+        use_default_story_sound: true,
+        use_default_show_story_poster: true,
+        use_default_disable_pinned_message_notifications: true,
+        use_default_disable_mention_notifications: true,
+      },
+    });
+    return { ok: true };
+  }
+
+  async unmuteChat(chatId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setChatNotificationSettings',
+      chat_id: chatId,
+      notification_settings: {
+        _: 'chatNotificationSettings',
+        use_default_mute_for: true,
+        use_default_sound: true,
+        use_default_show_preview: true,
+        use_default_mute_stories: true,
+        use_default_story_sound: true,
+        use_default_show_story_poster: true,
+        use_default_disable_pinned_message_notifications: true,
+        use_default_disable_mention_notifications: true,
+      },
+    });
+    return { ok: true };
+  }
+
   async viewMessages(chatId: number, messageId?: number) {
     if (!this._ready) return;
     try {

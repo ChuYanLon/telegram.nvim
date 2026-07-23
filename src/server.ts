@@ -523,6 +523,37 @@ app.post('/chat/unarchive', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Mark Unread ─────────────────────────────────────────────────
+
+app.post('/chat/mark-unread', async (req, res) => {
+  try {
+    const { chatId, isMarkedAsUnread } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.toggleChatIsMarkedAsUnread(Number(chatId), isMarkedAsUnread !== false);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Mute ────────────────────────────────────────────────────────────
+
+app.post('/chat/mute', async (req, res) => {
+  try {
+    const { chatId, muteFor } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.muteChat(Number(chatId), muteFor ? Number(muteFor) : 2147483647);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/unmute', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.unmuteChat(Number(chatId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 // ─── Reactions ──────────────────────────────────────────────────────
 
 app.post('/message/reaction/add', async (req, res) => {
