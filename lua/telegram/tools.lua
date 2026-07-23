@@ -497,10 +497,9 @@ M.register("translate", {
 			server.translate_text_async(msg.text, lang, function(data)
 				if data and data.text and #data.text > 0 then
 					vim.notify(data.text, vim.log.levels.INFO, { title = "Translation" })
-				else
-					local reason = data and data.error or "unknown error"
-					vim.notify("Translation failed: " .. reason, vim.log.levels.ERROR, { title = "tg" })
 				end
+			end, function(err)
+				vim.notify("Translation error: " .. (err or "unknown"), vim.log.levels.ERROR, { title = "tg" })
 			end)
 		end)
 	end,
