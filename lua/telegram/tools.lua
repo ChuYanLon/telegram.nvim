@@ -729,7 +729,6 @@ M.register("userinfo", {
 			end
 			row("")
 			row("", "TgWinbarTitle")
-			row("")
 
 			-- Window sizing
 			local height = #rows
