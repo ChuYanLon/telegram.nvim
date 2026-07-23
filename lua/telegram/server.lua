@@ -794,14 +794,8 @@ end
 ---@param text string
 ---@param to_lang string|nil  Language code (default "en")
 ---@param on_ok fun(data: table)|nil
-function M.translate_text_async(text, to_lang, on_ok, on_err)
-	request_async({ url = base_url() .. "/translate", body = vim.json.encode({ text = text, toLanguageCode = to_lang or "en" }) }, function(data, err)
-		if err then
-			if on_err then vim.schedule(function() on_err(err) end) end
-		elseif data then
-			vim.schedule(function() if on_ok then on_ok(data) end end)
-		end
-	end)
+function M.translate_text(text, to_lang)
+	return http_post("/translate", { text = text, toLanguageCode = to_lang or "en" })
 end
 
 -- ─── Draft ────────────────────────────────────────────────────────────

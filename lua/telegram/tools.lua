@@ -494,13 +494,13 @@ M.register("translate", {
 		vim.ui.input({ prompt = "Translate to (lang code, e.g. en, zh): ", default = "en" }, function(lang)
 			if not lang or #lang == 0 then return end
 			vim.notify("Translating...", vim.log.levels.INFO, { title = "tg" })
-			server.translate_text_async(msg.text, lang, function(data)
-				if data and data.text and #data.text > 0 then
-					vim.notify(data.text, vim.log.levels.INFO, { title = "Translation" })
-				end
-			end, function(err)
-				vim.notify("Translation error: " .. (err or "unknown"), vim.log.levels.ERROR, { title = "tg" })
-			end)
+			local data = server.translate_text(msg.text, lang)
+			if data and data.text and #data.text > 0 then
+				vim.notify(data.text, vim.log.levels.INFO, { title = "Translation" })
+			else
+				local reason = (data and data.error) or "unknown error"
+				vim.notify("Translation error: " .. reason, vim.log.levels.ERROR, { title = "tg" })
+			end
 		end)
 	end,
 })
