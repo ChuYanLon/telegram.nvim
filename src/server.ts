@@ -618,6 +618,19 @@ app.post('/message/reaction/remove', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.get('/messageLink', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.query;
+    if (!chatId || !messageId) { res.status(400).json({ error: 'chatId and messageId are required' }); return; }
+    const link = await tgClient.getMessageLink(Number(chatId), Number(messageId));
+    if (link) {
+      res.json({ link });
+    } else {
+      res.status(400).json({ error: 'Failed to generate link' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageMedia', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

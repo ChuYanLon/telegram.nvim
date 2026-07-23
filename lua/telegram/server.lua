@@ -809,6 +809,17 @@ function M.set_draft(chat_id, text)
 	if res.error then return nil, res.error end
 	return res.ok ~= false
 end
+-- ─── Message Link ───────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param message_id any
+---@return string|nil
+function M.get_message_link(chat_id, message_id)
+	local res = http_get("/messageLink?chatId=" .. chat_id .. "&messageId=" .. message_id)
+	if res and res.link then return res.link end
+	return nil
+end
+
 -- ─── Reactions ──────────────────────────────────────────────────────────
 
 ---@param chat_id any

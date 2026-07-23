@@ -538,6 +538,29 @@ M.register("draft", {
 		end)
 	end,
 })
+
+M.register("messagelink", {
+	description = "Copy shareable link of message under cursor",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.id ~= nil
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		if not msg or not msg.id then
+			vim.notify("No message at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		if not ui.state.chat_id then return end
+		local link = server.get_message_link(ui.state.chat_id, msg.id)
+		if link then
+			vim.fn.setreg("+", link)
+			vim.notify("Link copied: " .. link, vim.log.levels.INFO, { title = "tg" })
+		else
+			vim.notify("Failed to generate message link", vim.log.levels.WARN, { title = "tg" })
+		end
+	end,
+})
 M.register("showarchived", {
 	description = "Toggle archived chats in picker",
 	callback = function()

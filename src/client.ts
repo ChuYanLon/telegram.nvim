@@ -1375,6 +1375,26 @@ export class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
 
+  async getMessageLink(chatId: number, messageId: number): Promise<string | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'getMessageLink',
+        chat_id: chatId,
+        message_id: messageId,
+        media_timestamp: 0,
+        for_album: false,
+        in_message_thread: false,
+        checklist_task_id: 0,
+        poll_option_id: '',
+      }) as { link?: string };
+      return result.link || null;
+    } catch (e) {
+      console.warn('getMessageLink failed:', (e as Error).message);
+      return null;
+    }
+  }
+
   async getMessageMedia(chatId: number, messageId: number): Promise<{ path: string; mediaPath?: string } | null> {
     try {
       const msg = await this.client.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage;
