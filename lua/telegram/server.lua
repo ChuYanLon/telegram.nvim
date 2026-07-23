@@ -131,7 +131,7 @@ end
 ---@param opts { url: string, body?: string }
 ---@param callback fun(data: table|nil, err: string|nil)
 local function request_curl(opts, callback)
-	local args = { "curl", "-s", "--noproxy", "*", "--connect-timeout", "3", "--max-time", "15" }
+	local args = { "curl", "-s", "--noproxy", "*", "--fail-with-body", "--connect-timeout", "3", "--max-time", "15" }
 	if opts.body then
 		table.insert(args, "-X"); table.insert(args, "POST")
 		table.insert(args, "-H"); table.insert(args, "Content-Type: application/json")
@@ -143,7 +143,18 @@ local function request_curl(opts, callback)
 		stdout_buffered = true,
 		on_stdout = function(_, data) stdout = data end,
 		on_exit = function(_, code)
-			if code ~= 0 then callback(nil, "curl exit " .. code) return end
+			if code ~= 0 then
+				local body = table.concat(stdout)
+				if #body > 0 then
+					local ok, data = pcall(vim.json.decode, body)
+					if ok and type(data) == "table" and data.error then
+						callback(nil, data.error)
+						return
+					end
+				end
+				callback(nil, "curl exit " .. code)
+				return
+			end
 			local ok, data = pcall(vim.json.decode, table.concat(stdout))
 			if not ok then callback(nil, "Invalid JSON response") return end
 			if type(data) == "table" and data.error then callback(nil, data.error) return end
@@ -882,15 +893,45 @@ end
 ---@param callback fun(info: table|nil, err: string|nil)
 function M.get_message_link_info_async(url, callback)
 	local encoded = vim.json.encode({ url = url })
-	request_async({ url = base_url() .. "/messageLinkInfo", body = encoded }, function(data, err)
-		vim.schedule(function()
-			if err or not data or not data.chat_id or not data.message_id then
-				callback(nil, err or "Invalid response")
-			else
-				callback(data)
-			end
-		end)
-	end)
+	local curl_args = {
+		"curl", "-s", "--noproxy", "*", "--fail-with-body",
+		"--connect-timeout", "3", "--max-time", "10",
+		"-X", "POST",
+		"-H", "Content-Type: application/json",
+		"-d", encoded,
+		base_url() .. "/messageLinkInfo",
+	}
+	local stdout = {}
+	vim.fn.jobstart(curl_args, {
+		stdout_buffered = true,
+		on_stdout = function(_, data) stdout = data end,
+		on_exit = function(_, code)
+			vim.schedule(function()
+				local body = table.concat(stdout)
+				if code ~= 0 then
+					if #body > 0 then
+						local ok, d = pcall(vim.json.decode, body)
+						if ok and type(d) == "table" and d.error then
+							callback(nil, d.error)
+							return
+						end
+					end
+					callback(nil, "HTTP error " .. code)
+					return
+				end
+				local ok, d = pcall(vim.json.decode, body)
+				if not ok or type(d) ~= "table" then
+					callback(nil, "Invalid response")
+					return
+				end
+				if d.chat_id and d.message_id then
+					callback(d)
+				else
+					callback(nil, d.error or "Invalid response")
+				end
+			end)
+		end,
+	})
 end
 
 -- ─── Reactions ──────────────────────────────────────────────────────────
