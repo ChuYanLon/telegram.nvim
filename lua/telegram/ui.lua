@@ -996,6 +996,9 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			state.description = chat_info.description or ""
 			state.default_restricted = chat_info.defaultRestricted or false
 			groups.refresh_pinned_message(cid, chat_info.pinnedMessageId)
+			if chat_info.draftText and #chat_info.draftText > 0 then
+				state.editor_draft = chat_info.draftText
+			end
 		end
 		check_done()
 	end)

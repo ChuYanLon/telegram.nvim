@@ -607,6 +607,15 @@ export class TelegramLSPClient {
       defaultRestricted,
       defaultPermissions,
       pinnedMessageId: pinnedId,
+      draftText: (() => {
+        try {
+          const dm = (chat as any).draft_message;
+          if (dm && dm.content && dm.content._ === 'draftMessageContentText') {
+            return dm.content.text?.text || '';
+          }
+        } catch {}
+        return '';
+      })(),
     };
   }
 
