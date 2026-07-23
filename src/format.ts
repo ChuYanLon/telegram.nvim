@@ -32,6 +32,7 @@ export function extractText(content: { _: string; text?: { text: string }; capti
       case 'textEntityTypePre':
       case 'textEntityTypePreCode':     before = '```' + (e.type.language || '') + '\n'; after = '\n```'; break;
       case 'textEntityTypeStrikethrough': before = '~~'; after = '~~'; break;
+      case 'textEntityTypeSpoiler': before = '||'; after = '||'; break;
       case 'textEntityTypeTextUrl':     before = '['; after = '](' + (e.type.url || '') + ')'; break;
       default: continue;
     }

@@ -788,6 +788,26 @@ function M.unmute_chat(chat_id)
 	return http_post("/chat/unmute", { chatId = chat_id }) ~= nil
 end
 
+
+-- ─── Translation ───────────────────────────────────────────────────
+
+---@param text string
+---@param to_lang string|nil  Language code (default "en")
+---@param on_ok fun(data: table)|nil
+function M.translate_text_async(text, to_lang, on_ok)
+	request_async({ url = base_url() .. "/translate", body = vim.json.encode({ text = text, toLanguageCode = to_lang or "en" }) }, function(data, err)
+		if not err and data then vim.schedule(function() if on_ok then on_ok(data) end end) end
+	end)
+end
+
+-- ─── Draft ────────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param text string  Empty string to clear draft
+---@return boolean
+function M.set_draft(chat_id, text)
+	return http_post("/chat/draft", { chatId = chat_id, text = text or "" }) ~= nil
+end
 -- ─── Reactions ──────────────────────────────────────────────────────────
 
 ---@param chat_id any

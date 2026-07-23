@@ -478,6 +478,60 @@ M.register("dm", {
 		end, items)
 	end,
 })
+
+M.register("translate", {
+	description = "Translate message under cursor",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.text and #t.text > 0
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		if not msg or not msg.text or #msg.text == 0 then
+			vim.notify("No text at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.ui.input({ prompt = "Translate to (lang code, e.g. en, zh): ", default = "en" }, function(lang)
+			if not lang or #lang == 0 then return end
+			vim.notify("Translating...", vim.log.levels.INFO, { title = "tg" })
+			server.translate_text_async(msg.text, lang, function(data)
+				if data and data.text then
+					vim.notify(data.text, vim.log.levels.INFO, { title = "Translation" })
+				else
+					vim.notify("Translation failed", vim.log.levels.ERROR, { title = "tg" })
+				end
+			end)
+		end)
+	end,
+})
+
+M.register("draft", {
+	description = "Save draft to server / clear draft",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		local draft = ui.state.editor_draft or ""
+		local has_draft = #draft > 0
+		local choices = has_draft and { "Save draft to server", "Clear server draft", "Cancel" } or { "Cancel" }
+		vim.ui.select(choices, { prompt = has_draft and "Draft: " .. draft:sub(1, 40) or "No draft" }, function(choice)
+			if not choice or choice == "Cancel" then return end
+			if choice:find("Save") then
+				if server.set_draft(chat_id, draft) then
+					vim.notify("Draft saved to server", vim.log.levels.INFO, { title = "tg" })
+				end
+			elseif choice:find("Clear") then
+				if server.set_draft(chat_id, "") then
+					ui.state.editor_draft = nil
+					vim.notify("Draft cleared", vim.log.levels.INFO, { title = "tg" })
+				end
+			end
+		end)
+	end,
+})
 M.register("showarchived", {
 	description = "Toggle archived chats in picker",
 	callback = function()

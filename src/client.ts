@@ -681,6 +681,49 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
+  async translateText(text: string, toLanguageCode: string): Promise<string | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'translateText',
+        text: { _: 'formattedText', text, entities: [] },
+        to_language_code: toLanguageCode,
+        tone: '',
+      }) as { text?: string };
+      return result.text || null;
+    } catch (e) {
+      console.warn('translateText failed:', (e as Error).message);
+      return null;
+    }
+  }
+
+  async setChatDraftMessage(chatId: number, text: string): Promise<boolean> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      await this.client.invoke({
+        _: 'setChatDraftMessage',
+        chat_id: chatId,
+        topic_id: 0,
+        draft_message: text.length > 0 ? {
+          _: 'draftMessage',
+          reply_to: null,
+          date: Math.floor(Date.now() / 1000),
+          content: {
+            _: 'draftMessageContentText',
+            text: { _: 'formattedText', text, entities: [] },
+            link_preview_options: { _: 'linkPreviewOptions', is_disabled: true, url: '', prefer_small_media: false, prefer_large_media: false, show_above_text: false },
+          },
+          effect_id: 0,
+          suggested_post_info: null,
+        } : null,
+      });
+      return true;
+    } catch (e) {
+      console.warn('setChatDraftMessage failed:', (e as Error).message);
+      return false;
+    }
+  }
+
   async viewMessages(chatId: number, messageId?: number) {
     if (!this._ready) return;
     try {

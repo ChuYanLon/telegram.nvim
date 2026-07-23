@@ -14,6 +14,9 @@ function M.close_editor(save_draft)
 		local lines = vim.api.nvim_buf_get_lines(editor_buf, editor_input_start or 0, -1, false)
 		local text = table.concat(lines, "\n"):gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
 		state.editor_draft = #text > 0 and text or nil
+		if state.chat_id and #text > 0 then
+			pcall(server.set_draft, state.chat_id, text)
+		end
 	end
 	if editor_win and vim.api.nvim_win_is_valid(editor_win) then
 		pcall(vim.api.nvim_win_close, editor_win, true)
@@ -120,6 +123,9 @@ function M.open_editor(title, default_text, callback, context)
 				close()
 				if #text > 0 then
 					callback(text)
+					if state.chat_id then
+						pcall(server.set_draft, state.chat_id, "")
+					end
 				end
 			end, { buffer = buf, nowait = true })
 			vim.keymap.set("i", "<C-s>", function()
@@ -128,6 +134,9 @@ function M.open_editor(title, default_text, callback, context)
 				close()
 				if #text > 0 then
 					callback(text)
+					if state.chat_id then
+						pcall(server.set_draft, state.chat_id, "")
+					end
 				end
 			end, { buffer = buf, nowait = true })
 		end
@@ -140,6 +149,9 @@ function M.open_editor(title, default_text, callback, context)
 					local lines = vim.api.nvim_buf_get_lines(buf, input_start, -1, false)
 					local text = table.concat(lines, "\n"):gsub("^[\n ]+", ""):gsub("[\n ]+$", "")
 					state.editor_draft = #text > 0 and text or nil
+					if state.chat_id and #text > 0 then
+						pcall(server.set_draft, state.chat_id, text)
+					end
 				end
 				close()
 				callback(nil)

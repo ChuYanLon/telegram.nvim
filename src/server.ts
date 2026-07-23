@@ -558,6 +558,32 @@ app.post('/chat/unmute', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Translation ──────────────────────────────────────────────
+
+app.post('/translate', async (req, res) => {
+  try {
+    const { text, toLanguageCode } = req.body;
+    if (!text) { res.status(400).json({ error: 'text is required' }); return; }
+    const result = await tgClient.translateText(text, toLanguageCode || 'en');
+    if (result) {
+      res.json({ text: result });
+    } else {
+      res.status(400).json({ error: 'Translation failed' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Draft ──────────────────────────────────────────────────────────────
+
+app.post('/chat/draft', async (req, res) => {
+  try {
+    const { chatId, text } = req.body;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const ok = await tgClient.setChatDraftMessage(Number(chatId), text || '');
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 // ─── Reactions ──────────────────────────────────────────────────────
 
 app.post('/message/reaction/add', async (req, res) => {
