@@ -514,29 +514,22 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async forwardWithComment(fromChatId: number, messageId: number, toChatId: number, comment: string): Promise<FormattedMessage | null> {
+  async forwardWithReply(fromChatId: number, messageId: number, toChatId: number): Promise<{ ok: boolean }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const formatted = await this._parseMD(comment);
-    const result = await this.client.invoke({
-      _: 'sendMessage',
+    let messageIds = [messageId];
+    try {
+      const msg = await this.client.invoke({ _: 'getMessage', chat_id: fromChatId, message_id: messageId }) as { reply_to?: { message_id?: number } };
+      if (msg.reply_to?.message_id) {
+        messageIds = [msg.reply_to.message_id, messageId];
+      }
+    } catch {}
+    await this.client.invoke({
+      _: 'forwardMessages',
+      from_chat_id: fromChatId,
+      message_ids: messageIds,
       chat_id: toChatId,
-      input_message_content: {
-        _: 'inputMessageForwarded',
-        from_chat_id: fromChatId,
-        message_id: messageId,
-        in_game_share: false,
-        replace_video_start_timestamp: false,
-        new_video_start_timestamp: 0,
-        copy_options: {
-          _: 'messageCopyOptions',
-          send_copy: true,
-          replace_caption: true,
-          new_caption: formatted,
-          new_show_caption_above_media: false,
-        },
-      },
-    }) as RawTdMessage;
-    return this.formatter.format(result);
+    });
+    return { ok: true };
   }
 
   async pinMessage(chatId: number, messageId: number): Promise<{ ok: boolean }> {

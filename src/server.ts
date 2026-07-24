@@ -321,15 +321,15 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
-app.post('/forwardWithComment', async (req, res) => {
+app.post('/forwardWithReply', async (req, res) => {
   try {
-    const { fromChatId, messageId, toChatId, comment } = req.body;
-    if (!fromChatId || !messageId || !toChatId || !comment) {
-      res.status(400).json({ error: 'fromChatId, messageId, toChatId and comment are required' });
+    const { fromChatId, messageId, toChatId } = req.body;
+    if (!fromChatId || !messageId || !toChatId) {
+      res.status(400).json({ error: 'fromChatId, messageId and toChatId are required' });
       return;
     }
-    const msg = await tgClient.forwardWithComment(Number(fromChatId), Number(messageId), Number(toChatId), comment);
-    res.json({ ok: true, message: msg });
+    const result = await tgClient.forwardWithReply(Number(fromChatId), Number(messageId), Number(toChatId));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
