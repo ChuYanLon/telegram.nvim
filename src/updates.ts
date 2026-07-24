@@ -547,11 +547,11 @@ export class UpdateDispatcher {
   async handleChatFoldersUpdate(update: TdUpdate) {
     const broadcast = this.getBroadcast();
     if (typeof broadcast !== 'function') return;
-    const rawFolders = update.chat_folders as { id: number; name: { text: string }; is_shareable: boolean }[] | undefined;
+    const rawFolders = update.chat_folders as { id: number; name: { text: { text: string } }; is_shareable: boolean }[] | undefined;
     if (!rawFolders) return;
     const folders = rawFolders.map(f => ({
       id: f.id,
-      name: f.name?.text || 'Folder',
+      name: f.name?.text?.text || 'Folder',
       is_shareable: f.is_shareable,
     }));
     // Cache in global so HTTP endpoint can serve it
