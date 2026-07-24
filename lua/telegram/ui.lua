@@ -1117,7 +1117,10 @@ end
 
 function M.destroy_chat()
 	if state._title_update_timer then
-		vim.fn.timer_stop(state._title_update_timer)
+		local ok = pcall(vim.fn.timer_stop, state._title_update_timer)
+		if not ok then
+			pcall(state._title_update_timer.close, state._title_update_timer)
+		end
 		state._title_update_timer = nil
 	end
 	state.title_dirty = false
