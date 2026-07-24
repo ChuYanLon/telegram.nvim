@@ -651,6 +651,13 @@ app.get('/groups-in-common', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+app.get('/user/blocked', async (_req, res) => {
+  try {
+    const users = await tgClient.getBlockedUsers();
+    res.json({ users });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.post('/user/block', async (req, res) => {
   try {
     const { userId } = req.body;

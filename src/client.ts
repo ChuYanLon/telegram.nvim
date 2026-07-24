@@ -1507,6 +1507,32 @@ export class TelegramLSPClient {
     }
   }
 
+  async getBlockedUsers(): Promise<{ id: number; name: string }[]> {
+    if (!this._ready) return [];
+    try {
+      const result = await this.client.invoke({
+        _: 'getBlockedMessageSenders',
+        block_list: { _: 'blockListMain' },
+        offset: 0,
+        limit: 100,
+      }) as { senders?: { _: string; user_id?: number; chat_id?: number }[] };
+      if (!result?.senders) return [];
+      const users = await Promise.all(result.senders.map(async (s) => {
+        const uid = s.user_id || 0;
+        if (!uid) return null;
+        try {
+          const user = await this.client.invoke({ _: 'getUser', user_id: uid }) as { first_name?: string; last_name?: string };
+          const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${uid}`;
+          return { id: uid, name };
+        } catch { return { id: uid, name: `user_${uid}` }; }
+      }));
+      return users.filter(Boolean) as { id: number; name: string }[];
+    } catch (e) {
+      console.warn('getBlockedUsers failed:', (e as Error).message);
+      return [];
+    }
+  }
+
   async addContact(userId: number): Promise<boolean> {
     try {
       if (!this._ready) return false;

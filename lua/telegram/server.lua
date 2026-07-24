@@ -875,6 +875,13 @@ function M.unblock_user(user_id)
 	return res and res.ok == true
 end
 
+---@return { id: number, name: string }[]|nil
+function M.get_blocked_users()
+	local res = http_get("/user/blocked")
+	if res and res.users then return res.users end
+	return nil
+end
+
 ---@param user_id number
 ---@return boolean
 function M.add_contact(user_id)
