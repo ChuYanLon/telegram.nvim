@@ -33,6 +33,7 @@ function M.set_groups(groups)
 			online_count = (existing_online and existing_online > 0 and existing_online) or g.onlineMemberCount or 0,
 			user_id = g.userId,
 			last_msg = existing and existing.last_msg,
+			is_pinned = g.isPinned or false,
 			is_saved = g.isSaved or false,
 			is_archived = g.isArchived or false,
 			is_muted = (existing and existing.is_muted) or false,

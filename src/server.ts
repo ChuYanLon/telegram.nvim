@@ -527,6 +527,17 @@ app.post('/chat/unarchive', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Pin Chat ────────────────────────────────────────────────────────
+
+app.post('/chat/pin-toggle', async (req, res) => {
+  try {
+    const { chatId, isPinned } = req.body;
+    if (chatId === undefined || chatId === null) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.toggleChatIsPinned(Number(chatId), isPinned !== false);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 // ─── Mark Unread ─────────────────────────────────────────────────
 
 app.post('/chat/mark-unread', async (req, res) => {

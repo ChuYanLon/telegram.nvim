@@ -347,6 +347,26 @@ M.register("archive", {
 })
 
 
+M.register("pinchat", {
+	description = "Pin / unpin current chat",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local chat_id = ui.state.chat_id
+		local g = ui.state.groups[chat_id]
+		local is_pinned = g and g.is_pinned
+		if server.toggle_pin_chat(chat_id, not is_pinned) then
+			ui.state.groups[chat_id] = ui.state.groups[chat_id] or {}
+			ui.state.groups[chat_id].is_pinned = not is_pinned
+			vim.notify((is_pinned and "Unpinned" or "Pinned") .. " chat", vim.log.levels.INFO, { title = "tg" })
+			vim.cmd("redrawstatus")
+		end
+	end,
+})
+
 M.register("markunread", {
 	description = "Mark current chat as unread / read",
 	condition = function() return ui.state.chat_id ~= nil end,
@@ -881,6 +901,7 @@ M.register("showarchived", {
 						title = g.title,
 						type = g.type or "group",
 						unread = g.unreadCount or 0,
+						is_pinned = g.isPinned or false,
 						is_saved = g.isSaved or false,
 						is_archived = true,
 					})

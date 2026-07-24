@@ -119,13 +119,14 @@ export interface RawTdChat {
   last_read_inbox_message_id?: number;
   online_member_count?: number;
   last_message?: RawTdMessage | null;
-  positions?: { list: { _: string }; order: string }[];
+  positions?: { list: { _: string }; order: string; is_pinned?: boolean }[];
   permissions?: Record<string, unknown>;
 }
 
 export interface GroupInfo {
   id: number;
   title: string;
+  isPinned?: boolean;
   unreadCount: number;
   unreadMentionCount: number;
   onlineMemberCount: number;
@@ -138,6 +139,7 @@ export interface GroupInfo {
 export interface ChatInfo {
   id: number;
   title: string;
+  isPinned?: boolean;
   type: 'group' | 'private' | 'channel';
   unreadCount: number;
   unreadMentionCount: number;

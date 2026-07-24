@@ -776,6 +776,16 @@ function M.get_archived_chats_async(on_ok, on_err)
 	end)
 end
 
+-- ─── Pin Chat ───────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param pin boolean  true to pin, false to unpin
+---@return boolean
+function M.toggle_pin_chat(chat_id, pin)
+	local res = http_post("/chat/pin-toggle", { chatId = chat_id, isPinned = pin })
+	return res and res.ok == true
+end
+
 -- ─── Mark Unread ─────────────────────────────────────────────────────
 
 ---@param chat_id any

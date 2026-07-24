@@ -216,6 +216,7 @@ export class TelegramLSPClient {
     const group: GroupInfo = {
       id: chat.id,
       title: chat.title,
+      isPinned: (chat.positions || []).some(p => p.is_pinned),
       unreadCount: chat.unread_count || 0,
       unreadMentionCount: chat.unread_mention_count || 0,
       onlineMemberCount: chat.online_member_count || 0,
@@ -256,6 +257,7 @@ export class TelegramLSPClient {
     const info: ChatInfo = {
       id: chat.id,
       title: chat.title,
+      isPinned: (chat.positions || []).some(p => p.is_pinned),
       type: 'private',
       unreadCount: chat.unread_count || 0,
       unreadMentionCount: chat.unread_mention_count || 0,
@@ -617,6 +619,17 @@ export class TelegramLSPClient {
         return '';
       })(),
     };
+  }
+
+  async toggleChatIsPinned(chatId: number, isPinned: boolean): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'toggleChatIsPinned',
+      chat_list: { _: 'chatListMain' },
+      chat_id: chatId,
+      is_pinned: isPinned,
+    });
+    return { ok: true };
   }
 
   async archiveChat(chatId: number): Promise<{ ok: boolean }> {
