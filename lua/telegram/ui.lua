@@ -59,8 +59,6 @@ local function apply_highlights()
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgUnreadDivider", l, 0, -1)
 		elseif line:find("^  ↳ ") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgService", l, 0, -1)
-		elseif line == "[Message deleted]" then
-			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgPlaceholder", l, 0, -1)
 		end
 	end
 	local target_id = state.reply_to
