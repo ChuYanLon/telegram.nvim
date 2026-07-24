@@ -508,12 +508,25 @@ local function setup_chat_keymaps()
 			state.forward_target = nil
 			apply_highlights()
 			if not item then return end
-			local ok = server.forward_messages(state.chat_id, target.id, item.id)
-			if ok then
-				vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
-			else
-				vim.notify("Failed to forward message", vim.log.levels.WARN, { title = "tg" })
-			end
+			local ctx = target.sender and ("[Forward] " .. target.sender.name .. ": " .. (target.text or "")) or nil
+			if ctx then ctx = ctx:gsub("\n", " "):sub(1, 70) end
+			editor.open_editor("Forward", "", function(comment)
+				if not comment or #comment == 0 then
+					local ok = server.forward_messages(state.chat_id, target.id, item.id)
+					if ok then
+						vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
+					else
+						vim.notify("Failed to forward message", vim.log.levels.WARN, { title = "tg" })
+					end
+				else
+					local res = server.forward_with_comment(state.chat_id, target.id, item.id, comment)
+					if res then
+						vim.notify("Forwarded to " .. item.title, vim.log.levels.INFO, { title = "tg" })
+					else
+						vim.notify("Failed to forward message", vim.log.levels.WARN, { title = "tg" })
+					end
+				end
+			end, ctx)
 		end)
 	end)
 	set("pin", function()

@@ -321,6 +321,20 @@ app.post('/forwardMessages', async (req, res) => {
   }
 });
 
+app.post('/forwardWithComment', async (req, res) => {
+  try {
+    const { fromChatId, messageId, toChatId, comment } = req.body;
+    if (!fromChatId || !messageId || !toChatId || !comment) {
+      res.status(400).json({ error: 'fromChatId, messageId, toChatId and comment are required' });
+      return;
+    }
+    const msg = await tgClient.forwardWithComment(Number(fromChatId), Number(messageId), Number(toChatId), comment);
+    res.json({ ok: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.post('/pinMessage', async (req, res) => {
   try {
     const { chatId, messageId } = req.body;
