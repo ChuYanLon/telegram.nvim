@@ -135,11 +135,11 @@ M.register("search", {
 						return item.label
 					end,
 				}, function(choice)
-				if not choice then return end
-				local ok = require("telegram.server").unblock_user(choice.id)
-				if ok then
-					vim.notify("Unblocked " .. choice.name, vim.log.levels.INFO, { title = "tg" })
-				end
+					if choice then
+						ui.jump_to_message(choice.id)
+					end
+				end)
+				end, function()
 				vim.notify("Search failed", vim.log.levels.ERROR, { title = "tg" })
 			end)
 		end)
@@ -878,6 +878,33 @@ M.register("userinfo", {
 		end)
 	end,
 })
+
+M.register("blocked", {
+	description = "List and manage blocked users",
+	callback = function()
+		vim.notify("Loading blocked users...", vim.log.levels.INFO, { title = "tg" })
+		local users = require("telegram.server").get_blocked_users()
+		if not users or #users == 0 then
+			vim.notify("No blocked users", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		local items = {}
+		for _, u in ipairs(users) do
+			table.insert(items, { id = u.id, name = u.name, label = u.name .. "  [unblock]" })
+		end
+		vim.ui.select(items, {
+			prompt = "Blocked users (select to unblock)",
+			format_item = function(item) return item.label end,
+		}, function(choice)
+			if not choice then return end
+			local ok = require("telegram.server").unblock_user(choice.id)
+			if ok then
+				vim.notify("Unblocked " .. choice.name, vim.log.levels.INFO, { title = "tg" })
+			end
+		end)
+	end,
+})
+
 
 M.register("blocked", {
 	description = "List and manage blocked users",
