@@ -990,43 +990,20 @@ M.register("folders", {
 				vim.notify("No chat folders found", vim.log.levels.INFO, { title = "tg" })
 				return
 			end
+			-- Use a tmp buffer picker via vim.ui.select (avoid snacks picker direct API)
 			local items = {}
 			for _, f in ipairs(folders) do
-				table.insert(items, { id = f.id, title = f.name, name = f.name })
+				local label = tostring(f.name or "")
+				table.insert(items, { id = f.id, text = label, title = label })
 			end
-			local ok, snacks = pcall(require, "snacks")
-			if ok and snacks.picker then
-				local picker_items = {}
-				for _, f in ipairs(folders) do
-					table.insert(picker_items, { id = f.id, text = f.name })
-				end
-				local picked = false
-				snacks.picker.pick({
-					title = "Folders",
-					items = picker_items,
-					layout = "select",
-					format = function(item)
-						return { { item.text } }
-					end,
-					confirm = function(picker, item)
-						picked = true
-						picker:close()
-						on_folder_chosen(item and item.id, item and item.text)
-					end,
-					on_close = function()
-						if not picked then end
-					end,
-				})
-			else
-				vim.ui.select(items, {
-					prompt = "Select folder:",
-					format_item = function(item)
-						return item.title
-					end,
-				}, function(choice)
-					if choice then on_folder_chosen(choice.id, choice.title) end
-				end)
-			end
+			vim.ui.select(items, {
+				prompt = "Select folder:",
+				format_item = function(item)
+					return item.title
+				end,
+			}, function(choice)
+				if choice then on_folder_chosen(choice.id, choice.title) end
+			end)
 		end
 
 		-- Try cache from WS event first, then HTTP fallback
