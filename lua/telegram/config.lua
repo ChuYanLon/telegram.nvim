@@ -21,7 +21,7 @@ M.default_keys = {
 	editor_cancel = "<Esc>",
 	help_close = "<Esc>",
 	help_close_q = "q",
-	goto_last = "H",
+	goto_last = "<C-o>",
 	reaction = "r",
 	archive = "a",
 	mark_unread = "u",
@@ -86,7 +86,9 @@ end
 ---@return string|nil
 function M.key(name)
 	local k = M.config.keys[name]
-	if k == nil or k == false then return nil end
+	if k == nil or k == false then
+		return nil
+	end
 	return k
 end
 
@@ -115,7 +117,11 @@ function M.setup(opts)
 	vim.api.nvim_set_hl(0, "TgDateSeparator", { fg = comment_fg, default = true })
 	vim.api.nvim_set_hl(0, "TgEdited", { fg = comment_fg, italic = true, default = true })
 	vim.api.nvim_set_hl(0, "TgConnectionOff", { fg = "#f38ba8", bold = true, default = true })
-	vim.api.nvim_set_hl(0, "TgUnreadDivider", { fg = hl_fg("DiagnosticInfo") or "#89b4fa", bold = true, default = true })
+	vim.api.nvim_set_hl(
+		0,
+		"TgUnreadDivider",
+		{ fg = hl_fg("DiagnosticInfo") or "#89b4fa", bold = true, default = true }
+	)
 end
 
 M.plugin_root = plugin_root
