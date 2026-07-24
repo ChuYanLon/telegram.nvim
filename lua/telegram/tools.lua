@@ -962,16 +962,16 @@ M.register("folders", {
 			end
 			local items = {}
 			for _, f in ipairs(folders) do
-				table.insert(items, { id = f.id, name = f.name })
+				table.insert(items, { id = f.id, title = f.name, text = f.name })
 			end
 			vim.ui.select(items, {
 				prompt = "Select folder:",
 				format_item = function(item)
-					return item.name
+					return item.title
 				end,
 			}, function(choice)
 				if not choice then return end
-				vim.notify("Loading folder: " .. choice.name .. "...", vim.log.levels.INFO, { title = "tg" })
+				vim.notify("Loading folder: " .. choice.title .. "...", vim.log.levels.INFO, { title = "tg" })
 				srv.get_folder_chats_async(choice.id, function(chats)
 					if not chats or #chats == 0 then
 						vim.notify("No chats in this folder", vim.log.levels.INFO, { title = "tg" })
@@ -994,7 +994,7 @@ M.register("folders", {
 							require("telegram").open_chat(item.id, item.title)
 						end
 					end, picker_items)
-					vim.notify("Folder \"" .. choice.name .. "\" (" .. #chats .. " chats)", vim.log.levels.INFO, { title = "tg" })
+					vim.notify("Folder \"" .. choice.title .. "\" (" .. #chats .. " chats)", vim.log.levels.INFO, { title = "tg" })
 				end)
 			end)
 		end
