@@ -906,31 +906,6 @@ M.register("blocked", {
 })
 
 
-M.register("blocked", {
-	description = "List and manage blocked users",
-	callback = function()
-		vim.notify("Loading blocked users...", vim.log.levels.INFO, { title = "tg" })
-		local users = require("telegram.server").get_blocked_users()
-		if not users or #users == 0 then
-			vim.notify("No blocked users", vim.log.levels.INFO, { title = "tg" })
-			return
-		end
-		local items = {}
-		for _, u in ipairs(users) do
-			table.insert(items, { id = u.id, name = u.name, label = u.name .. "  [unblock]" })
-		end
-		vim.ui.select(items, {
-			prompt = "Blocked users (select to unblock)",
-			format_item = function(item) return item.label end,
-		}, function(choice)
-			if not choice then return end
-			local ok = require("telegram.server").unblock_user(choice.id)
-			if ok then
-				vim.notify("Unblocked " .. choice.name, vim.log.levels.INFO, { title = "tg" })
-			end
-		end)
-	end,
-})
 
 M.register("showarchived", {
 	description = "Toggle archived chats in picker",
