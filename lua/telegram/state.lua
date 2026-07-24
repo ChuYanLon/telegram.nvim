@@ -52,6 +52,7 @@ local state = {
 	connection_state = "connectionStateReady",
 	show_archived = false,
 	current_chat_archived = false,
+	prev_chat = nil,
 }
 
 M.state = state

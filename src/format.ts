@@ -106,6 +106,86 @@ export class MessageFormatter {
       if (emoji) formatted.text = emoji;
     }
 
+    // Enhanced display for special message types that lack text/caption content
+    if (!formatted.text && msg.content) {
+      const c = msg.content as Record<string, unknown>;
+      switch (c._) {
+        case 'messageCall': {
+          const call = msg.content as any;
+          const dur = call.duration || 0;                // duration:int32
+          const reason = call.discard_reason?._ || '';    // discard_reason:CallDiscardReason
+          const isVideo = call.is_video || false;          // is_video:Bool
+          const type = isVideo ? 'Video call' : 'Call';
+          if (dur > 0) {
+            const m = Math.floor(dur / 60);
+            const s = dur % 60;
+            formatted.text = `${type} (${m > 0 ? `${m}m ` : ''}${s}s)`;
+          } else if (reason === 'callDiscardReasonMissed') {
+            formatted.text = `Missed ${type.toLowerCase()}`;
+          } else if (reason === 'callDiscardReasonDeclined') {
+            formatted.text = `Declined ${type.toLowerCase()}`;
+          } else if (reason === 'callDiscardReasonBusy') {
+            formatted.text = 'Busy';
+          } else {
+            formatted.text = type;
+          }
+          break;
+        }
+        case 'messageInvoice': {
+          const inv = msg.content as any;
+          const amt = ((inv.total_amount || 0) / 100).toFixed(2);  // total_amount:int53
+          const curr = inv.currency || '';                          // currency:string
+          const pi = inv.product_info;                               // product_info:productInfo
+          const title = pi?.title || '';
+          formatted.text = `[Invoice] ${title}${title && amt ? ' — ' : ''}${amt ? `${amt} ${curr}` : ''}`.trim();
+          break;
+        }
+        case 'messageGiveaway':
+        case 'messagePremiumGiveaway': {
+          const gw = msg.content as any;
+          const winners = gw.winner_count || 0;  // winner_count:int32 (top-level)
+          formatted.text = `[Giveaway] ${winners} winner${winners !== 1 ? 's' : ''}`;
+          // prize:GiveawayPrize — could be giveawayPrizePremium with months
+          if (gw.prize?.months) {
+            formatted.text += `, ${gw.prize.months}mo Premium`;
+          }
+          break;
+        }
+        case 'messageContact': {
+          const mc = msg.content as any;
+          const ct = mc.contact as any;  // contact:contact
+          const name = ct ? [ct.first_name, ct.last_name].filter(Boolean).join(' ') : '';
+          formatted.text = `[Contact] ${name || ct?.phone_number || 'Unknown'}`;
+          break;
+        }
+        case 'messageDice': {
+          const dice = msg.content as any;
+          formatted.text = `${dice.emoji || '🎲'} ${dice.value || 0}`;
+          break;
+        }
+        case 'messageLocation': {
+          const loc = msg.content as any;
+          const lat = loc.location?.latitude?.toFixed(4) || '?';   // location:location
+          const lng = loc.location?.longitude?.toFixed(4) || '?';
+          formatted.text = `[Location] ${lat}, ${lng}`;
+          break;
+        }
+        case 'messagePoll': {
+          const poll = msg.content as any;
+          const q = poll.poll?.question;  // question:formattedText
+          const qText = typeof q === 'string' ? q : (q?.text || '');
+          formatted.text = `[Poll] ${qText}`;
+          break;
+        }
+        case 'messageGame': {
+          const game = msg.content as any;
+          const gTitle = game.game?.title || '';  // game:game → title:string
+          formatted.text = gTitle ? `[Game] ${gTitle}` : '[Game]';
+          break;
+        }
+      }
+    }
+
     if (msg.content?._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
       formatted.memberUserIds = msg.content.member_user_ids;
       formatted.addedMemberNames = await Promise.all(

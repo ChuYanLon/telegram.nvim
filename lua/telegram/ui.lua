@@ -550,6 +550,21 @@ local function setup_chat_keymaps()
 			M.jump_to_bottom()
 		end)
 	end)
+	set("goto_last", function()
+		if not state.prev_chat then
+			vim.notify("No previous chat", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		if state.chat_id and tostring(state.chat_id) == tostring(state.prev_chat.id) then
+			vim.notify("Already in previous chat", vim.log.levels.INFO, { title = "tg" })
+			return
+		end
+		local pc = state.prev_chat
+		if state.chat_id then
+			state.prev_chat = { id = state.chat_id, title = state.chat_title }
+		end
+		M.open_chat(pc.id, pc.title)
+	end)
 	set("ban", function() groups.ban_sender() end)
 	set("archive", function()
 		if not state.chat_id then
@@ -673,6 +688,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	end
 	if state.chat_id then
 		if state.chat_id ~= chat_id then
+			state.prev_chat = { id = state.chat_id, title = state.chat_title }
 			state.editor_draft = nil
 		end
 		server.close_chat(state.chat_id)

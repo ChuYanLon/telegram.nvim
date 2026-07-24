@@ -17,13 +17,11 @@ local type_labels = {
 }
 
 function M.render(msg)
-	local label = type_labels[msg.type] or "[" .. (msg.type or "Unknown") .. "]"
 	local text = msg.text or ""
 	if text and #text > 0 then
-		local parts = vim.split(text, "\n")
-		parts[1] = label .. " " .. parts[1]
-		return parts
+		return vim.split(text, "\n")
 	end
+	local label = type_labels[msg.type] or "[" .. (msg.type or "Unknown") .. "]"
 	return { label }
 end
 
