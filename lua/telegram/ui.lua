@@ -59,6 +59,8 @@ local function apply_highlights()
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgUnreadDivider", l, 0, -1)
 		elseif line:find("^  ↳ ") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgService", l, 0, -1)
+		elseif line == "[Message deleted]" then
+			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgPlaceholder", l, 0, -1)
 		end
 	end
 	local target_id = state.reply_to
@@ -431,9 +433,17 @@ local function setup_chat_keymaps()
 			if not choice or choice == "Cancel" then return end
 			local revoke = choice == "Revoke (for everyone)"
 			if server.delete_message(state.chat_id, target.id, revoke) then
-				for i = #state.messages, 1, -1 do
-					if state.messages[i].id == target.id then
-						table.remove(state.messages, i)
+				for _, m in ipairs(state.messages) do
+					if m.id == target.id and not m.deleted then
+						m.deleted = true
+						m.text = nil
+						m.type = nil
+						m.reactions = nil
+						m.views = nil
+						m.editDate = nil
+						m.forwardInfo = nil
+						m.linkPreview = nil
+						m.replyTo = nil
 						break
 					end
 				end

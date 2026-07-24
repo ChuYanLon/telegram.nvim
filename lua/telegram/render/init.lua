@@ -56,6 +56,9 @@ local service_styles = {
 }
 
 function M.render(msg)
+	if msg.deleted then
+		return { "[Message deleted]", "" }
+	end
 	local date_str = os.date("%Y-%m-%d %H:%M", msg.date)
 	local sender_name = msg.own and "Me" or (msg.sender and msg.sender.name or "unknown")
 	local title_str = ""

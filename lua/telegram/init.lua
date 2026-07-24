@@ -423,19 +423,24 @@ local function finish_init()
 			local del_chat_id = msg.chat_id
 			vim.schedule(function()
 				if not del_chat_id or del_chat_id ~= ui.state.chat_id then return end
-				local ids = {}
-				for _, id in ipairs(msg.message_ids) do
-					ids[tostring(id)] = true
-				end
-				local i = 1
-				while i <= #ui.state.messages do
-					if ids[tostring(ui.state.messages[i].id)] then
-						table.remove(ui.state.messages, i)
-					else
-						i = i + 1
+				local changed = false
+				for _, m in ipairs(ui.state.messages) do
+					for _, id in ipairs(msg.message_ids) do
+						if tostring(m.id) == tostring(id) and not m.deleted then
+							m.deleted = true
+							m.text = nil
+							m.type = nil
+							m.reactions = nil
+							m.views = nil
+							m.editDate = nil
+							m.forwardInfo = nil
+							m.linkPreview = nil
+							m.replyTo = nil
+							changed = true
+						end
 					end
 				end
-				ui.render()
+				if changed then ui.render() end
 			end)
 		elseif msg.event == "messageReactions" then
 			local mr_chat_id = msg.chat_id
