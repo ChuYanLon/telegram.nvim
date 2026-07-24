@@ -981,7 +981,6 @@ M.register("folders", {
 						require("telegram").open_chat(item.id, item.title)
 					end
 				end, picker_items)
-				vim.notify("Folder \"" .. folder_name .. "\" (" .. #chats .. " chats)", vim.log.levels.INFO, { title = "tg" })
 			end)
 		end
 
@@ -1015,7 +1014,6 @@ M.register("folders", {
 		if #folders > 0 then
 			show_folder_picker(folders)
 		else
-			vim.notify("Loading folders...", vim.log.levels.INFO, { title = "tg" })
 			srv.get_folders_async(function(data)
 				if not data or type(data) ~= "table" or #data == 0 then
 					vim.notify("No chat folders found", vim.log.levels.INFO, { title = "tg" })
