@@ -21,6 +21,7 @@ const tgClient = new TelegramLSPClient();
 
 declare global {
   var broadcast: ((data: unknown) => void) | undefined;
+  var __tg_chatFolders: { id: number; name: string; is_shareable: boolean }[] | undefined;
 }
 
 global.broadcast = (data: unknown) => {
@@ -126,6 +127,28 @@ app.get('/groups', async (_req, res) => {
 app.get('/chats/archived', async (_req, res) => {
   try {
     const chats = await tgClient.getArchivedChats();
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+app.get('/chats/folders', async (_req, res) => {
+  try {
+    res.json(global.__tg_chatFolders || []);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+app.get('/chats/folder/:id', async (req, res) => {
+  try {
+    const folderId = Number(req.params.id);
+    if (isNaN(folderId)) {
+      res.status(400).json({ error: 'Invalid folder id' });
+      return;
+    }
+    const chats = await tgClient.getFolderChats(folderId);
     res.json(chats);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

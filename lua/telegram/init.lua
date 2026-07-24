@@ -643,6 +643,16 @@ local function finish_init()
 					end
 				end)
 			end
+		elseif msg.event == "chatFolders" then
+			local folders = msg.folders
+			if folders then
+				vim.schedule(function()
+					ui.state.chat_folders = {}
+					for _, f in ipairs(folders) do
+						ui.state.chat_folders[f.id] = { id = f.id, name = f.name, is_shareable = f.is_shareable }
+					end
+				end)
+			end
 		elseif msg.event == "chatGroupRemoved" then
 			local cid = msg.chat_id
 			if cid then

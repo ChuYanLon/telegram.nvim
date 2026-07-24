@@ -434,6 +434,71 @@ export class TelegramLSPClient {
     return enriched.filter(Boolean) as ChatInfo[];
   }
 
+  async getFolderChats(folderId: number): Promise<ChatInfo[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const folderChatIds: number[] = [];
+    let offsetOrder = '9223372036854775807';
+    let offsetChatId = 0;
+    const limit = 100;
+    const MAX_ITERATIONS = 100;
+
+    for (let iterations = 0; iterations < MAX_ITERATIONS; iterations++) {
+      const result = await this.client.invoke({
+        _: 'getChats',
+        chat_list: { _: 'chatListFolder', chat_folder_id: folderId },
+        offset_order: offsetOrder,
+        offset_chat_id: offsetChatId,
+        limit,
+      }) as { chat_ids: number[] };
+      const chatIds = result.chat_ids;
+      if (!chatIds || chatIds.length === 0) break;
+
+      for (const id of chatIds) {
+        const chat = await this.client.invoke({ _: 'getChat', chat_id: id }) as RawTdChat;
+        const inFolder = (chat.positions || []).some(
+          p => p.list && p.list._ === 'chatListFolder' && (p.list as any).chat_folder_id === folderId
+        );
+        if (!inFolder) continue;
+        this._cacheChat(id, chat);
+        folderChatIds.push(id);
+      }
+
+      if (chatIds.length < limit) break;
+      const prevOrder = offsetOrder;
+      const prevChatId = offsetChatId;
+      offsetChatId = chatIds[chatIds.length - 1];
+      const lastChat = this._chats.get(offsetChatId);
+      if (lastChat) {
+        const pos = (lastChat.positions || []).find(
+          p => p.list && p.list._ === 'chatListFolder' && (p.list as any).chat_folder_id === folderId
+        );
+        if (pos) offsetOrder = String(pos.order);
+      }
+      if (offsetOrder === prevOrder || offsetChatId === prevChatId) break;
+    }
+
+    const results = folderChatIds.map(async (id) => {
+      const chat = this._chats.get(id);
+      if (!chat) return null;
+      const t = chat.type._;
+      if (t === 'chatTypeBasicGroup' || t === 'chatTypeSupergroup') {
+        const g = await this._enrichGroup(chat);
+        if (!g) return null;
+        return {
+          ...g,
+          type: (t === 'chatTypeSupergroup' && chat.type.is_channel) ? 'channel' as const : 'group' as const,
+        };
+      }
+      if (t === 'chatTypePrivate' || t === 'chatTypeSecret') {
+        return this._enrichPrivate(chat);
+      }
+      return null;
+    });
+
+    const enriched = await Promise.all(results);
+    return enriched.filter(Boolean) as ChatInfo[];
+  }
+
   private async _parseMD(text: string): Promise<{ _: string; text: string; entities: unknown[] }> {
     try {
       const parsed = await this.client.invoke({

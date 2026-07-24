@@ -84,6 +84,9 @@ export class UpdateDispatcher {
         case 'updateChatPosition':
           this.handleChatPositionUpdate(update);
           break;
+        case 'updateChatFolders':
+          await this.handleChatFoldersUpdate(update);
+          break;
         case 'updateMessageSendFailed':
           this.handleMessageSendFailed(update);
           break;
@@ -538,6 +541,27 @@ export class UpdateDispatcher {
         count: r.total_count,
         is_chosen: r.is_chosen,
       })),
+    });
+  }
+
+  async handleChatFoldersUpdate(update: TdUpdate) {
+    const broadcast = this.getBroadcast();
+    if (typeof broadcast !== 'function') return;
+    const rawFolders = update.chat_folders as { id: number; name: { text: string }; is_shareable: boolean }[] | undefined;
+    if (!rawFolders) return;
+    const folders = rawFolders.map(f => ({
+      id: f.id,
+      name: f.name?.text || 'Folder',
+      is_shareable: f.is_shareable,
+    }));
+    // Cache in global so HTTP endpoint can serve it
+    if (typeof global !== 'undefined') {
+      (global as any).__tg_chatFolders = folders;
+    }
+    broadcast({
+      event: 'chatFolders',
+      folders,
+      main_chat_list_position: update.main_chat_list_position,
     });
   }
 }

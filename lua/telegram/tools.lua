@@ -950,6 +950,84 @@ M.register("showarchived", {
 	end,
 })
 
+M.register("folders", {
+	description = "Switch chat folder",
+	callback = function()
+		local st = require("telegram.state").state
+		local srv = require("telegram.server")
+		local function show_folder_picker(folders)
+			if #folders == 0 then
+				vim.notify("No chat folders found", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, f in ipairs(folders) do
+				table.insert(items, { id = f.id, name = f.name })
+			end
+			vim.ui.select(items, {
+				prompt = "Select folder:",
+				format_item = function(item)
+					return item.name
+				end,
+			}, function(choice)
+				if not choice then return end
+				vim.notify("Loading folder: " .. choice.name .. "...", vim.log.levels.INFO, { title = "tg" })
+				srv.get_folder_chats_async(choice.id, function(chats)
+					if not chats or #chats == 0 then
+						vim.notify("No chats in this folder", vim.log.levels.INFO, { title = "tg" })
+						return
+					end
+					local picker_items = {}
+					for _, g in ipairs(chats) do
+						table.insert(picker_items, {
+							id = g.id,
+							title = g.title,
+							type = g.type or "group",
+							unread = g.unreadCount or 0,
+							is_pinned = g.isPinned or false,
+							is_saved = g.isSaved or false,
+							is_archived = false,
+						})
+					end
+					require("telegram.ui").show_groups_picker(function(item)
+						if item then
+							require("telegram").open_chat(item.id, item.title)
+						end
+					end, picker_items)
+					vim.notify("Folder \"" .. choice.name .. "\" (" .. #chats .. " chats)", vim.log.levels.INFO, { title = "tg" })
+				end)
+			end)
+		end
+		-- Check cache from WS event first, then fall back to HTTP
+		local folders = {}
+		for _, f in pairs(st.chat_folders) do
+			table.insert(folders, f)
+		end
+		table.sort(folders, function(a, b) return a.id < b.id end)
+		if #folders > 0 then
+			show_folder_picker(folders)
+		else
+			vim.notify("Loading folders...", vim.log.levels.INFO, { title = "tg" })
+			srv.get_folders_async(function(data)
+				if not data or type(data) ~= "table" or #data == 0 then
+					vim.notify("No chat folders found", vim.log.levels.INFO, { title = "tg" })
+					return
+				end
+				-- Cache for next time
+				for _, f in ipairs(data) do
+					st.chat_folders[f.id] = { id = f.id, name = f.name, is_shareable = f.is_shareable }
+				end
+				local folder_list = {}
+				for _, f in pairs(st.chat_folders) do
+					table.insert(folder_list, f)
+				end
+				table.sort(folder_list, function(a, b) return a.id < b.id end)
+				show_folder_picker(folder_list)
+			end)
+		end
+	end,
+})
+
 M.register("refreshmedia", {
 	description = "Download and update image for message under cursor",
 	condition = function()

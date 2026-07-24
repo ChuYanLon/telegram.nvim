@@ -763,6 +763,24 @@ function M.delete_chat_history(chat_id)
 	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
 end
 
+
+function M.get_folders()
+	return http_get("/chats/folders")
+end
+
+function M.get_folder_chats_async(folder_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chats/folder/" .. tostring(folder_id) }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+function M.get_folders_async(on_ok, on_err)
+	request_async({ url = base_url() .. "/chats/folders" }, function(data, err)
+		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+
 -- ─── Archive ──────────────────────────────────────────────────────────
 
 ---@param chat_id any
