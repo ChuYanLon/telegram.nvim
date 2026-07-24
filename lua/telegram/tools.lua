@@ -464,7 +464,7 @@ M.register("groups", {
 		for _, id in ipairs(ui.state.group_ids) do
 			local g = ui.state.groups[id]
 			if g and g.type == "group" then
-				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_pinned = g.is_pinned or false, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
 			end
 		end
 		if #items == 0 then
@@ -484,7 +484,7 @@ M.register("channels", {
 		for _, id in ipairs(ui.state.group_ids) do
 			local g = ui.state.groups[id]
 			if g and g.type == "channel" then
-				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_pinned = g.is_pinned or false, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
 			end
 		end
 		if #items == 0 then
@@ -504,7 +504,7 @@ M.register("dm", {
 		for _, id in ipairs(ui.state.group_ids) do
 			local g = ui.state.groups[id]
 			if g and g.type == "private" then
-				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
+				table.insert(items, { id = g.id, title = g.title, type = g.type, unread = g.unread_count or 0, is_pinned = g.is_pinned or false, is_saved = g.is_saved or false, is_archived = g.is_archived or false })
 			end
 		end
 		if #items == 0 then

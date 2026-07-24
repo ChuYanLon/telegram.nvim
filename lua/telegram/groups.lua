@@ -121,6 +121,7 @@ local function show_groups_picker(on_select, custom_items)
 					title = g.title,
 					type = g.type or "group",
 					unread = g.unread_count or 0,
+					is_pinned = g.is_pinned or false,
 					is_saved = g.is_saved or false,
 					is_archived = g.is_archived or false,
 				})
@@ -139,6 +140,7 @@ local function show_groups_picker(on_select, custom_items)
 			table.insert(picker_items, {
 				id = item.id,
 				text = item.title,
+				is_pinned = item.is_pinned,
 				unread = item.unread,
 				is_saved = item.is_saved,
 			})
@@ -150,7 +152,9 @@ local function show_groups_picker(on_select, custom_items)
 			layout = "select",
 			format = function(item)
 				local label = item.text
-				if item.is_saved then
+				if item.is_pinned then
+					label = "\xF0\x9F\x93\x8D " .. label
+				elseif item.is_saved then
 					label = "\xF0\x9F\x93\x8C " .. label
 				end
 				if item.unread > 0 then
@@ -178,7 +182,9 @@ local function show_groups_picker(on_select, custom_items)
 			prompt = "Select chat:",
 			format_item = function(item)
 				local label = item.title
-				if item.is_saved then
+				if item.is_pinned then
+					label = "\xF0\x9F\x93\x8D " .. label
+				elseif item.is_saved then
 					label = "\xF0\x9F\x93\x8C " .. label
 				elseif item.type == "channel" then
 					label = "# " .. label
