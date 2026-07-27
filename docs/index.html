@@ -671,7 +671,8 @@
                 <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
                 <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
               </div>
-              lazy.nvim
+              <span style="flex:1;">lazy.nvim</span>
+              <button onclick="copyCode(this)" style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;border:1px solid var(--astro-border);background:transparent;color:var(--astro-text-muted);cursor:pointer;font-size:0.85em;transition:all 0.2s;" onmouseover="this.style.background='var(--astro-bg-card)'" onmouseout="this.style.background='transparent'">📋 Copy</button>
             </div>
             <pre style="padding:28px 20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:0.85em;line-height:1.7;color:var(--astro-text);margin:0;background:transparent;text-align:left;"><code class="language-lua">{
   "ChuYanLon/telegram.nvim",
@@ -916,6 +917,29 @@
 
   <script src="js/prism.min.js"></script>
   <script src="js/prism-lua.min.js"></script>
+
+  <script>
+    function copyCode(btn) {
+      var pre = btn.closest('[style*="border-radius"]').querySelector('pre');
+      var code = pre ? pre.textContent : '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function() {
+          btn.textContent = '✅ Copied!';
+          setTimeout(function() { btn.textContent = '📋 Copy'; }, 2000);
+        });
+      } else {
+        // Fallback
+        var ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '✅ Copied!';
+        setTimeout(function() { btn.textContent = '📋 Copy'; }, 2000);
+      }
+    }
+  </script>
 
 </body>
 </html>
