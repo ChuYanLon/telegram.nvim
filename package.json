@@ -1,6 +1,6 @@
 {
   "name": "telegram-lsp-backend",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Backend server for telegram.nvim — a Telegram TUI client for Neovim",
   "keywords": [
     "telegram",
