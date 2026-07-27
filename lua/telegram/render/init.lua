@@ -129,18 +129,24 @@ function M.render(msg)
 		end
 		local content = get_renderer(msg).render(msg)
 		if msg.linkPreview and msg.linkPreview.url then
-			table.insert(out, msg.linkPreview.url)
+			table.insert(out, "  ↗ " .. msg.linkPreview.url)
+			local has_info = false
 			if msg.linkPreview.siteName and #msg.linkPreview.siteName > 0 then
-				table.insert(out, msg.linkPreview.siteName)
+				table.insert(out, "    " .. msg.linkPreview.siteName)
+				has_info = true
 			end
 			if msg.linkPreview.title and #msg.linkPreview.title > 0 then
-				table.insert(out, "  " .. msg.linkPreview.title)
+				table.insert(out, "      " .. msg.linkPreview.title)
+				has_info = true
 			end
 			if msg.linkPreview.description and #msg.linkPreview.description > 0 then
-				table.insert(out, "  " .. msg.linkPreview.description)
+				table.insert(out, "      " .. msg.linkPreview.description)
+				has_info = true
 			end
-			for _, l in ipairs(content) do
-				table.insert(out, "<" .. l .. ">")
+			if not has_info then
+				for _, l in ipairs(content) do
+					table.insert(out, l)
+				end
 			end
 		else
 			for _, l in ipairs(content) do

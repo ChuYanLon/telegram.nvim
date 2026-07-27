@@ -128,7 +128,8 @@ function M.setup(opts)
 	local border_fg = hl_fg("FloatBorder")
 	vim.api.nvim_set_hl(0, "TgBorder", { fg = border_fg, bg = "NONE", default = true })
 	vim.api.nvim_set_hl(0, "TgDateSeparator", { fg = comment_fg, default = true })
-	vim.api.nvim_set_hl(0, "TgEdited", { fg = comment_fg, italic = true, default = true })
+	vim.api.nvim_set_hl(0, "TgLinkPreview", { fg = hl_fg("DiagnosticInfo") or comment_fg, default = true })
+		vim.api.nvim_set_hl(0, "TgEdited", { fg = comment_fg, italic = true, default = true })
 	vim.api.nvim_set_hl(0, "TgConnectionOff", { fg = "#f38ba8", bold = true, default = true })
 	vim.api.nvim_set_hl(
 		0,
