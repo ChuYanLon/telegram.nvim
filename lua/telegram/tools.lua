@@ -542,7 +542,67 @@ M.register("translate", {
 			if not lang or #lang == 0 then return end
 			close_translate()
 			vim.notify("Translating to " .. lang .. "…", vim.log.levels.INFO, { title = "tg" })
-			local data = server.translate_text(msg.text, lang)
+			vim.defer_fn(function()
+				local data = server.translate_text(msg.text, lang)
+				if data and data.text and #data.text > 0 then
+					local buf = vim.api.nvim_create_buf(false, true)
+					vim.bo[buf].buftype = "nofile"
+					vim.bo[buf].bufhidden = "wipe"
+
+					local lines = vim.split(data.text, "\n")
+					local source_label = msg.sender and msg.sender.name or "Unknown"
+					local header = "── " .. source_label .. " → " .. lang .. " ──"
+					table.insert(lines, 1, header)
+					table.insert(lines, "")
+
+					local height = math.min(#lines + 2, 30)
+					local width = 40
+					for _, l in ipairs(lines) do
+						local w = vim.fn.strdisplaywidth(l)
+						if w + 4 > width then width = math.min(w + 4, 80) end
+					end
+
+					translate_win = vim.api.nvim_open_win(buf, true, {
+						relative = "editor",
+						width = width,
+						height = height,
+						row = math.max(0, (vim.o.lines - height) / 2),
+						col = math.max(0, (vim.o.columns - width) / 2),
+						zindex = 200,
+						style = "minimal",
+						border = "rounded",
+						title = " Translation ",
+						title_pos = "center",
+					})
+					vim.wo[translate_win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
+					vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+					vim.keymap.set("n", "q", close_translate, { buffer = buf, nowait = true })
+					vim.keymap.set("n", "<Esc>", close_translate, { buffer = buf, nowait = true })
+				else
+					local reason = (data and data.error) or "unknown error"
+					vim.notify("Translation error: " .. reason, vim.log.levels.ERROR, { title = "tg" })
+				end
+			end)
+		end)
+	end,
+})
+
+M.register("translate_zh", {
+	description = "Translate message under cursor to Chinese",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.text and #t.text > 0
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		if not msg or not msg.text or #msg.text == 0 then
+			vim.notify("No text at cursor", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		close_translate()
+		vim.notify("Translating to zh…", vim.log.levels.INFO, { title = "tg" })
+		vim.defer_fn(function()
+			local data = server.translate_text(msg.text, "zh")
 			if data and data.text and #data.text > 0 then
 				local buf = vim.api.nvim_create_buf(false, true)
 				vim.bo[buf].buftype = "nofile"
@@ -550,7 +610,7 @@ M.register("translate", {
 
 				local lines = vim.split(data.text, "\n")
 				local source_label = msg.sender and msg.sender.name or "Unknown"
-				local header = "── " .. source_label .. " → " .. lang .. " ──"
+				local header = "── " .. source_label .. " → 中文 ──"
 				table.insert(lines, 1, header)
 				table.insert(lines, "")
 
@@ -570,7 +630,7 @@ M.register("translate", {
 					zindex = 200,
 					style = "minimal",
 					border = "rounded",
-					title = " Translation ",
+					title = " 中文翻译 ",
 					title_pos = "center",
 				})
 				vim.wo[translate_win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
@@ -582,62 +642,6 @@ M.register("translate", {
 				vim.notify("Translation error: " .. reason, vim.log.levels.ERROR, { title = "tg" })
 			end
 		end)
-	end,
-})
-
-M.register("translate_zh", {
-	description = "Translate message under cursor to Chinese",
-	condition = function()
-		local t = ui.curr_msg()
-		return t and t.text and #t.text > 0
-	end,
-	callback = function()
-		local msg = ui.curr_msg()
-		if not msg or not msg.text or #msg.text == 0 then
-			vim.notify("No text at cursor", vim.log.levels.WARN, { title = "tg" })
-			return
-		end
-		close_translate()
-		vim.notify("Translating to zh…", vim.log.levels.INFO, { title = "tg" })
-		local data = server.translate_text(msg.text, "zh")
-		if data and data.text and #data.text > 0 then
-			local buf = vim.api.nvim_create_buf(false, true)
-			vim.bo[buf].buftype = "nofile"
-			vim.bo[buf].bufhidden = "wipe"
-
-			local lines = vim.split(data.text, "\n")
-			local source_label = msg.sender and msg.sender.name or "Unknown"
-			local header = "── " .. source_label .. " → 中文 ──"
-			table.insert(lines, 1, header)
-			table.insert(lines, "")
-
-			local height = math.min(#lines + 2, 30)
-			local width = 40
-			for _, l in ipairs(lines) do
-				local w = vim.fn.strdisplaywidth(l)
-				if w + 4 > width then width = math.min(w + 4, 80) end
-			end
-
-			translate_win = vim.api.nvim_open_win(buf, true, {
-				relative = "editor",
-				width = width,
-				height = height,
-				row = math.max(0, (vim.o.lines - height) / 2),
-				col = math.max(0, (vim.o.columns - width) / 2),
-				zindex = 200,
-				style = "minimal",
-				border = "rounded",
-				title = " 中文翻译 ",
-				title_pos = "center",
-			})
-			vim.wo[translate_win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
-			vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-			vim.keymap.set("n", "q", close_translate, { buffer = buf, nowait = true })
-			vim.keymap.set("n", "<Esc>", close_translate, { buffer = buf, nowait = true })
-		else
-			local reason = (data and data.error) or "unknown error"
-			vim.notify("Translation error: " .. reason, vim.log.levels.ERROR, { title = "tg" })
-		end
 	end,
 })
 
