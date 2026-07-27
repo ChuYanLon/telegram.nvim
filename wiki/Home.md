@@ -13,10 +13,12 @@ A Telegram chat client inside Neovim.
 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
+- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, and more
 - Send/edit/delete/forward/reply with markdown formatting
 - Polls: display with progress bars, vote (`@vote`), create (`@createpoll`), view voters (`@voters`), stop (`@stoppoll`). Supports multi-answer and timed polls.
 - Search messages, copy text, save to Favorites
 - Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
+- Open shared chats/users with `@openshared`
 - Read receipts, edited indicators, view counts, typing indicators
 
 ### Chat management

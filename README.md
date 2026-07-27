@@ -19,6 +19,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
+- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, and more
 - Send/edit/delete/forward/reply with markdown formatting
 - Polls: display with progress bars, vote (`@vote`), create (`@createpoll`), view voters (`@voters`), stop (`@stoppoll`). Supports multi-answer and timed polls.
 - Search messages, copy text, save to Favorites
@@ -57,7 +58,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 ### Known limitations
 - Send media (photos/videos/files/audio), stickers/GIFs
 - Scheduled messages
-- Poll/contact/location/dice/game/call display (fallback label only, except polls)
+- Unsupported message types (display basic label only)
 - Inline bots / bot commands
 
 ### Customizing keys
@@ -152,6 +153,21 @@ Media messages are shown as thumbnails or tags:
 | `[Call]` | Voice/video call |
 | emoji character | Animated emoji (inline text) |
 | `![Video](/thumbnail)` | Video thumbnail preview (click `@openlink` to play) |
+| `👤 Name` / `📞 phone` | Contact shared |
+| `📍 Name` / `address` / `🗺️ link` | Venue shared (click `@openlink` for map) |
+| `📍 Live: lat, lng` | Live location with expiry |
+| `💬 Chat shared: name` | Chat shared (click `@openshared` to open) |
+| `👥 Users shared: ...` | Users shared (click `@openshared` for DM) |
+| `⭐ Alice gifted Premium` | Premium gift / Stars / Gift code |
+| `🎁 Alice sent a gift` | Gift message |
+| `📱 Story` | Story share |
+| `🔋 Chat boosted ×N` | Chat boost |
+| `🎮 Score: +N` | Game score |
+| `✅ Payment: N curr` | Successful payment |
+| `📸 Screenshot taken` | Screenshot notification |
+| `📅 / 🔊 / 🔇` | Video chat scheduled / started / ended |
+| `📍 Proximity alert` | Proximity trigger |
+| `📌 Topic renamed: ...` | Forum topic edited |
 
 ## Requirements
 
