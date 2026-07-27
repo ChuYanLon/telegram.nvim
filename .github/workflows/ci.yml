@@ -29,16 +29,17 @@ jobs:
       - name: Sync keymaps docs from config.lua
         run: pnpm gen:docs
       - name: Commit regenerated docs if stale
+        if: github.event_name == 'push'
         run: |
           if ! git diff --exit-code -- README.md wiki/Keymaps.md wiki/Configuration.md; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add README.md wiki/Keymaps.md wiki/Configuration.md
             git commit -m "chore: sync keymaps docs [skip ci]"
-            git push || echo "⚠️ Could not auto-push (PR from fork?). Run 'pnpm gen:docs' locally."
+            git push || echo "⚠️ Could not auto-push. Run 'pnpm gen:docs' locally."
           fi
       - name: Sync to GitHub Wiki
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22'
         run: |
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git /tmp/wiki
           cp wiki/Home.md wiki/Installation.md wiki/Configuration.md wiki/Keymaps.md /tmp/wiki/
@@ -48,7 +49,7 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add Home.md Installation.md Configuration.md Keymaps.md
             git commit -m "sync docs from telegram.nvim@${{ github.sha }}"
-            git push
+            git push || echo "⚠️ Wiki push failed (check if wiki is initialized)"
             echo "✅ Wiki synced"
           else
             echo "✅ Wiki already up to date"
