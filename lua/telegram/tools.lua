@@ -1225,11 +1225,10 @@ M.register("voters", {
 })
 
 M.register("stoppoll", {
-	description = "Stop a poll (admin only)",
+	description = "Stop a poll",
 	condition = function()
 		local t = ui.curr_msg()
 		return t and t.type == "messagePoll" and t.pollInfo and not t.pollInfo.isClosed
-			and ui.state.permissions.can_manage_chat == true
 	end,
 	callback = function()
 		local msg = ui.curr_msg()
