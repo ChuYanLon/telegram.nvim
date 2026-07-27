@@ -20,7 +20,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
 - Send/edit/delete/forward/reply with markdown formatting
-- Polls: display with progress bars, vote, create with `@vote` / `@createpoll`
+- Polls: display with progress bars, vote (`@vote`), create (`@createpoll`), view voters (`@voters`), stop (`@stoppoll`). Supports multi-answer and timed polls.
 - Search messages, copy text, save to Favorites
 - Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
 - Read receipts, edited indicators, view counts, typing indicators
@@ -144,7 +144,7 @@ Media messages are shown as thumbnails or tags:
 | `![Voice](/path)` | Voice message (clickable) |
 | `![Video Note](/path)` | Video message (clickable) |
 | `![Sticker](/path)` | Sticker sent (clickable) |
-| `[Poll]` | Poll (rich display with progress bars, vote via `@vote`) |
+| `[Poll]` | Poll with progress bars. `@vote` to vote, `@voters` to see voters, `@stoppoll` to close |
 | `[Contact]` | Contact shared |
 | `[Location]` | Location shared |
 | `[Dice]` | Dice rolled |
