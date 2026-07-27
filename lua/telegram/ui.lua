@@ -347,6 +347,11 @@ local function setup_chat_keymaps()
 	end
 
 	set("tool_picker", tools.pick)
+	set("translate_zh", function()
+		if tools.translate_zh then
+			tools.translate_zh.callback()
+		end
+	end)
 	set("input_editor", function()
 		if state.permissions.can_send_messages ~= true then
 			vim.notify("No permission to send messages", vim.log.levels.WARN, { title = "tg" })

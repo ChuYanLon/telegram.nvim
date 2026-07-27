@@ -38,6 +38,7 @@ All keymaps are configurable via `setup({ keys = { ... } })`. Set a key to `nil`
 <!-- KEYMAPS_TABLE_START -->
 | Key name | Default | Action |
 |----------|---------|--------|
+| `translate_zh` | `z` | translate message to Chinese |
 | `tool_picker` | `@` | open tool picker |
 | `input_editor` | `i` | open input editor |
 | `reply` | `<CR>` | reply / jump to original |

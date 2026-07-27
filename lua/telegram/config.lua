@@ -4,6 +4,7 @@ local plugin_root = vim.fn.fnamemodify(info.source:match("@(.+)"), ":h:h:h")
 local M = {}
 
 M.default_keys = {
+	translate_zh = "z",
 	tool_picker = "@",
 	input_editor = "i",
 	reply = "<CR>",
@@ -58,6 +59,7 @@ M.key_labels = {
 	mute = "mute / unmute chat",
 	goto_last = "switch to previous chat",
 	help = "toggle this help",
+	translate_zh = "translate message to Chinese",
 	tool_picker = "open tool picker",
 	help_close = "close this help",
 	editor_submit = "submit message in editor",
