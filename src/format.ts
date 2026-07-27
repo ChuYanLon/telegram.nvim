@@ -200,10 +200,132 @@ export class MessageFormatter {
         case 'messageGame': {
           const game = msg.content as any;
           const gTitle = game.game?.title || '';  // game:game → title:string
-          formatted.text = gTitle ? `[Game] ${gTitle}` : '[Game]';
+          formatted.text = gTitle ? `🎮 ${gTitle}` : '🎮 Game';
+          break;
+        }
+        case 'messageVenue': {
+          const v = msg.content as any;
+          const venue = v.venue as any;
+          const title = venue?.title || 'Venue';
+          const addr = venue?.address || '';
+          formatted.text = `📍 ${title}`;
+          if (addr) formatted.text += `\n${addr}`;
+          if (venue?.location) {
+            const lat = venue.location.latitude?.toFixed(4) || '';
+            const lng = venue.location.longitude?.toFixed(4) || '';
+            if (lat && lng) formatted.text += `\n🗺️ https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}`;
+          }
+          break;
+        }
+        case 'messageLiveLocation': {
+          const ll = msg.content as any;
+          const loc = ll.location?.location as any;
+          const exp = ll.expires_in || 0;
+          const lat = loc?.latitude?.toFixed(4) || '?';
+          const lng = loc?.longitude?.toFixed(4) || '?';
+          formatted.text = `📍 Live: ${lat}, ${lng}`;
+          if (exp > 0) formatted.text += `\n⏱️ expires in ${exp}s`;
+          formatted.text += `\n🗺️ https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}`;
+          break;
+        }
+        case 'messageStory': {
+          const s = msg.content as any;
+          formatted.text = `📱 Story${s.via_mention ? ' (via mention)' : ''}`;
+          break;
+        }
+        case 'messageChatBoost': {
+          const boost = msg.content as any;
+          formatted.text = `🔋 Chat boosted ×${boost.boost_count || 1}`;
+          break;
+        }
+        case 'messageGameScore': {
+          const gs = msg.content as any;
+          formatted.text = `🎮 Score: +${gs.score || 0}`;
+          break;
+        }
+        case 'messageProximityAlertTriggered': {
+          const pa = msg.content as any;
+          const dist = pa.distance || 0;
+          const distStr = dist >= 1000 ? `${(dist/1000).toFixed(1)}km` : `${dist}m`;
+          formatted.text = `📍 Proximity alert — ${distStr}`;
+          break;
+        }
+        case 'messagePaymentSuccessful': {
+          const ps = msg.content as any;
+          const amt = ((ps.total_amount || 0) / 100).toFixed(2);
+          formatted.text = `✅ Payment: ${amt} ${ps.currency || ''}`.trim();
+          if (ps.invoice_name) formatted.text += `\n🧾 ${ps.invoice_name}`;
+          break;
+        }
+        case 'messageScreenshotTaken': {
+          formatted.text = '📸 Screenshot taken';
+          break;
+        }
+        case 'messageVideoChatScheduled': {
+          const vcs = msg.content as any;
+          const start = vcs.start_date || 0;
+          const dateStr = start > 0 ? new Date(start * 1000).toLocaleString() : 'soon';
+          formatted.text = `📅 Video chat scheduled\n🕐 ${dateStr}`;
+          break;
+        }
+        case 'messageVideoChatStarted': {
+          formatted.text = '🔊 Video chat started';
+          break;
+        }
+        case 'messageVideoChatEnded': {
+          const vce = msg.content as any;
+          const dur = vce.duration || 0;
+          const m = Math.floor(dur / 60);
+          const s = dur % 60;
+          formatted.text = `🔇 Video chat ended${dur > 0 ? ` (${m > 0 ? `${m}m ` : ''}${s}s)` : ''}`;
+          break;
+        }
+        case 'messageForumTopicEdited': {
+          const fte = msg.content as any;
+          formatted.text = fte.name ? `📌 Topic renamed: ${fte.name}` : '📌 Topic updated';
+          break;
+        }
+        case 'messageChatShared': {
+          const cs = msg.content as any;
+          const chat = cs.chat as any;
+          formatted.text = `💬 Chat shared: ${chat?.title || '?'}`;
+          break;
+        }
+        case 'messageUsersShared': {
+          const us = msg.content as any;
+          const users = us.users as any[] || [];
+          const names = users.map((u: any) => [u.first_name, u.last_name].filter(Boolean).join(' ') || `user_${u.user_id}`).join(', ');
+          formatted.text = `👥 Users shared: ${names || '?'}`;
           break;
         }
       }
+    }
+
+    // Gift types — these have text:formattedText, so extractText already set formatted.text
+    // Override with structured display that includes gifter info
+    if (msg.content?._ === 'messageGiftedPremium') {
+      const gp = msg.content as any;
+      const gifterId = gp.gifter_user_id;
+      const gifterName = gifterId ? await this.resolver.getUserName(gifterId) : 'Someone';
+      const months = gp.month_count || gp.day_count || 0;
+      const unit = gp.month_count ? 'mo' : 'day';
+      formatted.text = `⭐ ${gifterName} gifted Premium (${months} ${unit})`;
+    } else if (msg.content?._ === 'messageGiftedStars') {
+      const gs = msg.content as any;
+      const gifterId2 = gs.gifter_user_id;
+      const gifterName2 = gifterId2 ? await this.resolver.getUserName(gifterId2) : 'Someone';
+      formatted.text = `⭐ ${gifterName2} gifted ${gs.star_count || 0} Stars`;
+    } else if (msg.content?._ === 'messagePremiumGiftCode') {
+      const pgc = msg.content as any;
+      const months2 = pgc.month_count || 0;
+      formatted.text = `🎁 Gift code: ${months2}mo Premium${pgc.is_unclaimed ? ' (unclaimed)' : ''}`;
+    } else if (msg.content?._ === 'messageGift') {
+      const gift = msg.content as any;
+      const g = gift.gift as any;
+      const senderId = gift.sender_id?.user_id;
+      const senderName = senderId ? await this.resolver.getUserName(senderId) : 'Someone';
+      const giftName = g?.type || 'a gift';
+      formatted.text = `🎁 ${senderName} sent ${giftName}`;
     }
 
     if (msg.content?._ === 'messageChatAddMembers' && msg.content.member_user_ids) {
