@@ -136,11 +136,11 @@ function M.render(msg)
 				has_info = true
 			end
 			if msg.linkPreview.title and #msg.linkPreview.title > 0 then
-				table.insert(out, "      " .. msg.linkPreview.title)
+				table.insert(out, "    " .. msg.linkPreview.title)
 				has_info = true
 			end
 			if msg.linkPreview.description and #msg.linkPreview.description > 0 then
-				table.insert(out, "      " .. msg.linkPreview.description)
+				table.insert(out, "    " .. msg.linkPreview.description)
 				has_info = true
 			end
 			if not has_info then

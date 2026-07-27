@@ -59,7 +59,7 @@ local function apply_highlights()
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgUnreadDivider", l, 0, -1)
 		elseif line:find("^  ↳ ") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgService", l, 0, -1)
-		elseif line:find("^  ↗ ") or line:find("^    [^ ]") or line:find("^      ") then
+		elseif line:find("^  ↗ ") or line:find("^    [^ ]") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgLinkPreview", l, 0, -1)
 		end
 	end
