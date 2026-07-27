@@ -541,6 +541,7 @@ M.register("translate", {
 		vim.ui.input({ prompt = "Translate to (lang code, e.g. en, zh): ", default = "en" }, function(lang)
 			if not lang or #lang == 0 then return end
 			close_translate()
+			vim.notify("Translating to " .. lang .. "…", vim.log.levels.INFO, { title = "tg" })
 			local data = server.translate_text(msg.text, lang)
 			if data and data.text and #data.text > 0 then
 				local buf = vim.api.nvim_create_buf(false, true)
@@ -597,6 +598,7 @@ M.register("translate_zh", {
 			return
 		end
 		close_translate()
+		vim.notify("Translating to zh…", vim.log.levels.INFO, { title = "tg" })
 		local data = server.translate_text(msg.text, "zh")
 		if data and data.text and #data.text > 0 then
 			local buf = vim.api.nvim_create_buf(false, true)
