@@ -1260,12 +1260,7 @@ M.register("openshared", {
 		local info = msg.sharedInfo
 		if info.chatId then
 			-- Open shared chat directly
-			local chat = require("telegram.server").open_private_chat(info.chatId)
-			if chat then
-				require("telegram").open_chat(chat.id, info.chatTitle or "Shared chat", chat.type)
-			else
-				vim.notify("Could not open shared chat", vim.log.levels.WARN, { title = "tg" })
-			end
+			require("telegram").open_chat(info.chatId, info.chatTitle or "Shared chat")
 		elseif info.userIds and #info.userIds > 0 then
 			-- Pick which user to DM
 			local items = {}
