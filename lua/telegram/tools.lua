@@ -1116,7 +1116,7 @@ M.register("createpoll", {
 		end
 		vim.ui.input({ prompt = "Poll question: " }, function(question)
 			if not question or #question == 0 then return end
-			vim.ui.input({ prompt = "Options (comma-separated, min 2): " }, function(options_str)
+			vim.ui.input({ prompt = "Options (separated by ,): " }, function(options_str)
 				if not options_str or #options_str == 0 then return end
 				-- Support both ASCII and Chinese commas
 				local normalized = options_str:gsub("[“,，]", ",")
