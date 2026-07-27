@@ -1248,4 +1248,51 @@ M.register("stoppoll", {
 	end,
 })
 
+M.register("openshared", {
+	description = "Open shared chat or user DM",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.sharedInfo and (t.sharedInfo.chatId or (t.sharedInfo.userIds and #t.sharedInfo.userIds > 0))
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		if not msg or not msg.sharedInfo then return end
+		local info = msg.sharedInfo
+		if info.chatId then
+			-- Open shared chat directly
+			local chat = require("telegram.server").open_private_chat(info.chatId)
+			if chat then
+				require("telegram").open_chat(chat.id, info.chatTitle or "Shared chat", chat.type)
+			else
+				vim.notify("Could not open shared chat", vim.log.levels.WARN, { title = "tg" })
+			end
+		elseif info.userIds and #info.userIds > 0 then
+			-- Pick which user to DM
+			local items = {}
+			for i, uid in ipairs(info.userIds) do
+				local name = (info.userNames and info.userNames[i]) or ("user_" .. uid)
+				table.insert(items, { id = uid, label = name })
+			end
+			if #items == 1 then
+				-- Only one user, open directly
+				local chat = require("telegram.server").open_private_chat(items[1].id)
+				if chat then
+					require("telegram").open_chat(chat.id, items[1].label, chat.type)
+				end
+			else
+				vim.ui.select(items, {
+					prompt = "Open DM with:",
+					format_item = function(item) return item.label end,
+				}, function(choice)
+					if not choice then return end
+					local chat = require("telegram.server").open_private_chat(choice.id)
+					if chat then
+						require("telegram").open_chat(chat.id, choice.label, chat.type)
+					end
+				end)
+			end
+		end
+	end,
+})
+
 return M

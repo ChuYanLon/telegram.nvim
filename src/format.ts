@@ -288,14 +288,19 @@ export class MessageFormatter {
         case 'messageChatShared': {
           const cs = msg.content as any;
           const chat = cs.chat as any;
-          formatted.text = `💬 Chat shared: ${chat?.title || '?'}`;
+          const chatId = chat?.chat_id;
+          const chatTitle = chat?.title || '?';
+          formatted.text = `💬 Chat shared: ${chatTitle}`;
+          if (chatId) formatted.sharedInfo = { chatId, chatTitle };
           break;
         }
         case 'messageUsersShared': {
           const us = msg.content as any;
           const users = us.users as any[] || [];
-          const names = users.map((u: any) => [u.first_name, u.last_name].filter(Boolean).join(' ') || `user_${u.user_id}`).join(', ');
-          formatted.text = `👥 Users shared: ${names || '?'}`;
+          const names = users.map((u: any) => [u.first_name, u.last_name].filter(Boolean).join(' ') || `user_${u.user_id}`);
+          const ids = users.map((u: any) => u.user_id).filter(Boolean);
+          formatted.text = `👥 Users shared: ${names.join(', ') || '?'}`;
+          if (ids.length > 0) formatted.sharedInfo = { userIds: ids, userNames: names };
           break;
         }
       }

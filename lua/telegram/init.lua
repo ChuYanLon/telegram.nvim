@@ -221,6 +221,7 @@ local function flush_msg_queue()
 				linkPreview = msg.linkPreview,
 				forwardInfo = msg.forwardInfo,
 				pollInfo = msg.pollInfo,
+				sharedInfo = msg.sharedInfo,
 				_unread = should_count_unread,
 				})
 			else
@@ -380,6 +381,7 @@ local function finish_init()
 								linkPreview = msg.linkPreview,
 								forwardInfo = msg.forwardInfo,
 								pollInfo = msg.pollInfo,
+								sharedInfo = msg.sharedInfo,
 							}
 							ui.render()
 							break

@@ -65,6 +65,12 @@ export interface FormattedMessage {
   reactions?: Reaction[];
   linkPreview?: LinkPreview;
   forwardInfo?: ForwardInfo;
+  sharedInfo?: {
+    chatId?: number;
+    chatTitle?: string;
+    userIds?: number[];
+    userNames?: string[];
+  };
 }
 
 export interface RawTdMessage {
