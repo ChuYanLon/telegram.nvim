@@ -2,15 +2,6 @@ local M = {}
 
 local type_labels = {
 	messagePoll = "[Poll]",
-	messageContact = "[Contact]",
-	messageLocation = "[Location]",
-	messageDice = "[Dice]",
-	messageGame = "[Game]",
-	messageCall = "[Call]",
-	messageAnimatedEmoji = "",
-	messageInvoice = "[Invoice]",
-	messageGiveaway = "[Giveaway]",
-	messagePremiumGiveaway = "[Premium Giveaway]",
 	messageForumTopicCreated = "[Topic Created]",
 	messageExpiredPhoto = "[Expired Photo]",
 	messageExpiredVideo = "[Expired Video]",

@@ -137,25 +137,26 @@ export class MessageFormatter {
           const curr = inv.currency || '';                          // currency:string
           const pi = inv.product_info;                               // product_info:productInfo
           const title = pi?.title || '';
-          formatted.text = `[Invoice] ${title}${title && amt ? ' — ' : ''}${amt ? `${amt} ${curr}` : ''}`.trim();
+          const display = title ? `🧾 ${title}` : '🧾 Invoice';
+          formatted.text = amt ? `${display}\n💰 ${amt} ${curr}` : display;
           break;
         }
         case 'messageGiveaway':
         case 'messagePremiumGiveaway': {
           const gw = msg.content as any;
           const winners = gw.winner_count || 0;  // winner_count:int32 (top-level)
-          formatted.text = `[Giveaway] ${winners} winner${winners !== 1 ? 's' : ''}`;
-          // prize:GiveawayPrize — could be giveawayPrizePremium with months
-          if (gw.prize?.months) {
-            formatted.text += `, ${gw.prize.months}mo Premium`;
-          }
+          const line = `🎉 ${winners} winner${winners !== 1 ? 's' : ''}`;
+          formatted.text = gw.prize?.months ? `${line}\n🎁 ${gw.prize.months}mo Premium` : line;
           break;
         }
         case 'messageContact': {
           const mc = msg.content as any;
           const ct = mc.contact as any;  // contact:contact
           const name = ct ? [ct.first_name, ct.last_name].filter(Boolean).join(' ') : '';
-          formatted.text = `[Contact] ${name || ct?.phone_number || 'Unknown'}`;
+          const phone = ct?.phone_number || '';
+          const display = name || phone || 'Unknown';
+          formatted.text = `👤 ${display}`;
+          if (phone) formatted.text += `\n📞 ${phone}`;
           break;
         }
         case 'messageDice': {
@@ -165,9 +166,10 @@ export class MessageFormatter {
         }
         case 'messageLocation': {
           const loc = msg.content as any;
-          const lat = loc.location?.latitude?.toFixed(4) || '?';   // location:location
+          const lat = loc.location?.latitude?.toFixed(4) || '?';
           const lng = loc.location?.longitude?.toFixed(4) || '?';
-          formatted.text = `[Location] ${lat}, ${lng}`;
+          formatted.text = `📍 ${lat}, ${lng}`;
+          formatted.text += `\n🗺️ https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}`;
           break;
         }
         case 'messagePoll': {
