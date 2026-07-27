@@ -3,17 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="telegram.nvim — A Telegram chat client inside Neovim. Powered by TDLib + TypeScript backend + Lua frontend. Real-time messaging, group management, media preview, and more.">
+  <meta name="description" content="telegram.nvim — A Telegram chat client inside Neovim. Powered by TDLib + TypeScript backend + Lua frontend.">
   <meta name="keywords" content="telegram, neovim, neovim-plugin, tdlib, telegram-client, tui, lua, typescript, chat, messaging">
-  <meta name="author" content="ChuYanLon">
   <meta property="og:title" content="telegram.nvim — Telegram Client for Neovim">
-  <meta property="og:description" content="A full-featured Telegram chat client that runs inside Neovim. Real-time messaging, group management, media preview, and more.">
+  <meta property="og:description" content="A full-featured Telegram chat client that runs inside Neovim.">
   <meta property="og:url" content="https://chuyanlon.github.io/telegram.nvim">
   <meta property="og:type" content="software">
-  <meta property="og:image" content="screenshots/0ff29034-aaca-4d3a-8994-3418436f20d0.png">
+  <meta property="og:image" content="screenshots/9efb7eac-0175-4b00-bf5c-ba48cee129c6.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="telegram.nvim — Telegram Client for Neovim">
-  <meta name="twitter:description" content="A full-featured Telegram chat client that runs inside Neovim.">
   <link rel="canonical" href="https://chuyanlon.github.io/telegram.nvim">
   <title>telegram.nvim — Telegram Client for Neovim</title>
   <script type="application/ld+json">
@@ -25,16 +22,8 @@
     "url": "https://chuyanlon.github.io/telegram.nvim",
     "applicationCategory": "Communication",
     "operatingSystem": "macOS, Linux, Windows",
-    "author": {
-      "@type": "Person",
-      "name": "ChuYanLon",
-      "url": "https://github.com/ChuYanLon"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
+    "author": { "@type": "Person", "name": "ChuYanLon", "url": "https://github.com/ChuYanLon" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "softwareVersion": "0.6.0",
     "programmingLanguage": ["TypeScript", "Lua"],
     "requirements": "Node.js >= 18, libtdjson >= 1.8.64"
@@ -42,97 +31,407 @@
   </script>
   <style>
     :root {
-      --bg: #0d1117;
-      --fg: #c9d1d9;
+      --bg: #0b0e14;
+      --bg-card: #121820;
+      --bg-code: #181e28;
+      --fg: #cdd6e6;
+      --fg-muted: #8892a8;
       --accent: #58a6ff;
-      --border: #30363d;
-      --code-bg: #161b22;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --green: #3fb950;
+      --border: #1e2838;
+      --border-hover: #2a3a50;
     }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--fg);
-      line-height: 1.6;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(88, 166, 255, 0.08), transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 20%, rgba(88, 166, 255, 0.04), transparent 60%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero h1 {
+      font-size: 3em;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, #58a6ff 50%, #79c0ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 1.2em;
+      color: var(--fg-muted);
+      max-width: 560px;
+      margin: 0 auto 24px;
+    }
+
+    .hero .badges {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero .badges img { height: 22px; border-radius: 4px; }
+
+    .hero .links {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero .links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.95em;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .hero .links a.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .hero .links a.primary:hover {
+      background: #4a96e8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .hero .links a.secondary {
+      background: var(--bg-card);
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+
+    .hero .links a.secondary:hover {
+      border-color: var(--border-hover);
+      background: #1a2434;
+      transform: translateY(-1px);
+    }
+
+    /* Content wrapper */
+    .content {
       max-width: 860px;
       margin: 0 auto;
-      padding: 40px 20px 80px;
+      padding: 48px 24px 80px;
     }
-    h1 { font-size: 2.2em; margin-bottom: 0.2em; color: #fff; }
-    h2 { font-size: 1.4em; margin-top: 2em; margin-bottom: 0.8em; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-    p { margin-bottom: 1em; }
+
+    /* Section headings */
+    .section-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-muted);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 1.6em;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    h3 {
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    /* Screenshot */
+    .screenshot-section {
+      margin-bottom: 64px;
+    }
+
+    .screenshot-section .frame {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .screenshot-section .frame img {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+    }
+
+    /* Feature cards grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      margin-bottom: 64px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .feature-card .icon {
+      font-size: 1.3em;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.92em;
+      color: var(--fg-muted);
+      line-height: 1.5;
+    }
+
+    /* Quick Start / Code */
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 64px;
+      overflow: hidden;
+    }
+
+    .code-block .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85em;
+      color: var(--fg-muted);
+    }
+
+    .code-block .header .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .code-block .header .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .code-block .header .dot.r { background: #ff5f57; }
+    .code-block .header .dot.y { background: #febc2e; }
+    .code-block .header .dot.g { background: #28c840; }
+
+    .code-block pre {
+      padding: 20px;
+      overflow-x: auto;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: 0.9em;
+      line-height: 1.6;
+      color: #d4dcec;
+    }
+
+    .code-block code {
+      background: none;
+      padding: 0;
+    }
+
+    /* How it works grid */
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      margin-bottom: 64px;
+    }
+
+    .how-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .how-card .step {
+      font-size: 0.8em;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .how-card p {
+      font-size: 0.92em;
+      color: var(--fg-muted);
+    }
+
+    /* Requirements as inline chips */
+    .req-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 64px;
+    }
+
+    .req-list .chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.9em;
+      transition: border-color 0.2s;
+    }
+
+    .req-list .chip:hover {
+      border-color: var(--border-hover);
+    }
+
+    .req-list .chip code {
+      background: var(--bg-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.9em;
+      color: var(--fg-muted);
+    }
+
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 0.5em 0 1.5em; }
-    .badges img { height: 22px; }
-    .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1.5em 0; }
-    .screenshots img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
-    .features { columns: 2; column-gap: 24px; margin: 1em 0; }
-    .features li { break-inside: avoid; margin-bottom: 0.4em; list-style: none; }
-    .features li::before { content: "✓ "; color: #3fb950; }
-    code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-    pre { background: var(--code-bg); padding: 16px; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); margin: 1em 0; }
-    pre code { background: none; padding: 0; }
-    .footer { margin-top: 4em; padding-top: 1em; border-top: 1px solid var(--border); font-size: 0.9em; color: #8b949e; }
-    @media (max-width: 600px) { .screenshots { grid-template-columns: 1fr; } .features { columns: 1; } }
+    p { margin-bottom: 1em; }
+
+    @media (max-width: 640px) {
+      .hero { padding: 48px 20px 40px; }
+      .hero h1 { font-size: 2em; }
+      .hero p { font-size: 1em; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .how-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <h1>telegram.nvim</h1>
-  <p>A full-featured <strong>Telegram chat client</strong> that runs inside <strong>Neovim</strong>.</p>
 
-  <div class="badges">
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-    <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >=18"></a>
-    <a href="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml"><img src="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
+  <!-- Hero -->
+  <div class="hero">
+    <h1>telegram.nvim</h1>
+    <p>A full-featured Telegram chat client that runs inside Neovim.</p>
+    <div class="badges">
+      <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+      <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >=18"></a>
+      <a href="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml"><img src="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+      <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
+    </div>
+    <div class="links">
+      <a class="primary" href="https://github.com/ChuYanLon/telegram.nvim">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        GitHub
+      </a>
+      <a class="secondary" href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a>
+      <a class="secondary" href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Documentation</a>
+      <a class="secondary" href="https://t.me/+h4aEOaABJJ1mMzhl">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram
+      </a>
+    </div>
   </div>
 
-  <p>
-    <a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a> &middot;
-    <a href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a> &middot;
-    <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Documentation</a> &middot;
-    <a href="https://t.me/+h4aEOaABJJ1mMzhl">Telegram Group</a>
-  </p>
+  <div class="content">
 
-  <h2>Screenshots</h2>
-  <div class="screenshots">
-    <img src="screenshots/0ff29034-aaca-4d3a-8994-3418436f20d0.png" alt="telegram.nvim chat view">
-    <img src="screenshots/cb7b56cd-e498-47b2-9808-49af00b0d2c8.png" alt="telegram.nvim group list">
-    <img src="screenshots/46ec08d6-a275-47e0-a196-7d0eab7a51d5.png" alt="telegram.nvim message input">
-    <img src="screenshots/c53202ab-7f40-4adb-8e99-8b0ba16d2643.png" alt="telegram.nvim media preview">
-  </div>
+    <!-- Screenshot -->
+    <div class="screenshot-section">
+      <div class="frame">
+        <img src="screenshots/9efb7eac-0175-4b00-bf5c-ba48cee129c6.png" alt="telegram.nvim screenshot">
+      </div>
+    </div>
 
-  <h2>Features</h2>
-  <ul class="features">
-    <li>Real-time messaging via WebSocket</li>
-    <li>Group & channel management</li>
-    <li>Send formatted text (markdown)</li>
-    <li>Edit & delete messages</li>
-    <li>Forward & reply with quote</li>
-    <li>Pin & unpin messages</li>
-    <li>Photo, video, file previews</li>
-    <li>HD media download</li>
-    <li>Inline fuzzy-find chat picker</li>
-    <li>Typing indicators</li>
-    <li>Online member count</li>
-    <li>Proxy support (SOCKS5/HTTP)</li>
-    <li>Session persistence</li>
-    <li>Favorites (Saved Messages) — press <kbd>s</kbd> to save any message</li>
-    <li>View counts — channel messages show 👀 N footer</li>
-    <li>Read receipts — outgoing private messages show (read HH:MM)</li>
-    <li>Edited indicator — edited messages show [edited] footer</li>
-    <li>Copy message — press <kbd>yy</kbd> to copy text to clipboard</li>
-    <li>Input editor with markdown syntax highlighting</li>
-    <li>Connection status indicator in title bar</li>
-    <li>Customizable keymaps</li>
-    <li>Theme adaptation</li>
-    <li>GitHub PR & Issue integration</li>
-  </ul>
+    <!-- Features -->
+    <h2>Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">💬</div>
+        <h3>Messaging</h3>
+        <p>Real-time send, edit, delete, forward, and reply with markdown formatting via WebSocket.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📁</div>
+        <h3>Media</h3>
+        <p>Photo, video, sticker, file previews with HD download. Read receipts, view counts, typing indicators.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">👥</div>
+        <h3>Chat Management</h3>
+        <p>Groups, channels, DMs. Member management, permissions editor, invite links, pin &amp; react.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎨</div>
+        <h3>Neovim Native</h3>
+        <p>Configurable panel, floating input editor with treesitter, cursor persistence, statusline integration.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔐</div>
+        <h3>Auth &amp; Sync</h3>
+        <p>Phone → code → 2FA flow, session persistence, multi-device sync, proxy support.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⚡</div>
+        <h3>GitHub</h3>
+        <p>Create &amp; merge PRs, browse issues directly from Neovim via <code>:TgPr</code> and <code>:TgIssue</code>.</p>
+      </div>
+    </div>
 
-  <h2>Quick Start</h2>
-  <p>Add to your Neovim config (lazy.nvim):</p>
-  <pre><code>{
+    <!-- Quick Start -->
+    <h2>Quick Start</h2>
+    <div class="code-block">
+      <div class="header">
+        <div class="dots">
+          <span class="dot r"></span>
+          <span class="dot y"></span>
+          <span class="dot g"></span>
+        </div>
+        lazy.nvim
+      </div>
+      <pre><code>{
   "ChuYanLon/telegram.nvim",
   build = "npm i",
   event = "VeryLazy",
@@ -141,21 +440,49 @@
   },
   opts = {},
 }</code></pre>
+    </div>
 
-  <h2>How It Works</h2>
-  <p><strong>Backend:</strong> TypeScript (Express + WebSocket) running TDLib on ports 8080/8081.</p>
-  <p><strong>Frontend:</strong> Pure Lua plugin communicating via HTTP and WebSocket.</p>
-  <p><strong>Auth:</strong> Phone number → verification code → 2FA (optional). Session persists across restarts.</p>
+    <!-- How It Works -->
+    <h2>How It Works</h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="step">Step 1</div>
+        <h3>Start</h3>
+        <p>Run <code>:Tg</code> in Neovim. The TypeScript backend boots on port 8080 and connects to Telegram via TDLib.</p>
+      </div>
+      <div class="how-card">
+        <div class="step">Step 2</div>
+        <h3>Authenticate</h3>
+        <p>Enter phone number, verification code, and 2FA password if needed. Session persists across restarts.</p>
+      </div>
+      <div class="how-card">
+        <div class="step">Step 3</div>
+        <h3>Chat</h3>
+        <p>Browse groups, channels, DMs with fuzzy search. Real-time messages flow through an integrated WebSocket bridge.</p>
+      </div>
+    </div>
 
-  <h2>Requirements</h2>
-  <ul>
-    <li>Node.js ≥ 18</li>
-    <li><code>libtdjson</code> (TDLib shared library, v1.8.64+)</li>
-    <li>curl</li>
-  </ul>
+    <!-- Requirements -->
+    <h2>Requirements</h2>
+    <div class="req-list">
+      <span class="chip">Neovim <strong>≥ 0.9</strong></span>
+      <span class="chip">Node.js <strong>≥ 18</strong></span>
+      <span class="chip"><code>libtdjson</code> <strong>≥ 1.8.64</strong></span>
+      <span class="chip">curl</span>
+      <span class="chip">snacks.nvim <em>(optional)</em></span>
+      <span class="chip">ImageMagick <em>(optional)</em></span>
+      <span class="chip">gh CLI <em>(optional)</em></span>
+    </div>
 
-  <div class="footer">
-    <p>Maintained by <a href="https://github.com/ChuYanLon">ChuYanLon</a> &middot; MIT License</p>
+    <!-- Footer -->
+    <div class="footer">
+      <span>Maintained by <a href="https://github.com/ChuYanLon">ChuYanLon</a> &middot; MIT License</span>
+      <span>
+        <a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a> &middot;
+        <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Docs</a>
+      </span>
+    </div>
+
   </div>
 </body>
 </html>
