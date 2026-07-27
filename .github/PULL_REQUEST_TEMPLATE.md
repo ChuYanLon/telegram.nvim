@@ -17,3 +17,4 @@
 - [ ] I have tested the changes locally (`pnpm test`)
 - [ ] TypeScript types are valid (`pnpm typecheck`)
 - [ ] `pnpm start` works without errors
+- [ ] Docs are up to date: if I added/removed keys (config.lua), ran `pnpm gen:docs`; if I changed feature behavior, updated `README.md`

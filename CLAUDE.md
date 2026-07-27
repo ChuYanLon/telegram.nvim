@@ -1,0 +1,170 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## TDLib API Reference
+
+The official TDLib API schema is at **`schema/td_api.tl`** (16k+ lines). Always consult this file before implementing or modifying any TDLib API call (`client.invoke()`). Every method name, parameter, return type, and update event is defined there. Do not guess TDLib method names or parameter shapes.
+
+Search patterns:
+```bash
+grep -n '^methodName\b' schema/td_api.tl         # find a function definition
+grep -n '^typeName\b' schema/td_api.tl           # find a type definition
+grep -n 'updateSomething\b' schema/td_api.tl     # find an update event
+```
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm install` | Install Node.js dependencies |
+| `pnpm test` | Run all Vitest tests (backend only — no Lua tests exist) |
+| `pnpm test -- tests/client.test.ts` | Run a single test file |
+| `pnpm test -- -t "extractText"` | Run tests matching a name pattern |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm typecheck` | TypeScript type checking (`tsc --noEmit`) |
+| `pnpm start` | Start the backend server (for manual testing; `pretest` kills existing server) |
+
+CI runs on push/PR to `main` (matrix: node 18/20/22) using pnpm: `pnpm install --frozen-lockfile` → `pnpm test` → `pnpm typecheck`. Also verifies keymaps docs are in sync (`pnpm gen:docs` + diff).
+
+## Documentation Automation
+
+Keymaps table in README.md is auto-generated from `lua/telegram/config.lua`. After adding/removing/renaming keys:
+
+```bash
+pnpm gen:docs       # regenerate the keymaps table in README.md
+pnpm check:docs     # regenerate and check if it changed (exit 1 if out of sync)
+```
+
+CI runs `pnpm check:docs` so merging with a stale table will fail. The README feature checklist is intentionally high-level  (categories, not per-feature checkboxes) — keep it that way to avoid constant updates.
+
+> `pretest` kills any existing `tsx src/server.ts` process to avoid port conflicts. There is no `vitest.config.ts` — vitest uses default config.
+
+## Architecture Overview
+
+telegram.nvim is a Telegram chat client for Neovim with two halves communicating **only** through a local HTTP REST API + WebSocket on configurable ports (default 8080/8081). Both sides must be updated in sync when changing the message contract.
+
+### Communication flow
+
+```
+TDLib (C library)
+  ↕ tdl npm package (FFI)
+TypeScript backend (src/)
+  ↕ HTTP (REST) + WebSocket
+Lua frontend (lua/telegram/)
+  ↕ Neovim buffer / UI
+```
+
+- Lua talks to the backend via **curl** (`server.lua`) for synchronous requests and async callbacks. A retry mechanism (2 attempts, 300/500ms delays) handles transient curl failures, with `vim.net.request` as fallback.
+- Real-time events (new messages, typing indicators, reactions) arrive via **WebSocket** — a `tsx` subprocess (`bin/tg-ws-helper.ts`) bridges Neovim's job control to the WS server. Auto-reconnect with exponential backoff (1s→30s).
+- The message pipeline: TDLib raw message → `MessageFormatter.format()` (TS) → HTTP response → Lua render dispatcher (`render/init.lua`) → routed to text/link/media/other renderers → written as Markdown into a Neovim buffer with treesitter.
+- **Message batching**: incoming WS messages are queued in memory and flushed every 20ms (vim timer) — prevents Neovim freeze from rapid successive messages.
+
+### Project tree
+
+```
+lua/telegram/          # Neovim Lua frontend
+├── init.lua           # Entry point, WS event dispatch, commands
+├── ui.lua             # Window/panel management, rendering, keymaps, virtual scroll
+├── server.lua         # HTTP client (curl + retry, vim.net.request fallback)
+├── ws.lua             # WebSocket subprocess lifecycle + reconnect
+├── auth.lua           # Phone → code → 2FA auth flow
+├── config.lua         # setup() options, highlight groups, dep checks
+├── editor.lua         # Floating markdown input editor with context preview
+├── state.lua          # Global state singleton (50+ fields, MAX_WINDOW_MESSAGES=200)
+├── groups.lua         # Chat list, member management, permissions, invite links
+├── tools.lua          # Extensible @-tool system with condition() guards
+├── reactions.lua      # Emoji reaction picker (40+ emojis)
+├── emojis.lua         # Static emoji name→character mapping
+├── github.lua         # :TgPr / :TgIssue commands
+├── help.lua           # Keybinding help popup
+├── status.lua         # Statusline component helpers
+└── render/            # Message rendering pipeline
+    ├── init.lua       # Dispatcher — routes by message type
+    ├── text.lua       # Plain text renderer (includes code blocks)
+    ├── link.lua       # URL detection + wrapping
+    ├── media.lua      # Photo/Video/Document/etc. thumbnails
+    ├── other.lua      # Fallback (polls, contacts, location, service messages)
+    └── title.lua      # Floating title bar (status, typing, pinned)
+src/                   # TypeScript backend (CommonJS, tsx runtime)
+├── server.ts          # Express + WebSocket server, all HTTP routes
+├── client.ts          # TelegramLSPClient — TDLib wrapper
+├── types.ts           # Shared interfaces (FormattedMessage, RawTdMessage, etc.)
+├── tdlib.ts           # libtdjson path auto-detection per platform
+├── auth.ts            # AuthManager — phone/code/2FA callback bridge
+├── format.ts          # MessageFormatter — entity→markdown conversion
+├── resolve.ts         # Sender resolution cache (users + chats)
+└── updates.ts         # UpdateDispatcher — ~30 TDLib update events → WS broadcast
+bin/
+└── tg-ws-helper.ts    # WebSocket bridge subprocess for Neovim job control
+tests/
+├── client.test.ts     # Client formatting/sender/resolution/update tests
+├── server.test.ts     # Express server endpoint tests
+└── fake-td-client.ts  # FakeTdClient — in-memory TDLib mock (~20 API calls)
+```
+
+### Lua Frontend — Key Modules
+
+| Module | Role |
+|--------|------|
+| `init.lua` | Entry point, message routing, WS event dispatch, `:Tg` / `:TgLogout` / `:TgSend` / `:TgTool` commands |
+| `config.lua` | `setup()` options, default keymap definitions (31 keys), highlight groups, dependency checks (`node`, `curl`, `tsx`) |
+| `server.lua` | HTTP client (curl with retry, `vim.net.request` fallback), server start/stop, port detection, health check |
+| `ws.lua` | WebSocket subprocess lifecycle, auto-reconnect with exponential backoff (1s→30s) |
+| `auth.lua` | Auth polling loop: phone → code → 2FA via `vim.ui.input` |
+| `ui.lua` | Window/panel management (right/left/bottom/top), chat lifecycle (open/close/destroy), rendering, virtual scrolling (load older/newer), keymaps, cursor-preserved navigation, title bar |
+| `state.lua` | Global state singleton (50+ fields: buf, win, messages, groups, chat_id, permissions, typing users, pinned_message, editor_draft, etc.), message trimming (MAX_WINDOW_MESSAGES = 200) |
+| `editor.lua` | Floating input editor with markdown treesitter, typing indicator, context preview, draft persistence |
+| `tools.lua` | Extensible `@`-tool system — registers tools with optional `condition()` guards; includes `@chats`, `@search`, `@members`, `@invitelinks`, `@groupsettings`, `@refreshmedia`, `@openlink`, `@toggleheader` |
+| `groups.lua` | Group/chat list, Snacks/vim.ui.select picker, member management (ban/unban/promote/demote/restrict), invite links (CRUD with limit/expiration), group settings (title/description/leave/delete-history), permission editor popup (14 permission types) |
+| `reactions.lua` | Emoji reaction picker with 40+ verified emojis |
+| `emojis.lua` | Static emoji name→character mapping (lookup via `emojis.get(emojis.get_name("😀"))`) |
+| `github.lua` | `:TgPr` (create/merge PR with branch picker, squash/merge options, auto-delete branch), `:TgIssue` (list issues, create branch, close, assignees, open in browser) |
+| `help.lua` | Keybinding help popup |
+| `status.lua` | Statusline component helpers for integration with lualine, heirline, etc. |
+
+### TypeScript Backend — Key Modules
+
+| Module | Role |
+|--------|------|
+| `server.ts` | Express app + WebSocket server (`ws`), all HTTP routes (`/health`, `/chats`, `/chat/*`, `/messages`, `/sendMessage`, `/editMessage`, `/deleteMessage`, `/forwardMessages`, `/pinMessage`, `/message/*`, `/messageMedia`, `/user-profile`, etc.) |
+| `client.ts` | `TelegramLSPClient` — TDLib client wrapper; chat loading (paginated with offset, MAX_CHATS=500), message history, sending/editing/deleting/forwarding, member management, permissions, invite links, reactions, media download, keep-online heartbeat (30s interval), user profiles |
+| `auth.ts` | `AuthManager` — phone/code/2FA callback bridge |
+| `format.ts` | `MessageFormatter` — transforms `RawTdMessage` → `FormattedMessage`; entity→markdown conversion (bold, italic, code, pre, strikethrough, links); admin title preloading; reply-to extraction; file info extraction; forward info; `extractText()` helper |
+| `resolve.ts` | `Resolver` — sender resolution cache (users + chats, populated on-demand); preload mechanism for batch message rendering; chat lookups by ID |
+| `updates.ts` | `UpdateDispatcher` — listens to all TDLib `update*` events and broadcasts them as structured JSON via `global.broadcast()` (WebSocket); handles ~30 update types (newMessage, messageSendSucceeded, messageReactions, chatReadInbox, userStatus, connectionState, etc.) |
+| `tdlib.ts` | Auto-detection of `libtdjson.so`/`.dylib`/`.dll` path via platform-specific methods (Linux: ldconfig, find, LD_LIBRARY_PATH; macOS: mdfind, homebrew; Windows: where, env paths) |
+| `types.ts` | Shared interfaces: `FormattedMessage`, `RawTdMessage`, `RawTdChat`, `ChatInfo`, `GroupInfo`, `AuthState`, `TdUpdate`, `BroadcastFn`, `SenderInfo`, `Reaction`, `LinkPreview`, `ForwardInfo` |
+
+### Key Architectural Patterns
+
+1. **Message IDs use `tostring()` for comparison** throughout Lua — avoids type-coercion edge cases between number and string IDs.
+2. **All WS event handlers are wrapped in `pcall`** — prevents crashes from malformed updates.
+3. **Async HTTP responses use `vim.schedule()`** callbacks to safely update Neovim state from coroutine contexts.
+4. **Debounced notification batching** — new-message notifications from non-focused chats are grouped over 500ms and shown as aggregated `[Chat] N new messages`.
+5. **Unread-aware loading** — opening a chat loads history around the first unread message, with `last_read_id` persisted per chat.
+6. **Cursor position is tracked per chat** — saved by message ID, restored when re-opening.
+7. **Media auto-download** — new messages with media types trigger async `/messageMedia` fetch; the pending-message ID is tracked to avoid races if the chat changes mid-fetch.
+8. **WebSocket contract**: Never change a WS message event name or payload shape without updating both Lua (`init.lua` dispatch) and TS (`updates.ts` broadcast). The schema is the source of truth for TDLib fields, but the WS wire format is defined by the Lua dispatch table.
+
+### Test Structure
+
+- **Vitest** (config in `package.json`, no `vitest.config.ts`) — backend only; there are no Lua tests, Lua changes are tested manually in Neovim.
+- `tests/client.test.ts` — Tests `TelegramLSPClient` formatting (`_extractText`, `_resolveSender`, `_formatMessage`, reply formatting, chat member handling, user profiles, pinning, update dispatching). Tests use `describe` scoped to method, `it('does something specific', ...)`.
+- `tests/server.test.ts` — Tests Express server endpoints
+- `tests/fake-td-client.ts` — `FakeTdClient` class that simulates ~20 TDLib API calls (`getUser`, `getChat`, `searchPublicChat`, `getChatHistory`, `sendMessage`, etc.) with in-memory stores (`_users`, `_chats`, `_pinnedMessages`). Configured by injecting via `new TelegramLSPClient({ client: fake })`. This is the primary test double pattern — inject a fake TDLib client rather than mocking at the HTTP level.
+
+### Code Conventions
+
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `perf:`, `style:`, `test:`. Description focuses on *why* not *what*. Co-authored with `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **Lua**: tabs for indentation (enforced by `.editorconfig`), `---@class`/`---@field` annotations, no semicolons, lowercase module names, `M = {}` pattern for modules
+- **TypeScript**: full type annotations, `const` by default, `_` field prefix for TDLib type discriminators (e.g. `{ _: 'getChat', chat_id: id }`), **CommonJS modules** (`require`), `tsx` runtime (no build step), `strict: false` in tsconfig (prefer explicit narrowing)
+- **Backend uses CommonJS** (`tsconfig.json` module: `"commonjs"`), target `ES2022` — use `require()`, not `import`/`export` syntax when adding Node.js built-in requires
+- **CI uses pnpm** (`pnpm install --frozen-lockfile`), not npm — development should use pnpm too for lockfile consistency
+
+### Other Reference Files
+
+- `README.md` — full feature status, default keymaps, configuration reference, auth flow, FAQ
+- `AGENTS.md` — repository guidelines for two-tier architecture
+- `WORKFLOW.md` — branch naming conventions, development workflow
+- `CONTRIBUTING.md` — contribution process

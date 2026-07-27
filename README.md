@@ -28,71 +28,47 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ## Feature Status
 
-### What works
+### Messages
+- Read text, media, links, code blocks, service messages in real-time via WebSocket
+- Send/edit/delete/forward/reply with markdown formatting
+- Search messages, copy text, save to Favorites
+- Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
+- Read receipts, edited indicators, view counts, typing indicators
 
-- [x] Login with phone number, verification code, and 2FA password
-- [x] Session persists across restarts (no re-login)
-- [x] `:TgLogout` to clear auth and start fresh
-- [x] Group list with unread badges, inline fuzzy search (Snacks picker with `vim.ui.select` fallback)
-- [x] Open/close chats, switch between groups
-- [x] Scroll infinitely in both directions (older and newer messages)
-- [x] Receive new messages in real-time via WebSocket
-- [x] Typing indicators and online member count
-- [x] Cursor position is remembered per chat (tracked by message ID)
-- [x] Messages are marked as read when opening a chat; per-message read tracking with `last_read_id` persistence
-- [x] Unread-aware loading — opens at first unread message with unread divider
-- [x] Date separators between messages, loading indicators, and empty state
-- [x] Send plain text messages (with reply context)
-- [x] Send messages with formatting — type markdown syntax (`**bold**`, `### heading`) in input; Telegram clients (Android, iOS, Desktop) parse markdown natively, Neovim buffer renders via markdown treesitter
-- [x] Edit your own messages
-- [x] Delete your own messages (Delete for me / Revoke for everyone)
-- [x] Forward messages to another chat
-- [x] Reply to a message with quote context
-- [x] Search messages and jump to the result position
-- [x] URLs are highlighted and clickable
-- [x] Code blocks (backtick) are detected and formatted
-- [x] Single-panel chat layout with floating input popup
-- [x] Adjustable panel position — `panel_position` option (`"right"`, `"left"`, `"bottom"`, `"top"`); width via `g:telegram_width` (default 50), height via `g:telegram_height` (default 15)
-- [x] `?` opens a help popup with all keybindings
-- [x] Target line highlighting (reply/edit/delete/forward) using theme's `Diff*` colors
-- [x] `:TgPr` — create GitHub PR with branch picker, auto-fill, optional merge
-- [x] `:TgIssue` — list, create branch, close, assign, open in browser
-- [x] Proxy support (SOCKS5 / HTTP) for restricted regions
-- [x] Service messages shown as readable text with prefix symbols
-- [x] Download HD media — `@refreshmedia` downloads highest-quality version of photos/videos under cursor (async, non-blocking)
-- [x] Context-aware tool picker — `@` only shows applicable tools (e.g. `refreshmedia` only on media messages)
-- [x] Wake-up safe — messages received after sleep are batched and rendered at once, no Neovim freeze
-- [x] Admin custom titles — shows `[头衔]` next to admin names in messages and member list; admins without title show `[Administrator]`
-- [x] Photo / sticker / video / file inline preview — rendered as `![Photo](/path)` markdown; works with image renderers like `snacks.nvim` image module
-- [x] Private chats (direct 1-on-1 messages) — press `c` on a message to open DM with the sender
-- [x] Channel support — view channels and their messages; admin tools (member list, change info) shown based on permissions
-- [x] Group management — view members (including admins and creator), ban/unban, restrict/unrestrict, promote/demote admins, add members by @username
-- [x] Group settings — change title/description, granular default permissions editor (14 permission types with toggle-all), leave group, unsubscribe from channel, delete history
-- [x] Invite links — create (with optional member limit and expiration), view, edit, and revoke invite links
-- [x] Pin / unpin messages — press `p` on a message to pin/unpin; permission check for `can_pin_messages`
-- [x] React to messages — press `r` to open reaction picker with 40+ verified emojis; same emoji toggles off, different auto-switches; real-time sync via WebSocket
-- [x] Real-time sync between devices — edits, deletions, reactions, group info changes, user name/status changes sync via WebSocket from other clients
-- [x] Online status — session reports as online with periodic heartbeat; device shown as `telegram.nvim` in Telegram's active sessions list
-- [x] Favorites (Saved Messages) — dedicated chat with 📌 icon in picker; press `s` on any message to save with confirmation
-- [x] View counts — channel messages show `👀 N` footer with k/M formatting; real-time update via WebSocket
-- [x] Read receipts — outgoing private messages show `(read HH:MM)` in header when read by recipient
-- [x] Edited indicator — edited messages show `[edited]` footer
-- [x] Copy message text — press `yy` to copy message text to system clipboard
-- [x] Toggle title bar — `@toggleheader` shows/hides the floating title bar; configurable via `hide_title` option
-- [x] Connection status — title bar shows red dot when disconnected from Telegram
-- [x] Input editor redesign — bottom panel with context preview; markdown syntax highlighting while typing
-- [x] Customizable keymaps — all keys configurable via `setup({ keys = { ... } })`
-- [x] Configurable panel position — `panel_position = "right" | "left" | "bottom" | "top"`
-- [x] Theme adaptation — all highlight groups derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
+### Chat management
+- Group, channel, and private chat (DM) support
+- Member management: promote/demote, ban/unban, restrict, add by @username
+- Invite links with member limit and expiration
+- Group settings: title, description, granular permissions editor (14 types)
+- Pin/unpin messages, react with emojis (40+), mark unread, archive chats
+- Favorites (Saved Messages)
 
-### What doesn't work yet
+### UI & UX
+- Configurable panel position (right/left/bottom/top)
+- Floating input editor with markdown treesitter highlight and reply preview
+- Cursor persistence per chat, unread-aware loading with divider
+- Scroll infinitely in both directions, date separators
+- Statusline integration (lualine/heirline), help popup
+- Theme adaptation (all highlights from your Neovim theme)
+- Customizable keymaps, toggleable title bar with connection status
+- Wake-up safe: batches messages received during sleep
 
-- [ ] **Send media** (photos, videos, files, audio) — can't upload anything yet
-- [ ] **Send stickers / GIFs**
-- [ ] **Create polls**
-- [ ] **Scheduled messages**
-- [ ] **Poll, contact, location, dice, game, call display** — fallback shows label, content not interactive
-- [ ] **Inline bots** / bot commands
+### Authentication & connectivity
+- Phone → code → 2FA flow, session persists across restarts
+- `:TgLogout` to clear auth
+- Online status with periodic heartbeat (shows as `telegram.nvim`)
+- Real-time sync between devices
+- Proxy support (SOCKS5 / HTTP) for restricted regions
+
+### GitHub integration
+- `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete
+- `:TgIssue` — browse issues, close, assign, create branches, open in browser
+
+### Known limitations
+- Send media (photos/videos/files/audio), stickers/GIFs
+- Polls, scheduled messages
+- Poll/contact/location/dice/game/call display (fallback label only)
+- Inline bots / bot commands
 
 ### Customizing keys
 
@@ -109,32 +85,42 @@ require("telegram").setup({
 
 All available keys and their defaults:
 
+<!-- KEYMAPS_TABLE_START -->
 | Key name | Default | Action |
 |----------|---------|--------|
-| `tool_picker` | `@` | Open tool picker |
-| `input_editor` | `i` | Open message input editor |
-| `reply` | `<CR>` | Reply to / jump to message |
-| `edit` | `e` | Edit own message |
-| `delete` | `d` | Delete / revoke message |
-| `forward` | `f` | Forward message |
-| `pin` | `p` | Pin / unpin message |
-| `reaction` | `r` | React to message (opens emoji picker) |
-| `save` | `s` | Save message to Favorites (with confirmation) |
-| `copy` | `yy` | Copy message text to clipboard |
-| `refresh` | `G` | Refresh messages, jump to bottom |
-| `ban` | `B` | Ban message sender |
-| `open_dm` | `c` | Open DM with message sender |
-| `help` | `?` | Toggle help popup |
-| `editor_submit` | `<CR>` | Submit message in editor |
-| `editor_cancel` | `<Esc>` | Cancel editing |
-| `help_close` | `<Esc>` | Close help popup |
-| `help_close_q` | `q` | Close help popup (alt) |
-| `perms_down` | `j` | Permission editor: move down |
-| `perms_up` | `k` | Permission editor: move up |
-| `perms_toggle` | `<Tab>` | Permission editor: toggle item |
-| `perms_up_alt` | `<S-Tab>` | Permission editor: move up (alt) |
-| `perms_save` | `<CR>` | Permission editor: save |
-| `perms_discard` | `<Esc>` | Permission editor: discard |
+| `tool_picker` | `@` | open tool picker |
+| `input_editor` | `i` | open input editor |
+| `reply` | `<CR>` | reply / jump to original |
+| `edit` | `e` | edit own message |
+| `delete` | `d` | delete / revoke |
+| `forward` | `f` | forward message |
+| `forward_with_reply` | `F` | forward with reply context |
+| `pin` | `p` | pin / unpin message |
+| `save` | `s` | save to Favorites |
+| `copy` | `yy` | copy message text |
+| `refresh` | `G` | refresh + jump to bottom |
+| `ban` | `B` | ban message sender |
+| `open_dm` | `c` | open DM with message sender |
+| `help` | `?` | toggle this help |
+| `editor_submit` | `<CR>` | submit message in editor |
+| `editor_cancel` | `<Esc>` | cancel editing |
+| `help_close` | `<Esc>` | close this help |
+| `help_close_q` | `q` | close this help (alt) |
+| `goto_last` | `<C-o>` | switch to previous chat |
+| `reaction` | `r` | react to message |
+| `archive` | `a` | archive/unarchive chat |
+| `mark_unread` | `u` | mark unread / mark as read |
+| `message_link` | `L` | copy message link |
+| `user_profile` | `U` | view user profile |
+| `mute` | `m` | mute / unmute chat |
+| `perms_down` | `j` | permission editor: move down |
+| `perms_up` | `k` | permission editor: move up |
+| `perms_toggle` | `<Tab>` | permission editor: toggle item |
+| `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
+| `perms_save` | `<CR>` | permission editor: save |
+| `perms_discard` | `<Esc>` | permission editor: discard |
+
+<!-- KEYMAPS_TABLE_END -->
 
 Set any key to `false` to disable it.
 

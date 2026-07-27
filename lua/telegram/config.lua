@@ -60,6 +60,15 @@ M.key_labels = {
 	help = "toggle this help",
 	tool_picker = "open tool picker",
 	help_close = "close this help",
+	editor_submit = "submit message in editor",
+	editor_cancel = "cancel editing",
+	help_close_q = "close this help (alt)",
+	perms_down = "permission editor: move down",
+	perms_up = "permission editor: move up",
+	perms_toggle = "permission editor: toggle item",
+	perms_up_alt = "permission editor: move up (alt)",
+	perms_save = "permission editor: save",
+	perms_discard = "permission editor: discard",
 }
 
 M.config = {

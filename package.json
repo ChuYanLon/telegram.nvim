@@ -8,7 +8,9 @@
     "pretest": "pgrep -f 'tsx src/server\\.ts' | xargs -r kill 2>/dev/null; true",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:docs": "tsx scripts/gen-keymaps.ts",
+    "check:docs": "pnpm gen:docs && git diff --exit-code README.md"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
