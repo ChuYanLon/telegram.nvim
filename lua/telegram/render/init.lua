@@ -91,7 +91,7 @@ function M.render(msg)
 		local style = service_styles[msg.type]
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. date_str)
-	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) then
+	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) and not (msg.text and #msg.text > 0) then
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		table.insert(out, "[~] " .. s .. " performed an action at " .. date_str)
 	else

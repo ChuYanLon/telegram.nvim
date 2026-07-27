@@ -148,8 +148,8 @@ Media messages are shown as thumbnails or tags:
 | `[Poll]` | Poll with progress bars. `@vote` to vote, `@voters` to see voters, `@stoppoll` to close |
 | `[Contact]` | Contact shared |
 | `[Location]` | Location shared |
-| `[Dice]` | Dice rolled |
-| `[Game]` | Game played |
+| `🎲 5` / `🏀 3` etc. | Dice / emoji roll |
+| `🎮 Title` | Game played |
 | `[Call]` | Voice/video call |
 | emoji character | Animated emoji (inline text) |
 | `![Video](/thumbnail)` | Video thumbnail preview (click `@openlink` to play) |
@@ -168,6 +168,15 @@ Media messages are shown as thumbnails or tags:
 | `📅 / 🔊 / 🔇` | Video chat scheduled / started / ended |
 | `📍 Proximity alert` | Proximity trigger |
 | `📌 Topic renamed: ...` | Forum topic edited |
+| `🎲 5` etc. | Stake dice (🎯🎳🎰 etc.) |
+| `🎉 Giveaway created` / `🏆 Winners` / `✅ Completed` | Giveaway lifecycle |
+| `⭐ Giveaway prize: N Stars` | Giveaway star prize |
+| `💎 Alice gifted N TON` | TON gift |
+| `📱 Joined Telegram` | Contact registered notification |
+| `🔊 Group call started` / `📞 Missed` / `🔇 Ended` | Group call events |
+| `🌐 WebApp: button` | WebApp data sent |
+| `🎨 Theme set: name` | Chat theme changed |
+| `🖼️ Background changed` | Chat background changed |
 
 ## Requirements
 

@@ -303,6 +303,75 @@ export class MessageFormatter {
           if (ids.length > 0) formatted.sharedInfo = { userIds: ids, userNames: names };
           break;
         }
+        case 'messageStakeDice': {
+          const sd = msg.content as any;
+          formatted.text = `${sd.emoji || '🎲'} ${sd.value || 0}`;
+          break;
+        }
+        case 'messageGiveawayCreated': {
+          const gc = msg.content as any;
+          formatted.text = `🎉 Giveaway created${gc.star_count ? ` (${gc.star_count} ⭐)` : ''}`;
+          break;
+        }
+        case 'messageGiveawayCompleted': {
+          const gcomp = msg.content as any;
+          formatted.text = `✅ Giveaway completed — ${gcomp.winner_count || 0} winner${gcomp.winner_count !== 1 ? 's' : ''}`;
+          if (gcomp.unclaimed_prize_count) formatted.text += `\n📭 ${gcomp.unclaimed_prize_count} unclaimed`;
+          break;
+        }
+        case 'messageGiveawayWinners': {
+          const gw = msg.content as any;
+          formatted.text = `🏆 Giveaway winners (${gw.winner_count || 0})`;
+          break;
+        }
+        case 'messageGiveawayPrizeStars': {
+          const gps = msg.content as any;
+          formatted.text = `⭐ Giveaway prize: ${gps.star_count || 0} Stars${gps.is_unclaimed ? ' (unclaimed)' : ''}`;
+          break;
+        }
+        case 'messageContactRegistered': {
+          formatted.text = '📱 Joined Telegram';
+          break;
+        }
+        case 'messageGroupCall': {
+          const grp = msg.content as any;
+          const wasMissed = grp.was_missed;
+          const isActive = grp.is_active;
+          if (wasMissed) {
+            formatted.text = '📞 Missed group call';
+          } else if (isActive) {
+            formatted.text = '🔊 Group call started';
+          } else {
+            const dur = grp.duration || 0;
+            const m = Math.floor(dur / 60);
+            const s = dur % 60;
+            formatted.text = `🔇 Group call ended${dur > 0 ? ` (${m > 0 ? `${m}m ` : ''}${s}s)` : ''}`;
+          }
+          if (grp.is_video) formatted.text += ' 📹';
+          break;
+        }
+        case 'messageWebAppDataSent': {
+          const wa = msg.content as any;
+          formatted.text = `🌐 WebApp: ${wa.button_text || '?'}`;
+          break;
+        }
+        case 'messageChatSetTheme': {
+          const theme = msg.content as any;
+          const themeName = theme.theme?.name || 'a theme';
+          formatted.text = `🎨 Theme set: ${themeName}`;
+          break;
+        }
+        case 'messageChatSetBackground': {
+          formatted.text = '🖼️ Background changed';
+          break;
+        }
+        case 'messageGiftedTon': {
+          const gton = msg.content as any;
+          const gifterId3 = gton.gifter_user_id;
+          const gifterName3 = gifterId3 ? await this.resolver.getUserName(gifterId3) : 'Someone';
+          formatted.text = `💎 ${gifterName3} gifted ${(gton.gram_amount || 0) / 1e9} TON`;
+          break;
+        }
       }
     }
 
