@@ -140,7 +140,9 @@ function M.render(msg)
 				has_info = true
 			end
 			if msg.linkPreview.description and #msg.linkPreview.description > 0 then
-				table.insert(out, "  " .. msg.linkPreview.description)
+				for _, desc_line in ipairs(vim.split(msg.linkPreview.description, "\n")) do
+					table.insert(out, "  " .. desc_line)
+				end
 				has_info = true
 			end
 			if not has_info then

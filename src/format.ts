@@ -431,7 +431,11 @@ export class MessageFormatter {
       const content = msg.content as any;
       const lp = content.link_preview as { url?: string; title?: string; description?: { text?: string }; site_name?: string } | undefined;
       if (lp?.url) {
-        const desc = lp.description ? (typeof lp.description === 'string' ? lp.description : lp.description.text) : undefined;
+        let desc: string | undefined;
+        if (lp.description) {
+          const raw = typeof lp.description === 'string' ? lp.description : (lp.description as { text?: string }).text || '';
+          desc = raw.split('\n').join(' ');
+        }
         formatted.linkPreview = {
           url: lp.url,
           title: lp.title,
