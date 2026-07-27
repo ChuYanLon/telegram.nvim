@@ -2,7 +2,17 @@
   "name": "telegram-lsp-backend",
   "version": "0.6.0",
   "description": "Backend server for telegram.nvim — a Telegram TUI client for Neovim",
-  "keywords": ["telegram", "neovim", "neovim-plugin", "tdlib", "tdjson", "tui", "chat", "messaging", "telegram-client"],
+  "keywords": [
+    "telegram",
+    "neovim",
+    "neovim-plugin",
+    "tdlib",
+    "tdjson",
+    "tui",
+    "chat",
+    "messaging",
+    "telegram-client"
+  ],
   "scripts": {
     "start": "tsx src/server.ts",
     "pretest": "pgrep -f 'tsx src/server\\.ts' | xargs -r kill 2>/dev/null; true",
@@ -13,17 +23,23 @@
     "check:docs": "pnpm gen:docs && git diff --exit-code README.md wiki/Keymaps.md wiki/Configuration.md"
   },
   "dependencies": {
-    "dotenv": "^16.4.0",
-    "express": "^4.19.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
     "tdl": "^8.1.0",
-    "ws": "^8.18.0"
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
     "@types/ws": "^8.18.1",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "7.3.5",
+      "esbuild": "0.28.1"
+    }
   }
 }
