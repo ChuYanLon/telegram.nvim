@@ -3,22 +3,42 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 
 ## Chat Window
 
-| Key | Action |
-|-----|--------|
-| `?` | Show help popup |
-| `i` | Focus input editor |
-| `<CR>` | Reply to message / jump to original message |
-| `e` | Edit own message (highlighted in blue) |
-| `d` | Delete / revoke message (highlighted in red) |
-| `f` | Forward message to another chat |
-| `p` | Pin / unpin message at cursor |
-| `r` | React to message (opens emoji picker) |
-| `s` | Save message to Favorites (with confirmation) |
-| `yy` | Copy message text to clipboard |
-| `c` | Open DM with message sender |
-| `B` | Ban message sender |
-| `G` | Refresh messages, jump to bottom |
-| `@` | Open tool picker |
+<!-- KEYMAPS_TABLE_START -->
+| Key name | Default | Action |
+|----------|---------|--------|
+| `tool_picker` | `@` | open tool picker |
+| `input_editor` | `i` | open input editor |
+| `reply` | `<CR>` | reply / jump to original |
+| `edit` | `e` | edit own message |
+| `delete` | `d` | delete / revoke |
+| `forward` | `f` | forward message |
+| `forward_with_reply` | `F` | forward with reply context |
+| `pin` | `p` | pin / unpin message |
+| `save` | `s` | save to Favorites |
+| `copy` | `yy` | copy message text |
+| `refresh` | `G` | refresh + jump to bottom |
+| `ban` | `B` | ban message sender |
+| `open_dm` | `c` | open DM with message sender |
+| `help` | `?` | toggle this help |
+| `editor_submit` | `<CR>` | submit message in editor |
+| `editor_cancel` | `<Esc>` | cancel editing |
+| `help_close` | `<Esc>` | close this help |
+| `help_close_q` | `q` | close this help (alt) |
+| `goto_last` | `<C-o>` | switch to previous chat |
+| `reaction` | `r` | react to message |
+| `archive` | `a` | archive/unarchive chat |
+| `mark_unread` | `u` | mark unread / mark as read |
+| `message_link` | `L` | copy message link |
+| `user_profile` | `U` | view user profile |
+| `mute` | `m` | mute / unmute chat |
+| `perms_down` | `j` | permission editor: move down |
+| `perms_up` | `k` | permission editor: move up |
+| `perms_toggle` | `<Tab>` | permission editor: toggle item |
+| `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
+| `perms_save` | `<CR>` | permission editor: save |
+| `perms_discard` | `<Esc>` | permission editor: discard |
+
+<!-- KEYMAPS_TABLE_END -->
 
 ## Tools (`@` key)
 

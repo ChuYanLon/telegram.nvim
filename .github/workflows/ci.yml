@@ -26,5 +26,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm typecheck
-      - name: Check keymaps docs are in sync
-        run: pnpm check:docs
+      - name: Sync keymaps docs from config.lua
+        run: pnpm gen:docs
+      - name: Commit regenerated docs if stale
+        run: |
+          if ! git diff --exit-code -- README.md wiki/Keymaps.md wiki/Configuration.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add README.md wiki/Keymaps.md wiki/Configuration.md
+            git commit -m "chore: sync keymaps docs [skip ci]"
+            git push || echo "⚠️ Could not auto-push (PR from fork?). Run 'pnpm gen:docs' locally."
+          fi

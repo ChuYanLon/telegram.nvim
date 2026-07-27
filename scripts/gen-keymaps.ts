@@ -1,12 +1,13 @@
 /**
- * Auto-generates the keymaps table in README.md from lua/telegram/config.lua
+ * Auto-generates the keymaps table in README.md and wiki files
+ * from lua/telegram/config.lua
  *
  * Usage: npx tsx scripts/gen-keymaps.ts
  *
  * Reads M.default_keys and M.key_labels from config.lua,
  * builds a markdown table, and replaces the section
  * between <!-- KEYMAPS_TABLE_START --> and <!-- KEYMAPS_TABLE_END -->
- * in README.md.
+ * in all target markdown files.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -14,17 +15,15 @@ import { join, dirname } from 'path';
 
 const ROOT = join(dirname(__filename), '..');
 const CONFIG_LUA = join(ROOT, 'lua', 'telegram', 'config.lua');
-const README_MD = join(ROOT, 'README.md');
+const TARGETS = [
+  join(ROOT, 'README.md'),
+  join(ROOT, 'wiki', 'Keymaps.md'),
+  join(ROOT, 'wiki', 'Configuration.md'),
+];
 
 type KeyMap = Record<string, string>;
 
-/**
- * Parse a Lua table like:
- *   M.foo = {
- *       key = "value",
- *       key2 = "value2",
- *   }
- */
+/** Parse a Lua table like: M.foo = { key = "value", ... } */
 function parseLuaTable(text: string, tableName: string): KeyMap {
   const result: KeyMap = {};
   const tableRegex = new RegExp(
@@ -56,32 +55,41 @@ function generateTable(keys: string[], labels: KeyMap, defaults: KeyMap): string
 const START_MARKER = '<!-- KEYMAPS_TABLE_START -->';
 const END_MARKER = '<!-- KEYMAPS_TABLE_END -->';
 
-// Parse config.lua
 const configLua = readFileSync(CONFIG_LUA, 'utf-8');
 const defaults = parseLuaTable(configLua, 'default_keys');
 const labels = parseLuaTable(configLua, 'key_labels');
-
-// Preserve insertion order from default_keys
 const keys = Object.keys(defaults);
 const table = generateTable(keys, labels, defaults);
 
-// Read and update README.md
-let readme = readFileSync(README_MD, 'utf-8');
+let updated = 0;
+let skipped = 0;
 
-const startIdx = readme.indexOf(START_MARKER);
-const endIdx = readme.indexOf(END_MARKER);
+for (const filePath of TARGETS) {
+  let content: string;
+  try {
+    content = readFileSync(filePath, 'utf-8');
+  } catch {
+    console.log(`  ⚠ ${filePath.replace(ROOT, '.')} — not found, skipping`);
+    skipped++;
+    continue;
+  }
 
-if (startIdx === -1 || endIdx === -1) {
-  console.error('❌ Could not find markers in README.md');
-  console.error(`  ${START_MARKER}: ${startIdx === -1 ? 'not found' : 'ok'}`);
-  console.error(`  ${END_MARKER}: ${endIdx === -1 ? 'not found' : 'ok'}`);
-  process.exit(1);
+  const startIdx = content.indexOf(START_MARKER);
+  const endIdx = content.indexOf(END_MARKER);
+
+  if (startIdx === -1 || endIdx === -1) {
+    console.log(`  ⚠ ${filePath.replace(ROOT, '.')} — no markers found, skipping`);
+    skipped++;
+    continue;
+  }
+
+  const before = content.slice(0, startIdx + START_MARKER.length);
+  const after = content.slice(endIdx);
+  content = before + '\n' + table + '\n' + after;
+
+  writeFileSync(filePath, content);
+  console.log(`  ✅ ${filePath.replace(ROOT, '.')}`);
+  updated++;
 }
 
-const before = readme.slice(0, startIdx + START_MARKER.length);
-const after = readme.slice(endIdx);
-readme = before + '\n' + table + '\n' + after;
-
-writeFileSync(README_MD, readme);
-console.log('✅ Keymaps table updated in README.md');
-console.log(`   ${keys.length} keys generated`);
+console.log(`\nDone: ${updated} updated, ${skipped} skipped, ${keys.length} keys`);

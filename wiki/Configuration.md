@@ -35,32 +35,42 @@ require("telegram").setup({
 
 All keymaps are configurable via `setup({ keys = { ... } })`. Set a key to `nil` or `false` to disable it.
 
+<!-- KEYMAPS_TABLE_START -->
 | Key name | Default | Action |
 |----------|---------|--------|
-| `tool_picker` | `@` | Open tool picker |
-| `input_editor` | `i` | Open message input editor |
-| `reply` | `<CR>` | Reply to / jump to message |
-| `edit` | `e` | Edit own message |
-| `delete` | `d` | Delete / revoke message |
-| `forward` | `f` | Forward message |
-| `pin` | `p` | Pin / unpin message |
-| `reaction` | `r` | React to message (opens emoji picker) |
-| `save` | `s` | Save message to Favorites (with confirmation) |
-| `copy` | `yy` | Copy message text to clipboard |
-| `refresh` | `G` | Refresh messages, jump to bottom |
-| `ban` | `B` | Ban message sender |
-| `open_dm` | `c` | Open DM with message sender |
-| `help` | `?` | Toggle help popup |
-| `editor_submit` | `<CR>` | Submit message in editor |
-| `editor_cancel` | `<Esc>` | Cancel editing |
-| `help_close` | `<Esc>` | Close help popup |
-| `help_close_q` | `q` | Close help popup (alt) |
-| `perms_down` | `j` | Permission editor: move down |
-| `perms_up` | `k` | Permission editor: move up |
-| `perms_toggle` | `<Tab>` | Permission editor: toggle item |
-| `perms_up_alt` | `<S-Tab>` | Permission editor: move up (alt) |
-| `perms_save` | `<CR>` | Permission editor: save |
-| `perms_discard` | `<Esc>` | Permission editor: discard |
+| `tool_picker` | `@` | open tool picker |
+| `input_editor` | `i` | open input editor |
+| `reply` | `<CR>` | reply / jump to original |
+| `edit` | `e` | edit own message |
+| `delete` | `d` | delete / revoke |
+| `forward` | `f` | forward message |
+| `forward_with_reply` | `F` | forward with reply context |
+| `pin` | `p` | pin / unpin message |
+| `save` | `s` | save to Favorites |
+| `copy` | `yy` | copy message text |
+| `refresh` | `G` | refresh + jump to bottom |
+| `ban` | `B` | ban message sender |
+| `open_dm` | `c` | open DM with message sender |
+| `help` | `?` | toggle this help |
+| `editor_submit` | `<CR>` | submit message in editor |
+| `editor_cancel` | `<Esc>` | cancel editing |
+| `help_close` | `<Esc>` | close this help |
+| `help_close_q` | `q` | close this help (alt) |
+| `goto_last` | `<C-o>` | switch to previous chat |
+| `reaction` | `r` | react to message |
+| `archive` | `a` | archive/unarchive chat |
+| `mark_unread` | `u` | mark unread / mark as read |
+| `message_link` | `L` | copy message link |
+| `user_profile` | `U` | view user profile |
+| `mute` | `m` | mute / unmute chat |
+| `perms_down` | `j` | permission editor: move down |
+| `perms_up` | `k` | permission editor: move up |
+| `perms_toggle` | `<Tab>` | permission editor: toggle item |
+| `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
+| `perms_save` | `<CR>` | permission editor: save |
+| `perms_discard` | `<Esc>` | permission editor: discard |
+
+<!-- KEYMAPS_TABLE_END -->
 
 ```lua
 -- Example: rebind keys
