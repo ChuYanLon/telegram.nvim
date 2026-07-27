@@ -108,6 +108,19 @@
     .font-heading { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--astro-bg-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      color: var(--astro-text);
+    }
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
     /* Container */
     .container {
       width: 100%;
@@ -269,7 +282,7 @@
     .hero .badge:hover { border-color: var(--astro-gray-400); }
 
     .hero h1 {
-      font-family: 'Obviously', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       font-size: 2.25rem;
       line-height: 1.1;
       font-weight: 700;
@@ -343,7 +356,7 @@
       margin-bottom: 8px;
     }
     .section-copy h2 {
-      font-family: 'Obviously', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       font-size: 1.875rem;
       font-weight: 290;
       text-wrap: balance;
@@ -476,7 +489,7 @@
       color: var(--astro-gray-200);
     }
     .chip code {
-      font-family: 'MDIO', monospace;
+      font-family: 'JetBrains Mono', monospace;
       background: var(--astro-dark-700);
       padding: 2px 6px;
       border-radius: 4px;
@@ -649,7 +662,7 @@
             </div>
             lazy.nvim
           </div>
-          <pre style="padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:0.85em;line-height:1.7;color:#d4dcec;margin:0;background:transparent;"><code>{
+          <pre style="padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:0.85em;line-height:1.7;color:var(--astro-text);margin:0;background:transparent;"><code>{
   "ChuYanLon/telegram.nvim",
   build = "npm i",
   keys = { { "&lt;leader&gt;tt", "&lt;cmd&gt;Tg&lt;Cr&gt;" } },
@@ -731,7 +744,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F8E42E" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
               </div>
               <h3>GitHub</h3>
-              <p>Create &amp; merge PRs, browse issues from Neovim via <code style="font-family:'JetBrains Mono',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:TgPr</code> and <code style="font-family:'JetBrains Mono',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:TgIssue</code>.</p>
+              <p>Create &amp; merge PRs, browse issues from Neovim via <code style="font-family:'JetBrains Mono',monospace;background:var(--astro-bg-code);padding:2px 6px;border-radius:4px;">:TgPr</code> and <code style="font-family:'JetBrains Mono',monospace;background:var(--astro-bg-code);padding:2px 6px;border-radius:4px;">:TgIssue</code>.</p>
             </div>
           </div>
         </div>
@@ -749,7 +762,7 @@
           <div class="intro-card">
             <span style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:linear-gradient(247.23deg, #4AF2C8 0%, #2F4CB3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Step 1</span>
             <h3>Install &amp; Run</h3>
-            <p>Add to lazy.nvim, run <code style="font-family:'JetBrains Mono',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:Tg</code>. The backend boots on port 8080 and connects to Telegram via TDLib.</p>
+            <p>Add to lazy.nvim, run <code style="font-family:'JetBrains Mono',monospace;background:var(--astro-bg-code);padding:2px 6px;border-radius:4px;">:Tg</code>. The backend boots on port 8080 and connects to Telegram via TDLib.</p>
           </div>
           <div class="intro-card">
             <span style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:linear-gradient(83.21deg, #3245FF 0%, #B845ED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Step 2</span>
@@ -865,15 +878,18 @@
 
       if (toggle) {
         toggle.addEventListener('click', function() {
+          var hasStored = localStorage.getItem('theme') !== null;
           var current = html.getAttribute('data-theme');
-          var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-          if (current === 'dark') {
-            setTheme('light');
-          } else if (current === 'light') {
-            localStorage.removeItem('theme');
-            setTheme(prefersLight ? 'light' : 'dark');
-          } else {
+          if (!hasStored) {
+            // auto → dark
             setTheme('dark');
+          } else if (current === 'dark') {
+            // dark → light
+            setTheme('light');
+          } else {
+            // light → auto (follow system)
+            localStorage.removeItem('theme');
+            setTheme(getPreferredTheme());
           }
         });
 
