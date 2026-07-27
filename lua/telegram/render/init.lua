@@ -140,7 +140,7 @@ function M.render(msg)
 				table.insert(out, "  " .. msg.linkPreview.description)
 			end
 			for _, l in ipairs(content) do
-				table.insert(out, l)
+				table.insert(out, "<" .. l .. ">")
 			end
 		else
 			for _, l in ipairs(content) do
