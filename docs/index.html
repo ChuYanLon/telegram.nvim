@@ -13,6 +13,7 @@
   <link rel="canonical" href="https://chuyanlon.github.io/telegram.nvim">
   <title>telegram.nvim — Telegram Client for Neovim</title>
 
+  <link rel="stylesheet" href="css/prism.css">
   <style>
     @font-face {
       font-family: 'Inter';
@@ -119,6 +120,17 @@
     pre code {
       background: none;
       padding: 0;
+    }
+
+    /* Prism overrides — use our theme colors, keep token colors */
+    pre[class*="language-"] {
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    code[class*="language-"] {
+      background: transparent !important;
+      text-shadow: none !important;
     }
 
     /* Container */
@@ -663,7 +675,7 @@
               </div>
               lazy.nvim
             </div>
-            <pre style="padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:0.85em;line-height:1.7;color:var(--astro-text);margin:0;background:transparent;text-align:left;"><code>{
+            <pre style="padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:0.85em;line-height:1.7;color:var(--astro-text);margin:0;background:transparent;text-align:left;"><code class="language-lua">{
   "ChuYanLon/telegram.nvim",
   build = "npm i",
   keys = { { "&lt;leader&gt;tt", "&lt;cmd&gt;Tg&lt;Cr&gt;" } },
@@ -903,6 +915,9 @@
       }
     })();
   </script>
+
+  <script src="js/prism.min.js"></script>
+  <script src="js/prism-lua.min.js"></script>
 
 </body>
 </html>
