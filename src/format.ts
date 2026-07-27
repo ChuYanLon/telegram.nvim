@@ -190,6 +190,7 @@ export class MessageFormatter {
               isAnonymous: !!pollData.is_anonymous,
               allowsMultipleAnswers: !!pollData.allows_multiple_answers,
               isClosed: !!pollData.is_closed,
+              canGetVoters: !!pollData.can_get_voters,
             };
           }
           break;

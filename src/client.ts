@@ -627,6 +627,7 @@ export class TelegramLSPClient {
         question: { _: 'formattedText', text: question },
         options: options.map(o => ({ _: 'inputPollOption', text: { _: 'formattedText', text: o } })),
         is_anonymous: settings?.isAnonymous !== false,
+        allows_multiple_answers: settings?.allowsMultipleAnswers === true,
         allows_revoting: settings?.allowsRevoting === false ? false : true,
         open_period: settings?.openPeriod && settings.openPeriod > 0 ? settings.openPeriod : undefined,
         type: { _: 'inputPollTypeRegular', allow_multiple_answers: settings?.allowsMultipleAnswers === true },

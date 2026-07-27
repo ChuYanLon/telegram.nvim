@@ -35,6 +35,7 @@ export interface PollInfo {
   isAnonymous: boolean;
   allowsMultipleAnswers: boolean;
   isClosed: boolean;
+  canGetVoters: boolean;
 }
 
 export interface FormattedMessage {
