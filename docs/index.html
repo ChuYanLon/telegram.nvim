@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-astro-dark-900 overflow-x-clip break-words text-astro-gray-100 [color-scheme:dark]">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="telegram.nvim — A Telegram chat client inside Neovim. Powered by TDLib + TypeScript backend + Lua frontend.">
-  <meta name="keywords" content="telegram, neovim, neovim-plugin, tdlib, telegram-client, tui, lua, typescript, chat, messaging">
   <meta property="og:title" content="telegram.nvim — Telegram Client for Neovim">
   <meta property="og:description" content="A full-featured Telegram chat client that runs inside Neovim.">
   <meta property="og:url" content="https://chuyanlon.github.io/telegram.nvim">
@@ -13,476 +12,779 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://chuyanlon.github.io/telegram.nvim">
   <title>telegram.nvim — Telegram Client for Neovim</title>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "telegram.nvim",
-    "description": "A Telegram chat client inside Neovim, powered by TDLib + TypeScript + Lua",
-    "url": "https://chuyanlon.github.io/telegram.nvim",
-    "applicationCategory": "Communication",
-    "operatingSystem": "macOS, Linux, Windows",
-    "author": { "@type": "Person", "name": "ChuYanLon", "url": "https://github.com/ChuYanLon" },
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "softwareVersion": "0.6.0",
-    "programmingLanguage": ["TypeScript", "Lua"],
-    "requirements": "Node.js >= 18, libtdjson >= 1.8.64"
-  }
-  </script>
+
+  <!-- Fonts: Inter from Google Fonts, Obviously & MDIO from Astro CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Obviously';
+      src: url('https://astro.build/fonts/Obviously.woff2?v=1') format('woff2-variations'),
+           url('https://astro.build/fonts/Obviously.woff2?v=1') format('woff2');
+      font-style: normal;
+      font-display: swap;
+      font-weight: 100 1000;
+      font-stretch: 490 620;
+    }
+    @font-face {
+      font-family: 'MDIO';
+      src: url('https://astro.build/fonts/MDIO.woff2?v=1') format('woff2-variations'),
+           url('https://astro.build/fonts/MDIO.woff2?v=1') format('woff2');
+      font-style: normal;
+      font-display: swap;
+      font-weight: 400;
+    }
+
+    /* Tailwind-syle design tokens */
     :root {
-      --bg: #0b0e14;
-      --bg-card: #121820;
-      --bg-code: #181e28;
-      --fg: #cdd6e6;
-      --fg-muted: #8892a8;
-      --accent: #58a6ff;
-      --accent-glow: rgba(88, 166, 255, 0.15);
-      --green: #3fb950;
-      --border: #1e2838;
-      --border-hover: #2a3a50;
+      --black: #0D0F14;
+      --astro-dark-900: #060913;
+      --astro-dark-800: #0C0F19;
+      --astro-dark-700: #11172A;
+      --astro-dark-400: #18191E;
+      --astro-dark-300: #343841;
+      --astro-dark-100: #858B98;
+      --astro-gray-700: #17191E;
+      --astro-gray-600: #23262D;
+      --astro-gray-500: #343841;
+      --astro-gray-400: #545864;
+      --astro-gray-300: #858B98;
+      --astro-gray-200: #BFC1C9;
+      --astro-gray-100: #F2F6FA;
+      --astro-blue: #3245FF;
+      --astro-purple: #BC52EE;
+      --astro-pink-light: #E8C4F9;
+      --astro-pink: #F041FF;
+      --astro-green: #4AF2C8;
+      --container-width: 1280px;
+      --container-gutter: 24px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--astro-dark-900);
+      color: var(--astro-gray-100);
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: clip;
     }
+
+    /* Font utilities */
+    .font-heading { font-family: 'Obviously', system-ui, sans-serif; }
+    .font-mono { font-family: 'MDIO', monospace; }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: var(--container-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    @media (min-width: 768px) { .container { padding: 0 32px; } }
+
+    /* Grid container (3-column bleed layout) */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr minmax(var(--container-width), calc(100% - (2 * var(--container-gutter)))) 1fr;
+      overflow: clip;
+      width: 100%;
+    }
+    .grid-container > * { grid-column: 2; }
+    @media (max-width: 1328px) {
+      .grid-container { grid-template-columns: 1fr minmax(0, calc(100% - (2 * var(--container-gutter)))) 1fr; }
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 20;
+      background: rgba(13, 15, 20, 0.3);
+      height: 5rem;
+    }
+    .header nav {
+      display: flex;
+      align-items: center;
+      height: 5rem;
+    }
+    .header nav a {
+      color: var(--astro-gray-200);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 300;
+      transition: color 0.3s;
+    }
+    .header nav a:hover { color: #fff; }
+
+    .header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Obviously', system-ui, sans-serif;
+      font-size: 1.3rem;
+      font-weight: 475;
+      color: #fff;
+      text-decoration: none;
+    }
+    .header .logo svg { width: 28px; height: 28px; }
+
+    .header .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-left: 40px;
+    }
+    .header .nav-links a {
+      font-size: 0.9rem;
+      padding: 4px 0;
+    }
+
+    .header .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Buttons */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 56px;
+      padding: 0 40px;
+      border-radius: 9999px;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .button-primary {
+      border: none;
+      background: linear-gradient(83.21deg, #3245FF 0%, #B845ED 100%);
+      color: #fff !important;
+    }
+    .button-primary:hover { filter: brightness(0.75); }
+
+    .button-ghost {
+      border: 1px solid var(--astro-gray-100);
+      background: transparent;
+      color: #fff !important;
+    }
+    .button-ghost:hover { background: rgba(255,255,255,0.1); }
+
+    .button-sm { height: 40px; padding: 0 24px; font-size: 0.875rem; }
+    .button-xs { height: 24px; padding: 0 12px; font-size: 0.75rem; }
 
     /* Hero */
     .hero {
+      position: relative;
+      padding: 7rem 24px 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
-      padding: 80px 24px 60px;
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(88, 166, 255, 0.08), transparent 70%),
-                  radial-gradient(ellipse 60% 40% at 80% 20%, rgba(88, 166, 255, 0.04), transparent 60%);
-      border-bottom: 1px solid var(--border);
     }
+    @media (min-width: 768px) { .hero { padding-top: 9rem; } }
+    @media (min-width: 1024px) { .hero { padding-top: 10rem; } }
+
+    .hero .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: 1px solid var(--astro-dark-100);
+      background: var(--astro-dark-800);
+      font-size: 0.875rem;
+      color: var(--astro-gray-200);
+      text-decoration: none;
+      margin-bottom: 24px;
+      transition: border-color 0.2s;
+    }
+    .hero .badge:hover { border-color: var(--astro-gray-400); }
 
     .hero h1 {
-      font-size: 3em;
+      font-family: 'Obviously', system-ui, sans-serif;
+      font-size: 2.25rem;
+      line-height: 1.1;
       font-weight: 700;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #fff 0%, #58a6ff 50%, #79c0ff 100%);
+      text-wrap: balance;
+      margin-bottom: 16px;
+      max-width: 24ch;
+    }
+    @media (min-width: 768px) { .hero h1 { font-size: 3rem; } }
+    @media (min-width: 1280px) { .hero h1 { font-size: 3.75rem; } }
+
+    .hero .gradient-text {
+      background: linear-gradient(83.21deg, #3245FF 0%, #B845ED 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 12px;
     }
 
     .hero p {
-      font-size: 1.2em;
-      color: var(--fg-muted);
-      max-width: 560px;
-      margin: 0 auto 24px;
+      max-width: 56ch;
+      font-size: 1.125rem;
+      font-weight: 200;
+      color: var(--astro-gray-200);
+      text-wrap: balance;
+      margin-bottom: 24px;
+    }
+    @media (min-width: 768px) { .hero p { font-size: 1.25rem; } }
+
+    .hero .cta-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
     }
 
-    .hero .badges {
+    .hero .cta-row .button {
+      width: 100%;
+    }
+
+    .hero .code-hint {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      background: var(--astro-dark-800);
+      border: 1px solid var(--astro-dark-100);
+      border-radius: 9999px;
+      font-family: 'MDIO', monospace;
+      font-size: 0.85rem;
+      color: var(--astro-gray-200);
+    }
+    .hero .code-hint .copy-btn {
+      background: none;
+      border: none;
+      color: var(--astro-gray-400);
+      cursor: pointer;
+      padding: 2px;
+    }
+    .hero .code-hint .copy-btn:hover { color: #fff; }
+
+    /* Badge row */
+    .badge-row {
       display: flex;
       gap: 8px;
       justify-content: center;
       flex-wrap: wrap;
+      margin-top: 8px;
     }
+    .badge-row img { height: 22px; border-radius: 4px; }
 
-    .hero .badges img { height: 22px; border-radius: 4px; }
+    /* Section spacing */
+    .section { margin-top: 5rem; }
+    @media (min-width: 768px) { .section { margin-top: 6rem; } }
+    @media (min-width: 1024px) { .section { margin-top: 7rem; } }
 
-    .hero .links {
-      margin-top: 20px;
+    /* Section Copy */
+    .section-copy {
       display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .hero .links a {
-      display: inline-flex;
+      flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.95em;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
+      text-align: center;
+      margin-bottom: 32px;
     }
-
-    .hero .links a.primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .hero .links a.primary:hover {
-      background: #4a96e8;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px var(--accent-glow);
-    }
-
-    .hero .links a.secondary {
-      background: var(--bg-card);
-      color: var(--fg);
-      border: 1px solid var(--border);
-    }
-
-    .hero .links a.secondary:hover {
-      border-color: var(--border-hover);
-      background: #1a2434;
-      transform: translateY(-1px);
-    }
-
-    /* Content wrapper */
-    .content {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-    }
-
-    /* Section headings */
-    .section-title {
-      font-size: 1.1em;
+    .section-copy .label {
+      font-size: 0.875rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--fg-muted);
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      font-size: 1.6em;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 24px;
-      color: #fff;
-    }
-
-    h3 {
-      font-size: 1.1em;
-      font-weight: 600;
+      letter-spacing: 0.06em;
+      background: linear-gradient(83.21deg, #3245FF 0%, #B845ED 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 8px;
-      color: #fff;
+    }
+    .section-copy h2 {
+      font-family: 'Obviously', system-ui, sans-serif;
+      font-size: 1.875rem;
+      font-weight: 290;
+      text-wrap: balance;
+      margin-bottom: 8px;
+      max-width: 30ch;
+    }
+    @media (min-width: 768px) { .section-copy h2 { font-size: 2.25rem; } }
+    .section-copy p {
+      color: var(--astro-gray-200);
+      font-weight: 200;
+      font-size: 1.125rem;
+      max-width: 48ch;
+      text-wrap: balance;
     }
 
-    /* Screenshot */
-    .screenshot-section {
-      margin-bottom: 64px;
-    }
-
-    .screenshot-section .frame {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      overflow: hidden;
-    }
-
-    .screenshot-section .frame img {
-      width: 100%;
-      border-radius: 8px;
-      display: block;
-    }
-
-    /* Feature cards grid */
+    /* Feature grid */
     .feature-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 12px;
-      margin-bottom: 64px;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 8px;
     }
+    @media (min-width: 768px) { .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
+    @media (min-width: 1024px) { .feature-grid { grid-template-columns: repeat(3, 1fr); } }
 
     .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--astro-dark-800);
+      border: 1px solid rgba(133, 139, 152, 0.2);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    @media (min-width: 1280px) { .feature-card { border-radius: 16px; } }
+    .feature-card:hover { border-color: rgba(133, 139, 152, 0.4); }
+
+    .feature-card .card-body {
+      padding: 16px;
+    }
+    @media (min-width: 1280px) { .feature-card .card-body { padding: 24px; } }
+
+    .feature-card .card-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
       border-radius: 10px;
-      padding: 20px;
-      transition: border-color 0.2s, transform 0.2s;
+      margin-bottom: 12px;
+      font-size: 1.2rem;
     }
+    .feature-card .card-icon.blue { background: rgba(50, 69, 255, 0.15); }
+    .feature-card .card-icon.purple { background: rgba(188, 82, 238, 0.15); }
+    .feature-card .card-icon.green { background: rgba(74, 242, 200, 0.15); }
+    .feature-card .card-icon.pink { background: rgba(240, 65, 255, 0.15); }
+    .feature-card .card-icon.orange { background: rgba(255, 125, 84, 0.15); }
+    .feature-card .card-icon.yellow { background: rgba(248, 228, 46, 0.15); }
 
-    .feature-card:hover {
-      border-color: var(--border-hover);
-      transform: translateY(-2px);
-    }
-
-    .feature-card .icon {
-      font-size: 1.3em;
-      margin-bottom: 8px;
+    .feature-card h3 {
+      font-size: 1rem;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 4px;
     }
 
     .feature-card p {
-      font-size: 0.92em;
-      color: var(--fg-muted);
-      line-height: 1.5;
+      color: var(--astro-gray-200);
+      font-weight: 300;
+      font-size: 0.875rem;
+      text-wrap: pretty;
+    }
+    @media (min-width: 1280px) { .feature-card p { font-size: 1rem; } }
+
+    /* Intro section (What is) */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    @media (min-width: 768px) { .intro-grid { grid-template-columns: repeat(2, 1fr); gap: 48px; } }
+    @media (min-width: 1024px) { .intro-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .intro-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .intro-card h3 {
+      font-family: 'Obviously', system-ui, sans-serif;
+      font-size: 1.25rem;
+      font-weight: 380;
+      color: #fff;
+    }
+    .intro-card p {
+      font-weight: 200;
+      color: var(--astro-gray-200);
     }
 
-    /* Quick Start / Code */
-    .code-block {
-      background: var(--bg-code);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 64px;
+    /* Screenshot section */
+    .screenshot-frame {
+      background: var(--astro-dark-800);
+      border: 1px solid rgba(133, 139, 152, 0.2);
+      border-radius: 16px;
+      padding: 8px;
       overflow: hidden;
     }
-
-    .code-block .header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.85em;
-      color: var(--fg-muted);
+    .screenshot-frame img {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
     }
 
-    .code-block .header .dots {
-      display: flex;
-      gap: 6px;
-    }
-
-    .code-block .header .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .code-block .header .dot.r { background: #ff5f57; }
-    .code-block .header .dot.y { background: #febc2e; }
-    .code-block .header .dot.g { background: #28c840; }
-
-    .code-block pre {
-      padding: 20px;
-      overflow-x: auto;
-      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
-      font-size: 0.9em;
-      line-height: 1.6;
-      color: #d4dcec;
-    }
-
-    .code-block code {
-      background: none;
-      padding: 0;
-    }
-
-    /* How it works grid */
-    .how-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 12px;
-      margin-bottom: 64px;
-    }
-
-    .how-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px;
-    }
-
-    .how-card .step {
-      font-size: 0.8em;
-      font-weight: 600;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-
-    .how-card p {
-      font-size: 0.92em;
-      color: var(--fg-muted);
-    }
-
-    /* Requirements as inline chips */
-    .req-list {
+    /* Requirements chips */
+    .chip-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 64px;
+      gap: 8px;
+      justify-content: center;
     }
-
-    .req-list .chip {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 8px 16px;
-      font-size: 0.9em;
-      transition: border-color 0.2s;
+      background: var(--astro-dark-800);
+      border: 1px solid rgba(133, 139, 152, 0.2);
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      color: var(--astro-gray-200);
     }
-
-    .req-list .chip:hover {
-      border-color: var(--border-hover);
-    }
-
-    .req-list .chip code {
-      background: var(--bg-code);
+    .chip code {
+      font-family: 'MDIO', monospace;
+      background: var(--astro-dark-700);
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 0.9em;
+      font-size: 0.85em;
     }
+    .chip strong { color: #fff; }
+    .chip em { color: var(--astro-dark-100); font-style: normal; font-size: 0.85em; }
 
     /* Footer */
     .footer {
-      margin-top: 48px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-size: 0.9em;
-      color: var(--fg-muted);
+      width: 100%;
+      border-top: 1px solid rgba(133, 139, 152, 0.2);
+      margin-top: 96px;
     }
+    .footer .inner {
+      max-width: 1536px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    @media (min-width: 768px) { .footer .inner { padding: 48px 32px; } }
 
-    .footer a { color: var(--accent); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
+    .footer .cols {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+      padding-bottom: 32px;
+    }
+    @media (min-width: 1024px) { .footer .cols { flex-direction: row; justify-content: space-between; } }
 
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    p { margin-bottom: 1em; }
+    .footer .link-group h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .footer .link-group ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .footer .link-group a {
+      color: var(--astro-gray-200);
+      text-decoration: none;
+      font-weight: 300;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+    .footer .link-group a:hover { color: #fff; }
+    .footer .link-group { min-width: 128px; }
 
-    @media (max-width: 640px) {
-      .hero { padding: 48px 20px 40px; }
-      .hero h1 { font-size: 2em; }
-      .hero p { font-size: 1em; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .how-grid { grid-template-columns: 1fr; }
+    .footer .link-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 48px 64px;
+    }
+    @media (min-width: 1280px) { .footer .link-grid { display: grid; grid-template-columns: repeat(4, 1fr); } }
+
+    .footer .divider {
+      border: none;
+      border-top: 1px solid var(--astro-gray-500);
+    }
+    .footer .bottom {
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 32px;
+    }
+    @media (min-width: 1024px) { .footer .bottom { flex-direction: row; } }
+
+    .footer .bottom .copyright {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer .bottom a {
+      color: var(--astro-gray-200);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+    .footer .bottom a:hover { color: #fff; }
+
+    /* SVG icon helper */
+    .icon { width: 20px; height: 20px; }
+    .icon-sm { width: 16px; height: 16px; }
+
+    /* Responsive */
+    @media (max-width: 1023px) {
+      .header .nav-links { display: none; }
+      .header .nav-right .button span { display: none; }
+    }
+    @media (max-width: 639px) {
+      .hero h1 { font-size: 1.75rem; }
+      .hero .badge { font-size: 0.75rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Hero -->
-  <div class="hero">
-    <h1>telegram.nvim</h1>
-    <p>A full-featured Telegram chat client that runs inside Neovim.</p>
-    <div class="badges">
-      <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-      <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >=18"></a>
-      <a href="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml"><img src="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-      <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
-    </div>
-    <div class="links">
-      <a class="primary" href="https://github.com/ChuYanLon/telegram.nvim">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-        GitHub
+  <!-- Header -->
+  <header class="header">
+    <nav class="container">
+      <a href="/" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        telegram.nvim
       </a>
-      <a class="secondary" href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a>
-      <a class="secondary" href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Documentation</a>
-      <a class="secondary" href="https://t.me/+h4aEOaABJJ1mMzhl">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-        Telegram
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a>
+        <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Docs</a>
+      </div>
+      <div class="nav-right">
+        <a href="https://github.com/ChuYanLon/telegram.nvim" class="button button-sm button-ghost">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main style="position:relative;z-index:10;display:flex;flex-direction:column;flex:1;">
+
+    <!-- Hero -->
+    <section class="hero">
+      <a href="https://github.com/ChuYanLon/telegram.nvim/releases" class="badge">
+        <span class="gradient-text">v0.6.0</span>
+        Available now!
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
-    </div>
-  </div>
 
-  <div class="content">
+      <h1>
+        A Telegram chat client for
+        <span class="gradient-text">Neovim</span>
+      </h1>
 
-    <!-- Screenshot -->
-    <div class="screenshot-section">
-      <div class="frame">
+      <p>Read, send, and manage your Telegram messages directly inside Neovim. Powered by TDLib with real-time sync via WebSocket.</p>
+
+      <div class="badge-row">
+        <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+        <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node >=18">
+        <img src="https://github.com/ChuYanLon/telegram.nvim/actions/workflows/ci.yml/badge.svg" alt="CI">
+        <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
+      </div>
+
+      <div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:400px;">
+        <a href="https://github.com/ChuYanLon/telegram.nvim#installation" class="button button-primary" style="width:100%;">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <div class="code-hint">
+          <span>lazy.nvim: add to plugins</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+
+      <!-- Screenshot -->
+      <div class="section screenshot-frame">
         <img src="screenshots/9efb7eac-0175-4b00-bf5c-ba48cee129c6.png" alt="telegram.nvim screenshot">
       </div>
-    </div>
 
-    <!-- Features -->
-    <h2>Features</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="icon">💬</div>
-        <h3>Messaging</h3>
-        <p>Real-time send, edit, delete, forward, and reply with markdown formatting via WebSocket.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">📁</div>
-        <h3>Media</h3>
-        <p>Photo, video, sticker, file previews with HD download. Read receipts, view counts, typing indicators.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">👥</div>
-        <h3>Chat Management</h3>
-        <p>Groups, channels, DMs. Member management, permissions editor, invite links, pin &amp; react.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">🎨</div>
-        <h3>Neovim Native</h3>
-        <p>Configurable panel, floating input editor with treesitter, cursor persistence, statusline integration.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">🔐</div>
-        <h3>Auth &amp; Sync</h3>
-        <p>Phone → code → 2FA flow, session persistence, multi-device sync, proxy support.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">⚡</div>
-        <h3>GitHub</h3>
-        <p>Create &amp; merge PRs, browse issues directly from Neovim via <code>:TgPr</code> and <code>:TgIssue</code>.</p>
-      </div>
-    </div>
-
-    <!-- Quick Start -->
-    <h2>Quick Start</h2>
-    <div class="code-block">
-      <div class="header">
-        <div class="dots">
-          <span class="dot r"></span>
-          <span class="dot y"></span>
-          <span class="dot g"></span>
+      <!-- Features -->
+      <section id="features" class="section">
+        <div class="section-copy">
+          <span class="label">Everything you need</span>
+          <h2>Fully Featured</h2>
+          <p>telegram.nvim comes with everything you need to chat on Telegram from within Neovim.</p>
         </div>
-        lazy.nvim
-      </div>
-      <pre><code>{
-  "ChuYanLon/telegram.nvim",
-  build = "npm i",
-  event = "VeryLazy",
-  keys = {
-    { "&lt;leader&gt;tt", "&lt;cmd&gt;Tg&lt;Cr&gt;", desc = "Toggle Telegram" },
-  },
-  opts = {},
-}</code></pre>
-    </div>
 
-    <!-- How It Works -->
-    <h2>How It Works</h2>
-    <div class="how-grid">
-      <div class="how-card">
-        <div class="step">Step 1</div>
-        <h3>Start</h3>
-        <p>Run <code>:Tg</code> in Neovim. The TypeScript backend boots on port 8080 and connects to Telegram via TDLib.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3245FF" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <h3>Messaging</h3>
+              <p>Real-time send, edit, delete, forward, and reply with markdown formatting via WebSocket.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4AF2C8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              </div>
+              <h3>Media</h3>
+              <p>Photo, video, sticker, file previews with HD download. Read receipts, view counts, typing indicators.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BC52EE" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h3>Chat Management</h3>
+              <p>Groups, channels, DMs. Member management, permissions editor, invite links, pin &amp; react.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon pink">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F041FF" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </div>
+              <h3>Neovim Native</h3>
+              <p>Configurable panel, floating input with treesitter, cursor persistence, statusline integration.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon orange">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF7D54" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h3>Auth &amp; Sync</h3>
+              <p>Phone → code → 2FA flow, session persistence, multi-device sync, proxy support.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-body">
+              <div class="card-icon yellow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F8E42E" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              </div>
+              <h3>GitHub</h3>
+              <p>Create &amp; merge PRs, browse issues from Neovim via <code style="font-family:'MDIO',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:TgPr</code> and <code style="font-family:'MDIO',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:TgIssue</code>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section class="section">
+        <div class="section-copy">
+          <span class="label" style="background:linear-gradient(266.93deg, #F8E42E 0%, #FF7D54 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">How it works</span>
+          <h2>Start chatting in three steps</h2>
+          <p>Backend powered by TDLib + TypeScript, frontend in pure Lua.</p>
+        </div>
+
+        <div class="intro-grid" style="margin-top:16px;">
+          <div class="intro-card">
+            <span style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:linear-gradient(247.23deg, #4AF2C8 0%, #2F4CB3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Step 1</span>
+            <h3>Install &amp; Run</h3>
+            <p>Add to lazy.nvim, run <code style="font-family:'MDIO',monospace;background:#11172A;padding:2px 6px;border-radius:4px;">:Tg</code>. The backend boots on port 8080 and connects to Telegram via TDLib.</p>
+          </div>
+          <div class="intro-card">
+            <span style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:linear-gradient(83.21deg, #3245FF 0%, #B845ED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Step 2</span>
+            <h3>Authenticate</h3>
+            <p>Enter phone number, verification code, and 2FA password if needed. Session persists across restarts.</p>
+          </div>
+          <div class="intro-card">
+            <span style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:linear-gradient(66.77deg, #D83333 0%, #F041FF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Step 3</span>
+            <h3>Chat</h3>
+            <p>Browse groups, channels, DMs with fuzzy search. Real-time messages flow through the WebSocket bridge.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Requirements -->
+      <section class="section" style="text-align:center;">
+        <div class="section-copy">
+          <span class="label" style="background:linear-gradient(247.23deg, #4AF2C8 0%, #2F4CB3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Requirements</span>
+          <h2>What you need</h2>
+        </div>
+        <div class="chip-row" style="margin-top:8px;">
+          <span class="chip">Neovim <strong>≥ 0.9</strong></span>
+          <span class="chip">Node.js <strong>≥ 18</strong></span>
+          <span class="chip"><code>libtdjson</code> <strong>≥ 1.8.64</strong></span>
+          <span class="chip">curl</span>
+          <span class="chip">snacks.nvim <em>(optional)</em></span>
+          <span class="chip">ImageMagick <em>(optional)</em></span>
+          <span class="chip">gh CLI <em>(optional)</em></span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="inner">
+      <div class="cols">
+        <div style="max-width:320px;">
+          <div style="display:flex;align-items:center;gap:8px;font-family:'Obviously',system-ui,sans-serif;font-size:1.2rem;font-weight:475;color:#fff;margin-bottom:12px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            telegram.nvim
+          </div>
+          <p style="font-weight:200;font-size:0.9rem;color:var(--astro-gray-200);">A Telegram chat client inside Neovim. MIT License.</p>
+        </div>
+
+        <div class="link-grid">
+          <div class="link-group">
+            <h4>Resources</h4>
+            <ul>
+              <li><a href="https://github.com/ChuYanLon/telegram.nvim#installation">Installation</a></li>
+              <li><a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Documentation</a></li>
+              <li><a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a></li>
+            </ul>
+          </div>
+          <div class="link-group">
+            <h4>Community</h4>
+            <ul>
+              <li><a href="https://t.me/+h4aEOaABJJ1mMzhl">Telegram Group</a></li>
+              <li><a href="https://github.com/ChuYanLon/telegram.nvim/issues">Issues</a></li>
+              <li><a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/CONTRIBUTING.md">Contributing</a></li>
+            </ul>
+          </div>
+          <div class="link-group">
+            <h4>Related</h4>
+            <ul>
+              <li><a href="https://core.telegram.org/tdlib">TDLib</a></li>
+              <li><a href="https://neovim.io">Neovim</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
-      <div class="how-card">
-        <div class="step">Step 2</div>
-        <h3>Authenticate</h3>
-        <p>Enter phone number, verification code, and 2FA password if needed. Session persists across restarts.</p>
-      </div>
-      <div class="how-card">
-        <div class="step">Step 3</div>
-        <h3>Chat</h3>
-        <p>Browse groups, channels, DMs with fuzzy search. Real-time messages flow through an integrated WebSocket bridge.</p>
+
+      <hr class="divider">
+
+      <div class="bottom">
+        <div class="copyright">
+          <span>MIT License &copy; 2026</span>
+          <span>&middot;</span>
+          <a href="https://github.com/ChuYanLon">ChuYanLon</a>
+        </div>
+        <div style="display:flex;gap:16px;">
+          <a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a>
+          <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Docs</a>
+        </div>
       </div>
     </div>
+  </footer>
 
-    <!-- Requirements -->
-    <h2>Requirements</h2>
-    <div class="req-list">
-      <span class="chip">Neovim <strong>≥ 0.9</strong></span>
-      <span class="chip">Node.js <strong>≥ 18</strong></span>
-      <span class="chip"><code>libtdjson</code> <strong>≥ 1.8.64</strong></span>
-      <span class="chip">curl</span>
-      <span class="chip">snacks.nvim <em>(optional)</em></span>
-      <span class="chip">ImageMagick <em>(optional)</em></span>
-      <span class="chip">gh CLI <em>(optional)</em></span>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <span>Maintained by <a href="https://github.com/ChuYanLon">ChuYanLon</a> &middot; MIT License</span>
-      <span>
-        <a href="https://github.com/ChuYanLon/telegram.nvim">GitHub</a> &middot;
-        <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Docs</a>
-      </span>
-    </div>
-
-  </div>
 </body>
 </html>
