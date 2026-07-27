@@ -1118,7 +1118,9 @@ M.register("createpoll", {
 			if not question or #question == 0 then return end
 			vim.ui.input({ prompt = "Options (comma-separated, min 2): " }, function(options_str)
 				if not options_str or #options_str == 0 then return end
-				local opts = vim.split(options_str, ",")
+				-- Support both ASCII and Chinese commas
+				local normalized = options_str:gsub("[“,，]", ",")
+				local opts = vim.split(normalized, ",")
 				for i, o in ipairs(opts) do
 					opts[i] = o:match("^%s*(.-)%s*$")
 				end
