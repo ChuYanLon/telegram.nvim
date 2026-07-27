@@ -429,12 +429,13 @@ export class MessageFormatter {
 
     if (msg.content?._ === 'messageText') {
       const content = msg.content as any;
-      const lp = content.link_preview as { url?: string; title?: string; description?: string; site_name?: string } | undefined;
+      const lp = content.link_preview as { url?: string; title?: string; description?: { text?: string }; site_name?: string } | undefined;
       if (lp?.url) {
+        const desc = lp.description ? (typeof lp.description === 'string' ? lp.description : lp.description.text) : undefined;
         formatted.linkPreview = {
           url: lp.url,
           title: lp.title,
-          description: lp.description,
+          description: desc,
           siteName: lp.site_name,
         };
       }
