@@ -6,7 +6,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 <!-- KEYMAPS_TABLE_START -->
 | Key name | Default | Action |
 |----------|---------|--------|
-| `translate_zh` | `z` | translate message to Chinese |
+| `translate_zh` | `tt` | translate message to Chinese |
 | `tool_picker` | `@` | open tool picker |
 | `input_editor` | `i` | open input editor |
 | `reply` | `<CR>` | reply / jump to original |

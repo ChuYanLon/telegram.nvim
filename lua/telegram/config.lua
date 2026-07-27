@@ -4,7 +4,7 @@ local plugin_root = vim.fn.fnamemodify(info.source:match("@(.+)"), ":h:h:h")
 local M = {}
 
 M.default_keys = {
-	translate_zh = "z",
+	translate_zh = "tt",
 	tool_picker = "@",
 	input_editor = "i",
 	reply = "<CR>",
