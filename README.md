@@ -13,18 +13,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ## Screenshots
 
-> Partial screenshots — see Feature Status below for the full list.
-
-| | |
-|-|-|
-| <img width="400" src="https://github.com/user-attachments/assets/0ff29034-aaca-4d3a-8994-3418436f20d0" /> | <img width="400" src="https://github.com/user-attachments/assets/cb7b56cd-e498-47b2-9808-49af00b0d2c8" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/46ec08d6-a275-47e0-a196-7d0eab7a51d5" /> | <img width="400" src="https://github.com/user-attachments/assets/80f9c8e0-edc6-43a4-a6b5-e34b48a3d2fa" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/bb72b4a5-15e3-4cf5-89cb-c4673cea40db" /> | <img width="400" src="https://github.com/user-attachments/assets/2bedeb8e-ced1-4173-a7fd-5073344155b3" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/9efb7eac-0175-4b00-bf5c-ba48cee129c6" /> | <img width="400" src="https://github.com/user-attachments/assets/8e14abba-cbd2-44d7-add2-db16e08ca38e" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/20f1304d-7f6c-4fba-82f7-b7510d590481" /> | <img width="400" src="https://github.com/user-attachments/assets/abc5d65b-1799-4459-93f0-734b886cef07" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/a5f07ec6-bc8c-4a78-89cd-14d4c40520e9" /> | <img width="400" src="https://github.com/user-attachments/assets/8b50a9ae-8ca1-44c3-9ea1-4e3aa4631e56" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/79c6a18d-eeef-4a9b-97cd-1078a02db548" /> | <img width="400" src="https://github.com/user-attachments/assets/480cccf9-6b2b-420f-8a01-6553b78cc92e" /> |
-| <img width="400" src="https://github.com/user-attachments/assets/f5f98e2a-b823-42e0-b5e4-8ccdfaee0739" /> | <img width="400" src="https://github.com/user-attachments/assets/f03d1de1-55e0-49ba-ac76-2117515d2db3" /> |
+<img width="600" src="https://github.com/user-attachments/assets/9efb7eac-0175-4b00-bf5c-ba48cee129c6" />
 
 ## Feature Status
 
