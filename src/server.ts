@@ -380,12 +380,12 @@ app.post('/unpinMessage', async (req, res) => {
 
 app.post('/sendPoll', async (req, res) => {
   try {
-    const { chatId, question, options, isAnonymous, allowsMultipleAnswers, allowsRevoting } = req.body;
+    const { chatId, question, options, isAnonymous, allowsMultipleAnswers, allowsRevoting, openPeriod } = req.body;
     if (!chatId || !question || !options || !Array.isArray(options) || options.length < 2) {
       res.status(400).json({ error: 'chatId, question (string) and options (array, min 2) are required' });
       return;
     }
-    const result = await tgClient.sendPoll(Number(chatId), question, options, { isAnonymous, allowsMultipleAnswers, allowsRevoting });
+    const result = await tgClient.sendPoll(Number(chatId), question, options, { isAnonymous, allowsMultipleAnswers, allowsRevoting, openPeriod });
     if (result.errMsg) { res.status(400).json({ error: result.errMsg }); return; }
     res.json(result);
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
@@ -408,6 +408,19 @@ app.post('/poll/stop', async (req, res) => {
     const { chatId, messageId } = req.body;
     if (!chatId || !messageId) { res.status(400).json({ error: 'chatId and messageId are required' }); return; }
     const result = await tgClient.stopPoll(Number(chatId), Number(messageId));
+    if (result.errMsg) { res.status(400).json({ error: result.errMsg }); return; }
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.get('/poll/voters', async (req, res) => {
+  try {
+    const { chatId, messageId, optionId, offset, limit } = req.query;
+    if (!chatId || !messageId || optionId === undefined) {
+      res.status(400).json({ error: 'chatId, messageId and optionId are required' });
+      return;
+    }
+    const result = await tgClient.getPollVoters(Number(chatId), Number(messageId), Number(optionId), Number(offset) || 0, Number(limit) || 50);
     res.json(result);
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });

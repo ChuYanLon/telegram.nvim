@@ -663,6 +663,9 @@ function M.send_poll(chat_id, question, options, settings)
 		isAnonymous = settings.is_anonymous ~= false,
 		allowsMultipleAnswers = settings.allows_multiple_answers == true,
 	}
+	if settings.open_period and settings.open_period > 0 then
+		body.openPeriod = settings.open_period
+	end
 	return http_post("/sendPoll", body)
 end
 
@@ -679,6 +682,14 @@ end
 ---@return table|nil
 function M.stop_poll(chat_id, message_id)
 	return http_post("/poll/stop", { chatId = chat_id, messageId = message_id })
+end
+
+---@param chat_id any
+---@param message_id any
+---@param option_id integer
+---@return table|nil
+function M.get_poll_voters(chat_id, message_id, option_id)
+	return http_get("/poll/voters?chatId=" .. chat_id .. "&messageId=" .. message_id .. "&optionId=" .. option_id)
 end
 
 -- ─── Member Management ─────────────────────────────────────────────────

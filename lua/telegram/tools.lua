@@ -1083,24 +1083,44 @@ M.register("vote", {
 			vim.notify("Not a poll message", vim.log.levels.WARN, { title = "tg" })
 			return
 		end
-		local items = {}
-		for i, opt in ipairs(poll.options) do
-			local prefix = opt.isChosen and "✓ " or "  "
-			local label = prefix .. opt.text
-				.. "  (" .. opt.voterCount .. " votes, " .. opt.votePercentage .. "%)"
-			table.insert(items, { id = opt.id, index = i, label = label, chosen = opt.isChosen })
+		if poll.allowsMultipleAnswers then
+			vim.ui.input({ prompt = "Enter option numbers (e.g. 1,3): " }, function(input)
+				if not input or #input == 0 then return end
+				local ids = {}
+				for num in input:gmatch("(%d+)") do
+					local n = tonumber(num)
+					if n and n > 0 and n <= #poll.options then
+						table.insert(ids, n - 1)
+					end
+				end
+				if #ids == 0 then
+					vim.notify("No valid option numbers", vim.log.levels.WARN, { title = "tg" })
+					return
+				end
+				vim.notify("Voting...", vim.log.levels.INFO, { title = "tg" })
+				if not ui.state.chat_id then return end
+				server.vote_poll(ui.state.chat_id, msg.id, ids)
+			end)
+		else
+			local items = {}
+			for i, opt in ipairs(poll.options) do
+				local prefix = opt.isChosen and "✓ " or "  "
+				local label = prefix .. opt.text
+					.. "  (" .. opt.voterCount .. " votes, " .. opt.votePercentage .. "%)"
+				table.insert(items, { id = opt.id, index = i, label = label, chosen = opt.isChosen })
+			end
+			vim.ui.select(items, {
+				prompt = "Vote: " .. poll.question:sub(1, 40),
+				format_item = function(item) return item.label end,
+			}, function(choice)
+				if not choice then return end
+				if not ui.state.chat_id then return end
+				local msg_id = msg.id
+				if not msg_id then return end
+				vim.notify("Voting...", vim.log.levels.INFO, { title = "tg" })
+				server.vote_poll(ui.state.chat_id, msg_id, { choice.index - 1 })
+			end)
 		end
-		vim.ui.select(items, {
-			prompt = "Vote: " .. poll.question:sub(1, 40) .. (poll.allowsMultipleAnswers and " (multi)" or ""),
-			format_item = function(item) return item.label end,
-		}, function(choice)
-			if not choice then return end
-			if not ui.state.chat_id then return end
-			local msg_id = msg.id
-			if not msg_id then return end
-			vim.notify("Voting...", vim.log.levels.INFO, { title = "tg" })
-			server.vote_poll(ui.state.chat_id, msg_id, { choice.index - 1 })
-		end)
 	end,
 })
 
@@ -1138,19 +1158,93 @@ M.register("createpoll", {
 					vim.ui.input({ prompt = "Allow multiple answers? (y/n, default n): " }, function(multi_str)
 						if multi_str == nil then return end
 						local is_multi = multi_str:lower():sub(1, 1) == "y"
-						vim.notify("Creating poll...", vim.log.levels.INFO, { title = "tg" })
-						local result = server.send_poll(ui.state.chat_id, question, clean, {
-							is_anonymous = is_anon,
-							allows_multiple_answers = is_multi,
-						})
-						if result and not result.error then
-							vim.notify("Poll created", vim.log.levels.INFO, { title = "tg" })
-						else
-							vim.notify("Failed to create poll: " .. (result and result.error or "unknown error"), vim.log.levels.ERROR, { title = "tg" })
-						end
+						vim.ui.input({ prompt = "Timer (seconds, 0 for none): " }, function(timer_str)
+							if timer_str == nil then return end
+							local open_period = tonumber(timer_str) or 0
+							vim.notify("Creating poll...", vim.log.levels.INFO, { title = "tg" })
+							local result = server.send_poll(ui.state.chat_id, question, clean, {
+								is_anonymous = is_anon,
+								allows_multiple_answers = is_multi,
+								open_period = open_period,
+							})
+							if result and not result.error then
+								vim.notify("Poll created", vim.log.levels.INFO, { title = "tg" })
+							else
+								vim.notify("Failed to create poll: " .. (result and result.error or "unknown error"), vim.log.levels.ERROR, { title = "tg" })
+							end
+						end)
 					end)
 				end)
 			end)
+		end)
+	end,
+})
+
+
+M.register("voters", {
+	description = "List who voted on each poll option",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.type == "messagePoll" and t.pollInfo
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		local poll = msg.pollInfo
+		if not poll or not poll.options then
+			vim.notify("Not a poll message", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		if not ui.state.chat_id then return end
+		local items = {}
+		for i, opt in ipairs(poll.options) do
+			local label = opt.text .. "  (" .. opt.voterCount .. " votes)"
+			table.insert(items, { index = i, label = label })
+		end
+		vim.ui.select(items, {
+			prompt = "Select option to see voters:",
+			format_item = function(item) return item.label end,
+		}, function(choice)
+			if not choice then return end
+			if not ui.state.chat_id then return end
+			local msg_id = msg.id
+			if not msg_id then return end
+			vim.notify("Loading voters...", vim.log.levels.INFO, { title = "tg" })
+			local data = server.get_poll_voters(ui.state.chat_id, msg_id, choice.index - 1)
+			if not data or not data.voters or #data.voters == 0 then
+				vim.notify("No voters found", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local lines = {}
+			for _, v in ipairs(data.voters) do
+				local name = v.name or "user_" .. tostring(v.user_id)
+				table.insert(lines, name)
+			end
+			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Voters" })
+		end)
+	end,
+})
+
+M.register("stoppoll", {
+	description = "Stop a poll (admin only)",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.type == "messagePoll" and t.pollInfo and not t.pollInfo.isClosed
+			and ui.state.permissions.can_manage_chat == true
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		if not msg or not ui.state.chat_id then return end
+		vim.ui.select({ "Yes", "No" }, {
+			prompt = "Stop this poll?",
+		}, function(choice)
+			if choice ~= "Yes" then return end
+			vim.notify("Stopping poll...", vim.log.levels.INFO, { title = "tg" })
+			local result = server.stop_poll(ui.state.chat_id, msg.id)
+			if result and not result.error then
+				vim.notify("Poll stopped", vim.log.levels.INFO, { title = "tg" })
+			else
+				vim.notify("Failed to stop poll: " .. (result and result.error or "unknown error"), vim.log.levels.ERROR, { title = "tg" })
+			end
 		end)
 	end,
 })

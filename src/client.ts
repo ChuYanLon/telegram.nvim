@@ -617,7 +617,7 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async sendPoll(chatId: number, question: string, options: string[], settings?: { isAnonymous?: boolean; allowsMultipleAnswers?: boolean; allowsRevoting?: boolean }): Promise<{ ok: boolean; errMsg?: string }> {
+  async sendPoll(chatId: number, question: string, options: string[], settings?: { isAnonymous?: boolean; allowsMultipleAnswers?: boolean; allowsRevoting?: boolean; openPeriod?: number }): Promise<{ ok: boolean; errMsg?: string }> {
     if (!this._ready) throw new Error('Client not ready yet');
     const result = await this.client.invoke({
       _: 'sendMessage',
@@ -628,6 +628,7 @@ export class TelegramLSPClient {
         options: options.map(o => ({ _: 'inputPollOption', text: { _: 'formattedText', text: o } })),
         is_anonymous: settings?.isAnonymous !== false,
         allows_revoting: settings?.allowsRevoting === false ? false : true,
+        open_period: settings?.openPeriod && settings.openPeriod > 0 ? settings.openPeriod : undefined,
         type: { _: 'inputPollTypeRegular', allow_multiple_answers: settings?.allowsMultipleAnswers === true },
       },
     }) as Record<string, unknown>;
@@ -649,15 +650,37 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async stopPoll(chatId: number, messageId: number): Promise<{ ok: boolean }> {
+  async stopPoll(chatId: number, messageId: number): Promise<{ ok: boolean; errMsg?: string }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    await this.client.invoke({
+    const result = await this.client.invoke({
       _: 'stopPoll',
       chat_id: chatId,
       message_id: messageId,
       reply_markup: { _: 'replyMarkupRemove' },
-    });
+    }) as Record<string, unknown>;
+    if (result._ === 'error') {
+      return { ok: false, errMsg: (result as { message?: string }).message || 'Unknown error' };
+    }
     return { ok: true };
+  }
+
+  async getPollVoters(chatId: number, messageId: number, optionId: number, offset = 0, limit = 50): Promise<{ total_count: number; voters: { user_id: number; name: string; date: number }[] }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    const result = await this.client.invoke({
+      _: 'getPollVoters',
+      chat_id: chatId,
+      message_id: messageId,
+      option_id: optionId,
+      offset,
+      limit,
+    }) as Record<string, unknown>;
+    const raw = (result.voters as any[] || []);
+    const voters = await Promise.all(raw.map(async (v: any) => {
+      const uid = v.voter_id?.user_id || 0;
+      const name = uid ? await this.resolver.getUserName(uid) : 'unknown';
+      return { user_id: uid, name, date: v.date || 0 };
+    }));
+    return { total_count: (result.total_count as number) || 0, voters };
   }
 
   async getRawChat(chatId: number) {
