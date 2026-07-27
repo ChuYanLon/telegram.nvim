@@ -11,32 +11,41 @@ A Telegram chat client inside Neovim.
 
 ## Features
 
-- Chat UI with virtual scrolling, cursor position memory per chat
-- Real-time message push via WebSocket (sync edits, deletions, group info changes from other clients)
-- Send, edit, delete/recall, forward messages
-- Reply with context preview, highlighted reply/edit/delete/forward targets
-- React to messages with 40+ verified emojis (`r` key), synced across devices in real-time
-- Favorites — dedicated chat always in list; press `s` on any message to save with confirmation
-- View counts — channel messages show `👀 N` footer; real-time sync
-- Read receipts — outgoing private messages show `(read HH:MM)` when read
-- Edited indicator — edited messages show `[edited]` footer; `@edithistory` tool shows all previous versions
-- Copy message text — press `yy` to copy any message to clipboard
-- Message search within a chat
-- Media display (photos, video, documents, stickers, audio, voice)
-- Typing indicators in title bar, online member count
-- Multi-line input editor with placeholder
-- Tool system (`@` key): group switcher, refresh, quick send, search, refresh media, toggle title bar, edit history
-- Input editor with markdown syntax highlighting (bottom panel, context preview for reply/edit)
-- Link previews — `[site — title](url)` below links
-- Connection status indicator in title bar
-- Group management: view members (incl. admins), ban/unban, restrict/unrestrict, promote/demote, add members by @username
-- Granular default permissions editor with interactive floating window and toggle-all
-- Invite links: create (with expiry + member limit), view, edit, revoke
-- GitHub integration: PR creation (`:TgPr`), issue browser (`:TgIssue`)
-- Full auth flow (phone → code → 2FA), logout support
-- Proxy support (SOCKS5/HTTP) for restricted regions
-- Theme-adaptive colors — all highlights derive from your Neovim theme (`Comment`, `DiffAdd`, `DiagnosticOk`, etc.)
-- Lualine integration — drop `require("telegram").lualine` into your lualine config for connection status, unread count, and @mention indicators
+### Messages
+- Read text, media, links, code blocks, service messages in real-time via WebSocket
+- Send/edit/delete/forward/reply with markdown formatting
+- Search messages, copy text, save to Favorites
+- Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
+- Read receipts, edited indicators, view counts, typing indicators
+
+### Chat management
+- Group, channel, and private chat (DM) support
+- Member management: promote/demote, ban/unban, restrict, add by @username
+- Invite links with member limit and expiration
+- Group settings: title, description, granular permissions editor (14 types)
+- Pin/unpin messages, react with emojis (40+), mark unread, archive chats
+- Favorites (Saved Messages)
+
+### UI & UX
+- Configurable panel position (right/left/bottom/top)
+- Floating input editor with markdown treesitter highlight and reply preview
+- Cursor persistence per chat, unread-aware loading with divider
+- Scroll infinitely in both directions, date separators
+- Statusline integration (lualine/heirline), help popup
+- Theme adaptation (all highlights from your Neovim theme)
+- Customizable keymaps, toggleable title bar with connection status
+- Wake-up safe: batches messages received during sleep
+
+### Authentication & connectivity
+- Phone → code → 2FA flow, session persists across restarts
+- `:TgLogout` to clear auth
+- Online status with periodic heartbeat (shows as `telegram.nvim`)
+- Real-time sync between devices
+- Proxy support (SOCKS5 / HTTP) for restricted regions
+
+### GitHub integration
+- `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete
+- `:TgIssue` — browse issues, close, assign, create branches, open in browser
 
 ## Project Structure
 

@@ -42,12 +42,12 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22'
         run: |
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git /tmp/wiki
-          cp wiki/Home.md wiki/Installation.md wiki/Configuration.md wiki/Keymaps.md /tmp/wiki/
+          cp wiki/*.md /tmp/wiki/
           cd /tmp/wiki
           if [ -n "$(git status --porcelain)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add Home.md Installation.md Configuration.md Keymaps.md
+            git add *.md
             git commit -m "sync docs from telegram.nvim@${{ github.sha }}"
             git push || echo "⚠️ Wiki push failed (check if wiki is initialized)"
             echo "✅ Wiki synced"
