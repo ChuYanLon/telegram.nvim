@@ -251,27 +251,6 @@
       width: 100%;
     }
 
-    .hero .code-hint {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 20px;
-      background: var(--astro-dark-800);
-      border: 1px solid var(--astro-dark-100);
-      border-radius: 9999px;
-      font-family: 'MDIO', monospace;
-      font-size: 0.85rem;
-      color: var(--astro-gray-200);
-    }
-    .hero .code-hint .copy-btn {
-      background: none;
-      border: none;
-      color: var(--astro-gray-400);
-      cursor: pointer;
-      padding: 2px;
-    }
-    .hero .code-hint .copy-btn:hover { color: #fff; }
-
     /* Badge row */
     .badge-row {
       display: flex;
@@ -595,13 +574,26 @@
         <img src="https://img.shields.io/badge/neovim-%3E%3D0.9-blueviolet" alt="Neovim >= 0.9">
       </div>
 
-      <div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:400px;">
+      <div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:480px;">
         <a href="https://github.com/ChuYanLon/telegram.nvim#installation" class="button button-primary" style="width:100%;">
           Get Started
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <div class="code-hint">
-          <span>lazy.nvim: add to plugins</span>
+        <div style="width:100%;background:var(--astro-dark-800);border:1px solid rgba(133,139,152,0.2);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(133,139,152,0.15);font-size:0.85em;color:var(--astro-gray-300);">
+            <div style="display:flex;gap:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+            </div>
+            lazy.nvim
+          </div>
+          <pre style="padding:20px;overflow-x:auto;font-family:'MDIO',monospace;font-size:0.85em;line-height:1.7;color:#d4dcec;margin:0;background:transparent;"><code>{
+  "ChuYanLon/telegram.nvim",
+  build = "npm i",
+  keys = { { "&lt;leader&gt;tt", "&lt;cmd&gt;Tg&lt;Cr&gt;" } },
+  opts = {},
+}</code></pre>
         </div>
       </div>
     </section>
