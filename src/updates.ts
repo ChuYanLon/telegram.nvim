@@ -254,12 +254,18 @@ export class UpdateDispatcher {
       text: extractText(newContent),
       type: newContent._,
     };
-    const lp = newContent.link_preview;
-    if (lp?.url) {
-      payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
-    }
-    if (lp?.url) {
-      payload.linkPreview = { url: lp.url, title: lp.title, description: lp.description, siteName: lp.site_name };
+    // For polls: re-format the full message to get updated pollInfo (vote counts, etc.)
+    if (newContent._ === 'messagePoll') {
+      try {
+        const fullMsg = await this.invoke({ _: 'getMessage', chat_id: chatId, message_id: messageId }) as RawTdMessage | null;
+        if (fullMsg) {
+          const formatted = await this.formatter.format(fullMsg, undefined, chatId);
+          if (formatted?.pollInfo) {
+            payload.pollInfo = formatted.pollInfo;
+            payload.text = formatted.text;
+          }
+        }
+      } catch (e) { /* poll re-format best-effort */ }
     }
     broadcast(payload);
   }

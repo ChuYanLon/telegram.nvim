@@ -172,9 +172,26 @@ export class MessageFormatter {
         }
         case 'messagePoll': {
           const poll = msg.content as any;
-          const q = poll.poll?.question;  // question:formattedText
+          const pollData = poll.poll as any;
+          const q = pollData?.question;
           const qText = typeof q === 'string' ? q : (q?.text || '');
           formatted.text = `[Poll] ${qText}`;
+          if (pollData) {
+            formatted.pollInfo = {
+              question: qText,
+              options: (pollData.options || []).map((o: any) => ({
+                id: o.id,
+                text: o.text?.text || '',
+                voterCount: o.voter_count || 0,
+                votePercentage: o.vote_percentage || 0,
+                isChosen: o.is_chosen || false,
+              })),
+              totalVoterCount: pollData.total_voter_count || 0,
+              isAnonymous: !!pollData.is_anonymous,
+              allowsMultipleAnswers: !!pollData.allows_multiple_answers,
+              isClosed: !!pollData.is_closed,
+            };
+          }
           break;
         }
         case 'messageGame': {

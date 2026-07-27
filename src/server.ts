@@ -376,6 +376,41 @@ app.post('/unpinMessage', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Polls ────────────────────────────────────────────────────────────
+
+app.post('/sendPoll', async (req, res) => {
+  try {
+    const { chatId, question, options, isAnonymous, allowsMultipleAnswers, allowsRevoting } = req.body;
+    if (!chatId || !question || !options || !Array.isArray(options) || options.length < 2) {
+      res.status(400).json({ error: 'chatId, question (string) and options (array, min 2) are required' });
+      return;
+    }
+    const result = await tgClient.sendPoll(Number(chatId), question, options, { isAnonymous, allowsMultipleAnswers, allowsRevoting });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/poll/vote', async (req, res) => {
+  try {
+    const { chatId, messageId, optionIds } = req.body;
+    if (!chatId || !messageId || !optionIds || !Array.isArray(optionIds) || optionIds.length === 0) {
+      res.status(400).json({ error: 'chatId, messageId and optionIds (array) are required' });
+      return;
+    }
+    const result = await tgClient.votePoll(Number(chatId), Number(messageId), optionIds.map(Number));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/poll/stop', async (req, res) => {
+  try {
+    const { chatId, messageId } = req.body;
+    if (!chatId || !messageId) { res.status(400).json({ error: 'chatId and messageId are required' }); return; }
+    const result = await tgClient.stopPoll(Number(chatId), Number(messageId));
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 // ─── Member Management ────────────────────────────────────────────────
 
 app.post('/chat/ban', async (req, res) => {

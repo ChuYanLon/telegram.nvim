@@ -22,6 +22,21 @@ export interface ForwardInfo {
   name: string;
 }
 
+export interface PollInfo {
+  question: string;
+  options: {
+    id: string;
+    text: string;
+    voterCount: number;
+    votePercentage: number;
+    isChosen: boolean;
+  }[];
+  totalVoterCount: number;
+  isAnonymous: boolean;
+  allowsMultipleAnswers: boolean;
+  isClosed: boolean;
+}
+
 export interface FormattedMessage {
   id: number;
   type: string;
@@ -30,6 +45,7 @@ export interface FormattedMessage {
   date: number;
   own: boolean;
   containsMention: boolean;
+  pollInfo?: PollInfo;
   replyTo?: {
     id: number;
     sender?: SenderInfo | null;

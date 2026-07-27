@@ -1068,4 +1068,89 @@ M.register("refreshmedia", {
 	end,
 })
 
+-- ─── Poll tools ───────────────────────────────────────────────────────
+
+M.register("vote", {
+	description = "Vote on the poll message under cursor",
+	condition = function()
+		local t = ui.curr_msg()
+		return t and t.type == "messagePoll" and t.pollInfo and not t.pollInfo.isClosed
+	end,
+	callback = function()
+		local msg = ui.curr_msg()
+		local poll = msg.pollInfo
+		if not poll or not poll.options then
+			vim.notify("Not a poll message", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		local items = {}
+		for i, opt in ipairs(poll.options) do
+			local prefix = opt.isChosen and "✓ " or "  "
+			local label = prefix .. opt.text
+				.. "  (" .. opt.voterCount .. " votes, " .. opt.votePercentage .. "%)"
+			table.insert(items, { id = opt.id, index = i, label = label, chosen = opt.isChosen })
+		end
+		vim.ui.select(items, {
+			prompt = "Vote: " .. poll.question:sub(1, 40) .. (poll.allowsMultipleAnswers and " (multi)" or ""),
+			format_item = function(item) return item.label end,
+		}, function(choice)
+			if not choice then return end
+			if not ui.state.chat_id then return end
+			local msg_id = msg.id
+			if not msg_id then return end
+			vim.notify("Voting...", vim.log.levels.INFO, { title = "tg" })
+			server.vote_poll(ui.state.chat_id, msg_id, { choice.index - 1 })
+		end)
+	end,
+})
+
+M.register("createpoll", {
+	description = "Create a poll in current chat",
+	condition = function()
+		return ui.state.chat_id ~= nil and ui.state.permissions.can_send_polls ~= false
+	end,
+	callback = function()
+		if not ui.state.chat_id then
+			vim.notify("No chat open", vim.log.levels.WARN, { title = "tg" })
+			return
+		end
+		vim.ui.input({ prompt = "Poll question: " }, function(question)
+			if not question or #question == 0 then return end
+			vim.ui.input({ prompt = "Options (comma-separated, min 2): " }, function(options_str)
+				if not options_str or #options_str == 0 then return end
+				local opts = vim.split(options_str, ",")
+				for i, o in ipairs(opts) do
+					opts[i] = o:match("^%s*(.-)%s*$")
+				end
+				local clean = {}
+				for _, o in ipairs(opts) do
+					if #o > 0 then table.insert(clean, o) end
+				end
+				if #clean < 2 then
+					vim.notify("Need at least 2 options", vim.log.levels.WARN, { title = "tg" })
+					return
+				end
+				vim.ui.input({ prompt = "Anonymous? (y/n, default y): " }, function(anon_str)
+					if anon_str == nil then return end
+					local is_anon = anon_str == "" or anon_str:lower():sub(1, 1) == "y"
+					vim.ui.input({ prompt = "Allow multiple answers? (y/n, default n): " }, function(multi_str)
+						if multi_str == nil then return end
+						local is_multi = multi_str:lower():sub(1, 1) == "y"
+						vim.notify("Creating poll...", vim.log.levels.INFO, { title = "tg" })
+						local result = server.send_poll(ui.state.chat_id, question, clean, {
+							is_anonymous = is_anon,
+							allows_multiple_answers = is_multi,
+						})
+						if result and not result.error then
+							vim.notify("Poll created", vim.log.levels.INFO, { title = "tg" })
+						else
+							vim.notify("Failed to create poll: " .. (result and result.error or "unknown error"), vim.log.levels.ERROR, { title = "tg" })
+						end
+					end)
+				end)
+			end)
+		end)
+	end,
+})
+
 return M

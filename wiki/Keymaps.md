@@ -37,6 +37,7 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
 | `perms_save` | `<CR>` | permission editor: save |
 | `perms_discard` | `<Esc>` | permission editor: discard |
+| `vote` | `V` | vote on poll |
 
 <!-- KEYMAPS_TABLE_END -->
 

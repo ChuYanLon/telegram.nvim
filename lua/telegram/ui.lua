@@ -622,6 +622,14 @@ local function setup_chat_keymaps()
 			end
 		end)
 	end)
+	set("vote", function()
+		local tools = require("telegram.tools")
+		if tools.vote and tools.vote.condition() then
+			tools.vote.callback()
+		else
+			vim.notify("No poll at cursor", vim.log.levels.WARN, { title = "tg" })
+		end
+	end)
 	set("reaction", function() reactions.show_reaction_picker() end)
 	set("open_dm", function()
 		local target = curr_msg()

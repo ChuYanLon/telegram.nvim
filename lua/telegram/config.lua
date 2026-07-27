@@ -35,6 +35,7 @@ M.default_keys = {
 	perms_up_alt = "<S-Tab>",
 	perms_save = "<CR>",
 	perms_discard = "<Esc>",
+	vote = "V",
 }
 
 M.key_labels = {
@@ -69,6 +70,7 @@ M.key_labels = {
 	perms_up_alt = "permission editor: move up (alt)",
 	perms_save = "permission editor: save",
 	perms_discard = "permission editor: discard",
+	vote = "vote on poll",
 }
 
 M.config = {

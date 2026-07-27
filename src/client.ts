@@ -617,6 +617,45 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
+  async sendPoll(chatId: number, question: string, options: string[], settings?: { isAnonymous?: boolean; allowsMultipleAnswers?: boolean; allowsRevoting?: boolean }): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'sendMessage',
+      chat_id: chatId,
+      input_message_content: {
+        _: 'inputMessagePoll',
+        question: { _: 'formattedText', text: question },
+        options: options.map(o => ({ _: 'inputPollOption', text: { _: 'formattedText', text: o } })),
+        is_anonymous: settings?.isAnonymous !== false,
+        allows_multiple_answers: settings?.allowsMultipleAnswers === true,
+        allows_revoting: settings?.allowsRevoting === false ? false : true,
+      },
+    });
+    return { ok: true };
+  }
+
+  async votePoll(chatId: number, messageId: number, optionIds: number[]): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'setPollAnswer',
+      chat_id: chatId,
+      message_id: messageId,
+      option_ids: optionIds,
+    });
+    return { ok: true };
+  }
+
+  async stopPoll(chatId: number, messageId: number): Promise<{ ok: boolean }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    await this.client.invoke({
+      _: 'stopPoll',
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { _: 'replyMarkupRemove' },
+    });
+    return { ok: true };
+  }
+
   async getRawChat(chatId: number) {
     if (!this._ready) throw new Error('Client not ready yet');
     return await this.client.invoke({ _: 'getChat', chat_id: chatId }) as RawTdChat;

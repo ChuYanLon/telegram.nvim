@@ -69,6 +69,7 @@ All keymaps are configurable via `setup({ keys = { ... } })`. Set a key to `nil`
 | `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
 | `perms_save` | `<CR>` | permission editor: save |
 | `perms_discard` | `<Esc>` | permission editor: discard |
+| `vote` | `V` | vote on poll |
 
 <!-- KEYMAPS_TABLE_END -->
 

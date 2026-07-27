@@ -20,6 +20,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
 - Send/edit/delete/forward/reply with markdown formatting
+- Polls: display with progress bars, vote, create with `@vote` / `@createpoll` (V key)
 - Search messages, copy text, save to Favorites
 - Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
 - Read receipts, edited indicators, view counts, typing indicators
@@ -55,8 +56,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### Known limitations
 - Send media (photos/videos/files/audio), stickers/GIFs
-- Polls, scheduled messages
-- Poll/contact/location/dice/game/call display (fallback label only)
+- Scheduled messages
+- Poll/contact/location/dice/game/call display (fallback label only, except polls)
 - Inline bots / bot commands
 
 ### Customizing keys
@@ -108,6 +109,7 @@ All available keys and their defaults:
 | `perms_up_alt` | `<S-Tab>` | permission editor: move up (alt) |
 | `perms_save` | `<CR>` | permission editor: save |
 | `perms_discard` | `<Esc>` | permission editor: discard |
+| `vote` | `V` | vote on poll |
 
 <!-- KEYMAPS_TABLE_END -->
 

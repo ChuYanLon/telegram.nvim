@@ -647,6 +647,40 @@ function M.unpin_message(chat_id, message_id)
 	return http_post("/unpinMessage", { chatId = chat_id, messageId = message_id }) ~= nil
 end
 
+-- ─── Polls ────────────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param question string
+---@param options string[]
+---@param settings { is_anonymous?: boolean, allows_multiple_answers?: boolean }|nil
+---@return table|nil
+function M.send_poll(chat_id, question, options, settings)
+	settings = settings or {}
+	local body = {
+		chatId = chat_id,
+		question = question,
+		options = options,
+		isAnonymous = settings.is_anonymous ~= false,
+		allowsMultipleAnswers = settings.allows_multiple_answers == true,
+	}
+	return http_post("/sendPoll", body)
+end
+
+---@param chat_id any
+---@param message_id any
+---@param option_ids integer[]
+---@return table|nil
+function M.vote_poll(chat_id, message_id, option_ids)
+	return http_post("/poll/vote", { chatId = chat_id, messageId = message_id, optionIds = option_ids })
+end
+
+---@param chat_id any
+---@param message_id any
+---@return table|nil
+function M.stop_poll(chat_id, message_id)
+	return http_post("/poll/stop", { chatId = chat_id, messageId = message_id })
+end
+
 -- ─── Member Management ─────────────────────────────────────────────────
 
 ---@param chat_id any

@@ -220,6 +220,7 @@ local function flush_msg_queue()
 				editDate = msg.editDate,
 				linkPreview = msg.linkPreview,
 				forwardInfo = msg.forwardInfo,
+				pollInfo = msg.pollInfo,
 				_unread = should_count_unread,
 				})
 			else
@@ -378,6 +379,7 @@ local function finish_init()
 								editDate = msg.editDate,
 								linkPreview = msg.linkPreview,
 								forwardInfo = msg.forwardInfo,
+								pollInfo = msg.pollInfo,
 							}
 							ui.render()
 							break
@@ -414,6 +416,9 @@ local function finish_init()
 						end
 						m.type = msg.type or m.type
 						m.linkPreview = msg.linkPreview
+						if msg.pollInfo then
+							m.pollInfo = msg.pollInfo
+						end
 						ui.render()
 						break
 					end
