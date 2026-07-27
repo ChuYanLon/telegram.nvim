@@ -657,7 +657,6 @@ export class TelegramLSPClient {
       _: 'stopPoll',
       chat_id: chatId,
       message_id: messageId,
-      reply_markup: { _: 'replyMarkupRemove' },
     }) as Record<string, unknown>;
     if (result._ === 'error') {
       return { ok: false, errMsg: (result as { message?: string }).message || 'Unknown error' };
