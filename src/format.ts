@@ -209,7 +209,7 @@ export class MessageFormatter {
           const title = venue?.title || 'Venue';
           const addr = venue?.address || '';
           formatted.text = `📍 ${title}`;
-          if (addr) formatted.text += `\n${addr}`;
+          if (addr) formatted.text += `, ${addr}`;
           if (venue?.location) {
             const lat = venue.location.latitude?.toFixed(4) || '';
             const lng = venue.location.longitude?.toFixed(4) || '';
@@ -224,7 +224,7 @@ export class MessageFormatter {
           const lat = loc?.latitude?.toFixed(4) || '?';
           const lng = loc?.longitude?.toFixed(4) || '?';
           formatted.text = `📍 Live: ${lat}, ${lng}`;
-          if (exp > 0) formatted.text += `\n⏱️ expires in ${exp}s`;
+          if (exp > 0) formatted.text += `\n⏱️ ${exp}s remaining`;
           formatted.text += `\n🗺️ https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}`;
           break;
         }
