@@ -33,48 +33,55 @@ local function render_poll(msg)
 	-- Question
 	local q_icon = poll.isClosed and "🔒" or "📊"
 	table.insert(lines, "  " .. q_icon .. "  " .. poll.question)
+	table.insert(lines, "  " .. string.rep("─", 36)
+		.. (poll.allowsMultipleAnswers and "  (multi)" or ""))
 
-	-- Separator
-	local sep_width = 32
-	if poll.allowsMultipleAnswers then
-		table.insert(lines, "  " .. string.rep("─", sep_width) .. "  (multi)")
-	else
-		table.insert(lines, "  " .. string.rep("─", sep_width))
+	-- Find longest option text (display width) for alignment
+	local max_text_w = 0
+	for _, opt in ipairs(poll.options) do
+		local w = vim.fn.strdisplaywidth(opt.text)
+		if w > max_text_w then max_text_w = w end
 	end
+	local name_col_w = math.min(max_text_w, 24)
 
 	-- Options with progress bars
-	for i, opt in ipairs(poll.options) do
-		local chosen = opt.isChosen and "✓ " or "  "
+	for _, opt in ipairs(poll.options) do
 		local opt_text = opt.text
-		-- Truncate long option text
-		local max_text = 26
-		if #opt_text > max_text then
-			opt_text = opt_text:sub(1, max_text - 1) .. "…"
+		local opt_w = vim.fn.strdisplaywidth(opt_text)
+		-- Truncate if too long
+		if opt_w > name_col_w then
+			local s = ""
+			for c in opt_text:gmatch(".[\128-\191]*") do
+				if vim.fn.strdisplaywidth(s .. c) > name_col_w - 1 then
+					s = s .. "…"
+					break
+				end
+				s = s .. c
+			end
+			opt_text = s
+			opt_w = name_col_w + 1  -- includes ellipsis
 		end
 
-		-- Progress bar: 16 chars wide
-		local bar_chars = 16
-		local filled = math.floor(opt.votePercentage / 100 * bar_chars + 0.5)
-		local bar = string.rep("█", filled) .. string.rep("░", math.max(0, bar_chars - filled))
+		-- Progress bar: 10 chars wide
+		local filled = math.floor(opt.votePercentage / 100 * 10 + 0.5)
+		local bar = string.rep("█", filled) .. string.rep("░", 10 - filled)
 		local pct = string.format("%3d%%", opt.votePercentage)
-		local votes = "(" .. opt.voterCount .. ")"
+		local votes = string.format("%4d", opt.voterCount)
+		local check = opt.isChosen and " ✓" or ""
 
-		local line = chosen .. string.format("%-2d", i) .. ") " .. opt_text
-		-- Pad to align bar
-		local text_w = vim.fn.strdisplaywidth(opt_text)
-		local pad = math.max(0, max_text - text_w)
-		line = line .. string.rep(" ", pad + 1) .. bar .. " " .. pct .. "  " .. votes
+		local line = "  " .. opt_text .. string.rep(" ", name_col_w - opt_w + 1)
+			.. bar .. " " .. pct .. " " .. votes .. check
 		table.insert(lines, line)
 	end
 
 	-- Footer
-	table.insert(lines, "  " .. string.rep("─", sep_width))
 	local footer = {}
 	table.insert(footer, poll.isAnonymous and "Anonymous" or "Public")
 	table.insert(footer, poll.totalVoterCount .. " vote" .. (poll.totalVoterCount ~= 1 and "s" or ""))
 	if poll.isClosed then
 		table.insert(footer, "Closed")
 	end
+	table.insert(lines, "  " .. string.rep("─", 36))
 	table.insert(lines, "  " .. table.concat(footer, " · "))
 
 	return lines
