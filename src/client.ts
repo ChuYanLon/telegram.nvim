@@ -617,9 +617,9 @@ export class TelegramLSPClient {
     return { ok: true };
   }
 
-  async sendPoll(chatId: number, question: string, options: string[], settings?: { isAnonymous?: boolean; allowsMultipleAnswers?: boolean; allowsRevoting?: boolean }): Promise<{ ok: boolean }> {
+  async sendPoll(chatId: number, question: string, options: string[], settings?: { isAnonymous?: boolean; allowsMultipleAnswers?: boolean; allowsRevoting?: boolean }): Promise<{ ok: boolean; errMsg?: string }> {
     if (!this._ready) throw new Error('Client not ready yet');
-    await this.client.invoke({
+    const result = await this.client.invoke({
       _: 'sendMessage',
       chat_id: chatId,
       input_message_content: {
@@ -630,7 +630,11 @@ export class TelegramLSPClient {
         allows_multiple_answers: settings?.allowsMultipleAnswers === true,
         allows_revoting: settings?.allowsRevoting === false ? false : true,
       },
-    });
+    }) as Record<string, unknown>;
+    if (result._ === 'error') {
+      const msg = (result as { message?: string }).message || 'Unknown TDLib error';
+      return { ok: false, errMsg: msg };
+    }
     return { ok: true };
   }
 

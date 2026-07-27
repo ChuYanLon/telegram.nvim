@@ -386,6 +386,7 @@ app.post('/sendPoll', async (req, res) => {
       return;
     }
     const result = await tgClient.sendPoll(Number(chatId), question, options, { isAnonymous, allowsMultipleAnswers, allowsRevoting });
+    if (result.errMsg) { res.status(400).json({ error: result.errMsg }); return; }
     res.json(result);
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
