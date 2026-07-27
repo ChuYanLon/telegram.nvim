@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-astro-dark-900 overflow-x-clip break-words text-astro-gray-100 [color-scheme:dark]">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,13 +59,43 @@
       --astro-green: #4AF2C8;
       --container-width: 1280px;
       --container-gutter: 24px;
+      --astro-bg: #060913;
+      --astro-bg-card: #0C0F19;
+      --astro-bg-code: #11172A;
+      --astro-text: #F2F6FA;
+      --astro-text-muted: #BFC1C9;
+      --astro-border: rgba(133, 139, 152, 0.2);
+      --astro-border-hover: rgba(133, 139, 152, 0.4);
+    }
+
+    [data-theme="light"] {
+      --astro-dark-900: #f8f9fb;
+      --astro-dark-800: #ffffff;
+      --astro-dark-700: #f0f2f5;
+      --astro-dark-400: #e8eaee;
+      --astro-dark-300: #d0d4dc;
+      --astro-dark-100: #9098a8;
+      --astro-gray-700: #e8eaee;
+      --astro-gray-600: #d0d4dc;
+      --astro-gray-500: #b0b6c2;
+      --astro-gray-400: #9098a8;
+      --astro-gray-300: #6a7284;
+      --astro-gray-200: #3a4050;
+      --astro-gray-100: #1a1a2e;
+      --astro-bg: #f8f9fb;
+      --astro-bg-card: #ffffff;
+      --astro-bg-code: #f0f2f5;
+      --astro-text: #1a1a2e;
+      --astro-text-muted: #5a6274;
+      --astro-border: rgba(0, 0, 0, 0.1);
+      --astro-border-hover: rgba(0, 0, 0, 0.2);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--astro-dark-900);
-      color: var(--astro-gray-100);
+      background: var(--astro-bg);
+      color: var(--astro-text);
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
@@ -148,6 +178,29 @@
       align-items: center;
       gap: 16px;
     }
+
+    /* Theme toggle */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--astro-border);
+      background: transparent;
+      color: var(--astro-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover {
+      background: var(--astro-bg-card);
+      color: var(--astro-text);
+    }
+    .theme-toggle .sun { display: none; }
+    .theme-toggle .moon { display: block; }
+    [data-theme="light"] .theme-toggle .sun { display: block; }
+    [data-theme="light"] .theme-toggle .moon { display: none; }
 
     /* Buttons */
     .button {
@@ -316,13 +369,13 @@
       display: flex;
       flex-direction: column;
       background: var(--astro-dark-800);
-      border: 1px solid rgba(133, 139, 152, 0.2);
+      border: 1px solid var(--astro-border);
       border-radius: 12px;
       overflow: hidden;
       transition: border-color 0.3s;
     }
     @media (min-width: 1280px) { .feature-card { border-radius: 16px; } }
-    .feature-card:hover { border-color: rgba(133, 139, 152, 0.4); }
+    .feature-card:hover { border-color: var(--astro-border-hover); }
 
     .feature-card .card-body {
       padding: 16px;
@@ -389,7 +442,7 @@
     /* Screenshot section */
     .screenshot-frame {
       background: var(--astro-dark-800);
-      border: 1px solid rgba(133, 139, 152, 0.2);
+      border: 1px solid var(--astro-border);
       border-radius: 16px;
       padding: 8px;
       overflow: hidden;
@@ -413,7 +466,7 @@
       gap: 6px;
       padding: 8px 16px;
       background: var(--astro-dark-800);
-      border: 1px solid rgba(133, 139, 152, 0.2);
+      border: 1px solid var(--astro-border);
       border-radius: 9999px;
       font-size: 0.9rem;
       color: var(--astro-gray-200);
@@ -431,7 +484,7 @@
     /* Footer */
     .footer {
       width: 100%;
-      border-top: 1px solid rgba(133, 139, 152, 0.2);
+      border-top: 1px solid var(--astro-border);
       margin-top: 96px;
     }
     .footer .inner {
@@ -540,6 +593,10 @@
         <a href="https://github.com/ChuYanLon/telegram.nvim/blob/main/README.md">Docs</a>
       </div>
       <div class="nav-right">
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sm sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="icon-sm moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
         <a href="https://github.com/ChuYanLon/telegram.nvim" class="button button-sm button-ghost">
           <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
@@ -580,7 +637,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
         <div style="width:100%;background:var(--astro-dark-800);border:1px solid rgba(133,139,152,0.2);border-radius:12px;overflow:hidden;">
-          <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(133,139,152,0.15);font-size:0.85em;color:var(--astro-gray-300);">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--astro-border);font-size:0.85em;color:var(--astro-gray-300);">
             <div style="display:flex;gap:6px;">
               <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
               <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
@@ -777,6 +834,53 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    (function() {
+      var html = document.documentElement;
+      var toggle = document.getElementById('theme-toggle');
+
+      function getPreferredTheme() {
+        var stored = localStorage.getItem('theme');
+        if (stored === 'dark' || stored === 'light') return stored;
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+
+      function setTheme(theme) {
+        html.setAttribute('data-theme', theme);
+        var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        var systemPref = prefersLight ? 'light' : 'dark';
+        if (theme === systemPref) {
+          localStorage.removeItem('theme');
+        } else {
+          localStorage.setItem('theme', theme);
+        }
+      }
+
+      setTheme(getPreferredTheme());
+
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          var current = html.getAttribute('data-theme');
+          var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          if (current === 'dark') {
+            setTheme('light');
+          } else if (current === 'light') {
+            localStorage.removeItem('theme');
+            setTheme(prefersLight ? 'light' : 'dark');
+          } else {
+            setTheme('dark');
+          }
+        });
+
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function() {
+          if (!localStorage.getItem('theme')) {
+            setTheme(getPreferredTheme());
+          }
+        });
+      }
+    })();
+  </script>
 
 </body>
 </html>
