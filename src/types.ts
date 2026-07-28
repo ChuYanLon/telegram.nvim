@@ -146,6 +146,16 @@ export interface RawTdChat {
   permissions?: Record<string, unknown>;
 }
 
+export interface BotCommand {
+  command: string;
+  description: string;
+}
+
+export interface GroupBotCommands {
+  bot_user_id: number;
+  commands: BotCommand[];
+}
+
 export interface GroupInfo {
   id: number;
   title: string;
@@ -157,6 +167,7 @@ export interface GroupInfo {
   memberCount?: number;
   owner?: SenderInfo | null;
   description?: string;
+  bot_commands?: GroupBotCommands[];
 }
 
 export interface ChatInfo {

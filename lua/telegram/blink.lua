@@ -3,7 +3,8 @@
 ---   :name  → emoji
 ---   @name  → chat member mention
 ---   #chat  → chat/channel reference
----   /cmd   → quick phrase templates
+---   /cmd   → bot commands (from group info)
+---   !cmd   → quick phrase templates
 ---   ```    → code block language
 ---
 --- Register in blink.cmp setup:
@@ -60,7 +61,6 @@ local phrases = {
 	{ cmd = "gl", text = "Good luck!", desc = "Good luck" },
 	{ cmd = "hf", text = "Have fun!", desc = "Have fun" },
 	{ cmd = "gg", text = "GG", desc = "Good game" },
-	{ cmd = "nsfw", text = "NSFW", desc = "Not safe for work" },
 }
 
 -- ── Code languages ─────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ local code_languages = {
 
 -- ── Kind constants ─────────────────────────────────────────────────────
 
-local ItemKind = { Text = 1, User = 2, Snippet = 15 }
+local ItemKind = { Text = 1, User = 2, Snippet = 15, Keyword = 14 }
 pcall(function()
 	ItemKind = require("blink.cmp.types").CompletionItemKind
 end)
@@ -94,32 +94,31 @@ function source:enabled()
 end
 
 function source:get_trigger_characters()
-	return { ":", "@", "#", "!", "`" }
+	return { ":", "@", "#", "/", "!", "`" }
 end
 
 function source:get_completions(ctx, callback)
 	local line = ctx.line
-	local cursor = ctx.cursor[2] -- 0-indexed column
+	local cursor = ctx.cursor[2]
 	local line_idx = ctx.cursor[1]
 
-	-- Special case: detect triple backtick
+	-- Triple backtick
 	if cursor >= 3 then
 		local before = line:sub(cursor - 2, cursor)
 		if before == "```" then
-			local range = {
+			callback({ items = self:get_language_items({
 				start = { line = line_idx, character = cursor - 2 },
 				["end"] = { line = line_idx, character = cursor },
-			}
-			callback({ items = self:get_language_items(range) })
+			}) })
 			return
 		end
 	end
 
-	-- Find trigger character before cursor, at word boundary
+	-- Find trigger at word boundary
 	local trigger_pos
 	for i = cursor, 1, -1 do
 		local char = line:sub(i, i)
-		if char == ":" or char == "@" or char == "#" or char == "!" then
+		if char == ":" or char == "@" or char == "#" or char == "/" or char == "!" then
 			if i == 1 or line:sub(i - 1, i - 1):match("%s") then
 				trigger_pos = i
 				break
@@ -134,7 +133,6 @@ function source:get_completions(ctx, callback)
 
 	local trigger = line:sub(trigger_pos, trigger_pos)
 	local keyword = line:sub(trigger_pos + 1, cursor)
-
 	local range = {
 		start = { line = line_idx, character = trigger_pos - 1 },
 		["end"] = { line = line_idx, character = cursor },
@@ -147,10 +145,11 @@ function source:get_completions(ctx, callback)
 		items = self:get_member_items(keyword, range)
 	elseif trigger == "#" then
 		items = self:get_chat_items(keyword, range)
+	elseif trigger == "/" then
+		items = self:get_command_items(keyword, range)
 	elseif trigger == "!" then
 		items = self:get_phrase_items(keyword, range)
 	end
-
 	callback({ items = items })
 end
 
@@ -166,6 +165,7 @@ function source:get_emoji_items(keyword, range)
 				filterText = name,
 				textEdit = { newText = char, range = range },
 				kind = ItemKind.Text,
+				score_offset = 100,
 			})
 		end
 	end
@@ -204,7 +204,6 @@ function source:get_member_items(keyword, range)
 		end
 	end
 
-	-- Add chat title
 	local chat_id = state.chat_id
 	if chat_id then
 		local g = state.groups[chat_id]
@@ -240,16 +239,12 @@ function source:get_chat_items(keyword, range)
 	for _, id in ipairs(state.group_ids or {}) do
 		local g = state.groups[id]
 		if g and g.title and #g.title > 0 then
-			local label = "#" .. g.title
-			local filter = g.title:lower()
-			if g.type then
-				local icon = g.type == "private" and "👤 " or g.type == "channel" and "📢 " or "👥 "
-				label = icon .. label
-			end
-			if #kw == 0 or filter:find(kw, 1, true) then
+			local icon = g.type == "private" and "👤 " or g.type == "channel" and "📢 " or "👥 "
+			local label = icon .. "#" .. g.title
+			if #kw == 0 or g.title:lower():find(kw, 1, true) then
 				table.insert(items, {
 					label = label,
-					filterText = filter,
+					filterText = g.title:lower(),
 					textEdit = { newText = "#" .. g.title .. " ", range = range },
 					kind = ItemKind.Text,
 				})
@@ -268,7 +263,44 @@ function source:get_chat_items(keyword, range)
 	return items
 end
 
--- ── Phrase items (/cmd) ─────────────────────────────────────────────
+-- ── Bot command items (/cmd) ─────────────────────────────────────────
+
+function source:get_command_items(keyword, range)
+	local kw = keyword:lower()
+	local items = {}
+	local chat_id = state.chat_id
+	if not chat_id then return items end
+
+	local g = state.groups[chat_id]
+	if not g or not g.bot_commands then return items end
+
+	for _, bc in ipairs(g.bot_commands) do
+		for _, cmd in ipairs(bc.commands or {}) do
+			local name = cmd.command or ""
+			if #kw == 0 or name:find(kw, 1, true) then
+				table.insert(items, {
+					label = "/" .. name .. "  " .. (cmd.description or ""),
+					filterText = name,
+					textEdit = { newText = "/" .. name .. " ", range = range },
+					kind = ItemKind.Keyword,
+					score_offset = 100,
+				})
+			end
+		end
+	end
+
+	table.sort(items, function(a, b)
+		if #kw > 0 then
+			local a_exact = a.filterText == kw
+			local b_exact = b.filterText == kw
+			if a_exact ~= b_exact then return a_exact end
+		end
+		return a.filterText < b.filterText
+	end)
+	return items
+end
+
+-- ── Phrase items (!cmd) ─────────────────────────────────────────────
 
 function source:get_phrase_items(keyword, range)
 	local kw = keyword:lower()
@@ -300,7 +332,6 @@ end
 function source:get_language_items(range)
 	local items = {}
 	for _, lang in ipairs(code_languages) do
-		local label = lang
 		local icon = ""
 		if lang == "lua" then icon = "🌙 "
 		elseif lang == "python" then icon = "🐍 "
@@ -315,7 +346,7 @@ function source:get_language_items(range)
 		elseif lang == "json" or lang == "toml" or lang == "yaml" then icon = "📋 "
 		end
 		table.insert(items, {
-			label = icon .. label,
+			label = icon .. lang,
 			filterText = lang,
 			textEdit = { newText = lang .. "\n", range = range },
 			kind = ItemKind.Text,

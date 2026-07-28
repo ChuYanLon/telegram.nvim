@@ -237,6 +237,7 @@ export class TelegramLSPClient {
         const info: any = await this.client.invoke({ _: 'getSupergroupFullInfo', supergroup_id: chat.type.supergroup_id });
         group.description = info.description;
         if (!group.onlineMemberCount && info.online_member_count) group.onlineMemberCount = info.online_member_count;
+        if (info.bot_commands) group.bot_commands = info.bot_commands;
       } else if (chat.type._ === 'chatTypeBasicGroup') {
         const bg: any = await this.client.invoke({ _: 'getBasicGroup', basic_group_id: chat.type.basic_group_id });
         if (bg.status._ === 'chatMemberStatusLeft' || bg.status._ === 'chatMemberStatusBanned' || !bg.is_active) return null;
@@ -247,6 +248,7 @@ export class TelegramLSPClient {
         const info: any = await this.client.invoke({ _: 'getBasicGroupFullInfo', basic_group_id: chat.type.basic_group_id });
         group.description = info.description;
         if (!group.onlineMemberCount && info.online_member_count) group.onlineMemberCount = info.online_member_count;
+        if (info.bot_commands) group.bot_commands = info.bot_commands;
       }
     } catch (e) { console.warn('_enrichChatGroup failed:', (e as Error).message); }
 
