@@ -9,7 +9,8 @@ A Telegram chat client inside Neovim.
 3. Enter phone number, verification code, 2FA password if needed
 4. Chat list opens automatically — select a chat and start messaging
 
-## Features
+<!-- FEATURES_START -->
+## Feature Status
 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
@@ -49,6 +50,7 @@ A Telegram chat client inside Neovim.
 - Online status with periodic heartbeat (shows as `telegram.nvim`)
 - Real-time sync between devices
 - Proxy support (SOCKS5 / HTTP) for restricted regions
+<!-- FEATURES_END -->
 
 ### GitHub integration
 - `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete

@@ -15,6 +15,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 <img width="600" src="https://github.com/user-attachments/assets/9efb7eac-0175-4b00-bf5c-ba48cee129c6" />
 
+<!-- FEATURES_START -->
 ## Feature Status
 
 ### Messages
@@ -55,8 +56,7 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 - Online status with periodic heartbeat (shows as `telegram.nvim`)
 - Real-time sync between devices
 - Proxy support (SOCKS5 / HTTP) for restricted regions
-
-### GitHub integration
+<!-- FEATURES_END -->
 - `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete
 - `:TgIssue` — browse issues, close, assign, create branches, open in browser
 

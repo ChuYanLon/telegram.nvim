@@ -142,10 +142,32 @@ for (const filePath of TARGETS) {
     updated++;
     console.log(`  ✅ ${filePath.replace(ROOT, '.')}`);
   }
+}
 
-  writeFileSync(filePath, working);
-  console.log(`  ✅ ${filePath.replace(ROOT, '.')}`);
-  updated++;
+// ── Sync Features from README.md → wiki/Home.md ──────────────────────
+
+const readmePath = join(ROOT, 'README.md');
+const homePath = join(ROOT, 'wiki', 'Home.md');
+
+try {
+  const readme = readFileSync(readmePath, 'utf-8');
+  const start = readme.indexOf('<!-- FEATURES_START -->');
+  const end = readme.indexOf('<!-- FEATURES_END -->');
+
+  if (start !== -1 && end !== -1 && end > start) {
+    const featureSection = readme.slice(start, end + '<!-- FEATURES_END -->'.length);
+    const home = readFileSync(homePath, 'utf-8');
+    const synced = replaceBetween(home, '<!-- FEATURES_START -->', '<!-- FEATURES_END -->',
+      featureSection.replace('<!-- FEATURES_START -->', '').replace('<!-- FEATURES_END -->', '').trim());
+
+    if (synced && synced !== home) {
+      writeFileSync(homePath, synced);
+      console.log(`  ✅ ${homePath.replace(ROOT, '.')} — features synced`);
+      updated++;
+    }
+  }
+} catch (e) {
+  console.log(`  ⚠ features sync failed: ${(e as Error).message}`);
 }
 
 console.log(`\nDone: ${updated} updated, ${skipped} skipped, ${Object.keys(defaults).length} keys, ${tools.length} tools`);
