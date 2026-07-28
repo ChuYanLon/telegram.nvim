@@ -121,6 +121,9 @@ function source:get_completions(ctx, callback)
 	elseif trigger == "@" then
 		items = self:get_member_items(keyword, range)
 		-- Always fetch full member list async (triggers re-callback with results)
+		if self._last_chat_id ~= state.chat_id then
+			self._members_fetched = nil
+		end
 		if not self._members_fetched then
 			local seen = {}
 			for _, it in ipairs(items) do seen[it.filterText] = true end
@@ -314,6 +317,8 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 	local server = require("telegram.server")
 	server.get_members_async(state.chat_id, function(data)
 		self._fetching_members = false
+		self._members_fetched = true
+		self._last_chat_id = state.chat_id
 		local names = {}
 		for _, m in ipairs(data.members or {}) do
 			if m.name and #m.name > 0 then

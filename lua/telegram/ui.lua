@@ -739,6 +739,7 @@ function M.open_chat(chat_id, chat_title, chat_type)
 	end
 	editor.close_editor()
 	state.chat_id = chat_id
+	state.member_names = {}
 	state.chat_title = chat_title
 	state.unread = 0
 	state.last_group = { id = chat_id, title = chat_title }
