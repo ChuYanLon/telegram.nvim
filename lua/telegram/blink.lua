@@ -120,8 +120,8 @@ function source:get_completions(ctx, callback)
 		items = self:get_emoji_items(keyword, range)
 	elseif trigger == "@" then
 		items = self:get_member_items(keyword, range)
-		-- If full member list not yet cached, fetch async and re-callback
-		if #items == 0 then
+		-- Always fetch full member list async (triggers re-callback with results)
+		if not self._members_fetched then
 			self:ensure_members_fetched(keyword, range, callback)
 		end
 	elseif trigger == "#" then
