@@ -189,11 +189,11 @@ function source:get_member_items(keyword, range)
 	end
 
 	for _, m in ipairs(members) do
-		local mention = m.username and ("@" .. m.username) or ("@" .. m.name)
+		local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
 		if #kw == 0 or mention:lower():find(kw, 1, true) or (m.name and m.name:lower():find(kw, 1, true)) then
 			table.insert(items, {
 				label = mention,
-				filterText = m.username or m.name or "",
+				filterText = (#m.username > 0 and m.username) or m.name or "",
 				textEdit = { newText = mention .. " ", range = range },
 				kind = ItemKind.User,
 			})
@@ -334,7 +334,7 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 		local items = {}
 		local kw = keyword:lower()
 		for _, m in ipairs(members) do
-			if seen_names and seen_names[m.name] then
+			if seen_names and (seen_names[m.name] or (m.username and #m.username > 0 and seen_names[m.username])) then
 				-- skip, already in fallback results
 			elseif #kw == 0 or m.name:lower():find(kw, 1, true) or (m.username and #m.username > 0 and m.username:find(kw, 1, true)) then
 				local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
