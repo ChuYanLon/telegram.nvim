@@ -140,3 +140,49 @@ Displays `  ` with:
 TDLib stores data in `data_dir/tdlib_db/` (SQLite + binlog) and files in `data_dir/tdlib_files/`.  
 Delete these directories to force re-authentication.  
 `:TgLogout` does this automatically.
+
+### `@` Tools
+
+Available tools via the tool picker (`@` or `:TgTool`):
+
+<!-- TOOLS_TABLE_START -->
+| Tool | Description |
+|------|-------------|
+| `@archive` | Archive/unarchive current chat |
+| `@blocked` | List and manage blocked users |
+| `@channels` | Switch to a channel (filtered) |
+| `@chats` | Switch to another chat |
+| `@createpoll` | Create a poll in current chat |
+| `@dm` | Switch to a private chat (filtered) |
+| `@draft` | Save draft to server / clear draft |
+| `@folders` | Switch chat folder |
+| `@groups` | Switch to a group (filtered) |
+| `@groupsettings` | Group / channel settings (title, description, permissions, etc.) |
+| `@invitelinks` | Manage invite links |
+| `@jump_to_date` | Jump to messages on a specific date |
+| `@markunread` | Mark current chat as unread / read |
+| `@members` | View and manage chat members |
+| `@mentions` | Search @mentions in current chat |
+| `@messagelink` | Copy shareable link of message under cursor |
+| `@mute` | Mute / unmute current chat |
+| `@newchat` | Start a new private chat by @username |
+| `@openlink` | Open URL or media file under cursor |
+| `@openshared` | Open shared chat or user DM |
+| `@pinchat` | Pin / unpin current chat |
+| `@reaction` | React to message |
+| `@refresh` | Refresh messages |
+| `@refreshmedia` | Download and update image for message under cursor |
+| `@saved` | Open Saved Messages |
+| `@search` | Search message history |
+| `@send` | Send a message to current chat |
+| `@showarchived` | Toggle archived chats in picker |
+| `@stoppoll` | Stop a poll |
+| `@toggleheader` | Toggle floating title bar visibility |
+| `@translate` | Translate message under cursor |
+| `@translate_zh` | Translate message under cursor to Chinese |
+| `@userinfo` | View profile of message sender |
+| `@vote` | Vote on the poll message under cursor |
+| `@voters` | List who voted on each poll option |
+
+<!-- TOOLS_TABLE_END -->
+

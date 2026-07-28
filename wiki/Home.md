@@ -13,12 +13,14 @@ A Telegram chat client inside Neovim.
 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
-- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, and more
+- Rich text highlighting: **bold**, *italic*, `code`, ~~strikethrough~~, ||spoiler||, [links](url) with distinct highlight groups
+- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, calls, dice, and more
+- Full service message coverage: screenshot, contact registered, proximity alert, theme/background changes, boosts, payments, web apps, admin events, and more
 - Send/edit/delete/forward/reply with markdown formatting
 - Polls: display with progress bars, vote (`@vote`), create (`@createpoll`), view voters (`@voters`), stop (`@stoppoll`). Supports multi-answer and timed polls.
 - Search messages, copy text, save to Favorites
+- Jump to any date with `@jump_to_date` — supports `YYYY-MM-DD`, `today`, `yesterday`
 - Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
-- Open shared chats/users with `@openshared`
 - Read receipts, edited indicators, view counts, typing indicators
 
 ### Chat management
@@ -31,6 +33,8 @@ A Telegram chat client inside Neovim.
 
 ### UI & UX
 - Configurable panel position (right/left/bottom/top)
+- Rich text highlighting: **bold**, *italic*, `code`, ~~strikethrough~~, ||spoiler||, [links](url) in messages
+- Footer metadata ([edited], views, reactions) styled with distinct highlight group
 - Floating input editor with markdown treesitter highlight and reply preview
 - Cursor persistence per chat, unread-aware loading with divider
 - Scroll infinitely in both directions, date separators
@@ -49,6 +53,51 @@ A Telegram chat client inside Neovim.
 ### GitHub integration
 - `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete
 - `:TgIssue` — browse issues, close, assign, create branches, open in browser
+
+### `@` Tools
+
+Available tools via the tool picker (`@` or `:TgTool`):
+
+<!-- TOOLS_TABLE_START -->
+| Tool | Description |
+|------|-------------|
+| `@archive` | Archive/unarchive current chat |
+| `@blocked` | List and manage blocked users |
+| `@channels` | Switch to a channel (filtered) |
+| `@chats` | Switch to another chat |
+| `@createpoll` | Create a poll in current chat |
+| `@dm` | Switch to a private chat (filtered) |
+| `@draft` | Save draft to server / clear draft |
+| `@folders` | Switch chat folder |
+| `@groups` | Switch to a group (filtered) |
+| `@groupsettings` | Group / channel settings (title, description, permissions, etc.) |
+| `@invitelinks` | Manage invite links |
+| `@jump_to_date` | Jump to messages on a specific date |
+| `@markunread` | Mark current chat as unread / read |
+| `@members` | View and manage chat members |
+| `@mentions` | Search @mentions in current chat |
+| `@messagelink` | Copy shareable link of message under cursor |
+| `@mute` | Mute / unmute current chat |
+| `@newchat` | Start a new private chat by @username |
+| `@openlink` | Open URL or media file under cursor |
+| `@openshared` | Open shared chat or user DM |
+| `@pinchat` | Pin / unpin current chat |
+| `@reaction` | React to message |
+| `@refresh` | Refresh messages |
+| `@refreshmedia` | Download and update image for message under cursor |
+| `@saved` | Open Saved Messages |
+| `@search` | Search message history |
+| `@send` | Send a message to current chat |
+| `@showarchived` | Toggle archived chats in picker |
+| `@stoppoll` | Stop a poll |
+| `@toggleheader` | Toggle floating title bar visibility |
+| `@translate` | Translate message under cursor |
+| `@translate_zh` | Translate message under cursor to Chinese |
+| `@userinfo` | View profile of message sender |
+| `@vote` | Vote on the poll message under cursor |
+| `@voters` | List who voted on each poll option |
+
+<!-- TOOLS_TABLE_END -->
 
 ## Project Structure
 

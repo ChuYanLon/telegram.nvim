@@ -20,7 +20,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "gen:docs": "tsx scripts/gen-keymaps.ts",
-    "check:docs": "pnpm gen:docs && git diff --exit-code README.md wiki/Keymaps.md wiki/Configuration.md"
+    "check:docs": "pnpm gen:docs && git diff --exit-code README.md wiki/Home.md wiki/Keymaps.md wiki/Configuration.md"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
