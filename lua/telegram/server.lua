@@ -1025,6 +1025,11 @@ end
 ---@param on_ok fun(profile: table|nil)
 function M.get_my_profile_async(on_ok)
 	request_async({ url = base_url() .. "/my-profile" }, function(data, err)
+		if not err and data then
+			-- vim.json.decode converts JSON null to vim.NIL (truthy in Lua)
+			if data.bio == vim.NIL then data.bio = "" end
+			if data.name == vim.NIL then data.name = "" end
+		end
 		vim.schedule(function() on_ok(not err and data or nil) end)
 	end)
 end
