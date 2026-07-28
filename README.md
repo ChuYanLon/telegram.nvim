@@ -351,6 +351,21 @@ In the chat picker (`@` → chats):
 - `<CR>` — select chat
 - `<Esc>` — close
 
+<!-- INPUT_EDITOR_START -->
+## Input Editor
+
+| Key | Action |
+|-----|--------|
+| `<CR>` | Send message / confirm edit |
+| `Esc` | Cancel reply/edit/forward mode |
+<!-- INPUT_EDITOR_END -->
+
+<!-- MOUSE_START -->
+## Mouse
+
+Scrolling near the top/bottom of the buffer automatically loads older/newer messages.
+<!-- MOUSE_END -->
+
 ## Auth Flow
 
 First run of `:Tg`:
@@ -363,6 +378,7 @@ First run of `:Tg`:
 
 Cancelling the input prompt (ESC / close dialog) aborts auth and cleans cached state. The next `:Tg` starts from scratch.
 
+<!-- CONFIG_REFERENCE_START -->
 ## Configuration
 
 Pass options via `setup()`:
@@ -390,7 +406,6 @@ Environment variable overrides:
 | `TG_WS_PORT` | WebSocket server port (default: `8081`) |
 | `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` (default: plugin root) |
 
-
 The server auto-detects `libtdjson` on startup via:
 - **Linux**: `ldconfig -p`, common paths (`/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/lib64`, `/opt/lib`), `LD_LIBRARY_PATH`, and `find`
 - **macOS**: `mdfind` and common paths (`/opt/homebrew/lib`, `/usr/local/lib`)
@@ -402,6 +417,15 @@ Override with `setup({ tdlib_path = "..." })` or the `TG_TDLIB_PATH` env var.
 > - `socks5://127.0.0.1:7890`
 > - `socks5://user:pass@127.0.0.1:7890`
 > - `http://127.0.0.1:8080`
+<!-- CONFIG_REFERENCE_END -->
+
+<!-- DATABASE_START -->
+## Database
+
+TDLib stores data in `data_dir/tdlib_db/` (SQLite + binlog) and files in `data_dir/tdlib_files/`.  
+Delete these directories to force re-authentication.  
+`:TgLogout` does this automatically.
+<!-- DATABASE_END -->
 
 ## FAQ
 

@@ -1,35 +1,43 @@
-## Setup Options
+<!-- CONFIG_REFERENCE_START -->
+## Configuration
+
+Pass options via `setup()`:
 
 ```lua
 require("telegram").setup({
-  -- tdlib_path = "/path/to/libtdjson.so",
-  -- proxy = "socks5://127.0.0.1:7890",
-
-  -- data_dir = "/path/to/data",  -- default: plugin root directory
-  -- http_port = 8080,
-  -- ws_port = 8081,
+  -- tdlib_path = "/path/to/libtdjson.so",  -- only if auto-detection fails
+  -- proxy = "socks5://127.0.0.1:7890",     -- proxy for TDLib connections
+  -- data_dir = "/path/to/data",            -- default: plugin root
+  -- http_port = 8080,                      -- HTTP server port
+  -- ws_port = 8081,                        -- WebSocket server port
   -- notify_chat_types = { "private", "mention" },  -- types: "private", "group", "channel"; add "mention" for @mentions
-
-  -- Custom keymaps (nil/false to disable a key)
-  -- keys = {
-  --   tool_picker = "@",
-  --   input_editor = "i",
-  --   reply = "<CR>",
-  --   edit = "e",
-  -- },
+  -- hide_title = false,  -- start with floating title bar hidden
+  -- panel_position = "right",  -- "right" | "left" | "bottom" | "top"
 })
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `tdlib_path` | `string?` | auto-detect | Path to `libtdjson.so`/`.dylib`/`.dll` |
-| `proxy` | `string?` | `nil` | Proxy URL (e.g. `socks5://127.0.0.1:7890`) |
-| `data_dir` | `string?` | plugin root | Directory for TDLib database and files |
-| `http_port` | `number?` | `8080` | Backend HTTP server port |
-| `ws_port` | `number?` | `8081` | Backend WebSocket server port |
-| `keys` | `table?` | all defaults | Custom keymaps — see [Keymaps](#keymaps) below |
-| `notify_chat_types` | `table?` | `{"private", "mention"}` | Chat types that trigger `vim.notify` on new messages (`"private"`, `"group"`, `"channel"`). Include `"mention"` for @mentions |
-| `hide_title` | `boolean?` | `false` | Start with floating title bar hidden |
+Environment variable overrides:
+
+| Env var | Overrides |
+|---------|-----------|
+| `TG_TDLIB_PATH` | `tdlib_path` |
+| `TG_PROXY` | `proxy` |
+| `TG_PORT` | HTTP server port (default: `8080`) |
+| `TG_WS_PORT` | WebSocket server port (default: `8081`) |
+| `TG_DATA_DIR` | Data directory for `tdlib_db/` and `tdlib_files/` (default: plugin root) |
+
+The server auto-detects `libtdjson` on startup via:
+- **Linux**: `ldconfig -p`, common paths (`/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/lib64`, `/opt/lib`), `LD_LIBRARY_PATH`, and `find`
+- **macOS**: `mdfind` and common paths (`/opt/homebrew/lib`, `/usr/local/lib`)
+- **Windows**: `where tdjson.dll` and common paths (`%LOCALAPPDATA%`, `%PROGRAMFILES%`)
+
+Override with `setup({ tdlib_path = "..." })` or the `TG_TDLIB_PATH` env var.
+
+> **Note on `proxy`:** In regions where Telegram is blocked (e.g. China), TDLib cannot connect to Telegram's servers directly. Set a SOCKS5 or HTTP proxy here. Supported formats:
+> - `socks5://127.0.0.1:7890`
+> - `socks5://user:pass@127.0.0.1:7890`
+> - `http://127.0.0.1:8080`
+<!-- CONFIG_REFERENCE_END -->
 
 ## Keymaps
 
@@ -85,31 +93,6 @@ require("telegram").setup({
 })
 ```
 
-## Environment Variables
-
-| Env var | Overrides |
-|---------|-----------|
-| `TG_TDLIB_PATH` | `tdlib_path` in setup |
-| `TG_PROXY` | `proxy` in setup |
-| `TG_PORT` | Backend HTTP port (default `8080`, overrides `http_port`) |
-| `TG_WS_PORT` | WebSocket port (default `8081`, overrides `ws_port`) |
-| `TG_DATA_DIR` | Database/files directory |
-
-## Proxy
-
-In regions where Telegram is blocked, set a proxy:
-
-```lua
-require("telegram").setup({ proxy = "socks5://127.0.0.1:7890" })
-```
-
-Supported formats:
-- `socks5://host:port`
-- `socks5://user:pass@host:port`
-- `http://host:port`
-
-The proxy is applied via TDLib's `addProxy` at startup.
-
 <!-- LUA_API_START -->
 ## Lua API
 
@@ -142,11 +125,13 @@ Displays `  ` with:
 - Appends `!` when there are @mentions, e.g. `  3!`
 <!-- LUA_API_END -->
 
+<!-- DATABASE_START -->
 ## Database
 
 TDLib stores data in `data_dir/tdlib_db/` (SQLite + binlog) and files in `data_dir/tdlib_files/`.  
 Delete these directories to force re-authentication.  
 `:TgLogout` does this automatically.
+<!-- DATABASE_END -->
 
 ### `@` Tools
 

@@ -154,6 +154,10 @@ const sections: SectionSync[] = [
   { marker: 'INSTALLATION', source: readmePath, target: join(ROOT, 'wiki', 'Installation.md'),   label: 'installation' },
   { marker: 'COMMANDS',     source: readmePath, target: join(ROOT, 'wiki', 'Keymaps.md'),        label: 'commands' },
   { marker: 'LUA_API',      source: readmePath, target: join(ROOT, 'wiki', 'Configuration.md'),  label: 'lua_api' },
+  { marker: 'INPUT_EDITOR', source: readmePath, target: join(ROOT, 'wiki', 'Keymaps.md'),        label: 'input_editor' },
+  { marker: 'MOUSE',        source: readmePath, target: join(ROOT, 'wiki', 'Keymaps.md'),        label: 'mouse' },
+  { marker: 'DATABASE',     source: readmePath, target: join(ROOT, 'wiki', 'Configuration.md'),  label: 'database' },
+  { marker: 'CONFIG_REFERENCE', source: readmePath, target: join(ROOT, 'wiki', 'Configuration.md'),  label: 'config_reference' },
 ];
 
 for (const { marker, source, target, label } of sections) {

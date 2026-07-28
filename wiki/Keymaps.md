@@ -41,12 +41,14 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 
 <!-- KEYMAPS_TABLE_END -->
 
+<!-- INPUT_EDITOR_START -->
 ## Input Editor
 
 | Key | Action |
 |-----|--------|
 | `<CR>` | Send message / confirm edit |
 | `Esc` | Cancel reply/edit/forward mode |
+<!-- INPUT_EDITOR_END -->
 
 <!-- COMMANDS_START -->
 ## Commands
@@ -63,9 +65,11 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 > The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
 <!-- COMMANDS_END -->
 
+<!-- MOUSE_START -->
 ## Mouse
 
 Scrolling near the top/bottom of the buffer automatically loads older/newer messages.
+<!-- MOUSE_END -->
 
 ### `@` Tools
 
