@@ -279,6 +279,7 @@ function source:get_phrase_items(keyword, range)
 				label = "!" .. p.cmd .. "  " .. p.desc,
 				filterText = p.cmd,
 				textEdit = { newText = p.text, range = range },
+				score_offset = 100,
 				kind = ItemKind.Snippet,
 			})
 		end
