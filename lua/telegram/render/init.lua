@@ -53,6 +53,22 @@ local service_styles = {
 	messageChatSetMessageAutoDeleteTime = { prefix = "[!]", text = "set auto-delete timer" },
 	messageChatUpgradeFrom = { prefix = "[~]", text = "upgraded from a basic group" },
 	messageChatUpgradeTo = { prefix = "[~]", text = "upgraded to a supergroup" },
+	-- Additional service types (text from format.ts takes priority)
+	messageScreenshotTaken = { prefix = "[~]", text = "took a screenshot" },
+	messageContactRegistered = { prefix = "[+]", text = "joined Telegram" },
+	messageCustomServiceAction = { prefix = "[!]", text = "performed a custom action" },
+	messageProximityAlertTriggered = { prefix = "[!]", text = "triggered a proximity alert" },
+	messageChatSetTheme = { prefix = "[~]", text = "changed the theme" },
+	messageChatSetBackground = { prefix = "[~]", text = "changed the background" },
+	messageChatBoost = { prefix = "[~]", text = "boosted the chat" },
+	messageGameScore = { prefix = "[~]", text = "scored" },
+	messagePaymentSuccessful = { prefix = "[~]", text = "made a payment" },
+	messageWebAppDataSent = { prefix = "[~]", text = "used a web app" },
+	messageChatAddedToCommunity = { prefix = "[+]", text = "added to community" },
+	messageChatRemovedFromCommunity = { prefix = "[-]", text = "removed from community" },
+	messageChatOwnerLeft = { prefix = "[~]", text = "owner left" },
+	messageChatOwnerChanged = { prefix = "[~]", text = "owner changed" },
+	messageChatHasProtectedContentToggled = { prefix = "[~]", text = "changed forwarding settings" },
 }
 
 function M.render(msg)
@@ -90,7 +106,9 @@ function M.render(msg)
 	elseif msg.type and service_styles[msg.type] then
 		local style = service_styles[msg.type]
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
-		table.insert(out, style.prefix .. " " .. s .. " " .. style.text .. " at " .. date_str)
+		-- Use rich text from format.ts when available (includes emoji icons)
+		local action_text = (msg.text and #msg.text > 0) and msg.text or style.text
+		table.insert(out, style.prefix .. " " .. s .. " " .. action_text .. " at " .. date_str)
 	elseif msg.type and (msg.type:match("^messageChat") or msg.type:match("^messageBasicGroup") or msg.type:match("^messageSupergroup") or msg.type:match("^messageForum")) and not (msg.text and #msg.text > 0) then
 		local s = msg.sender and msg.sender.name or (msg.own and "You" or "Someone")
 		table.insert(out, "[~] " .. s .. " performed an action at " .. date_str)
