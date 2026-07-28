@@ -834,9 +834,10 @@ end
 ---@param user_id any
 ---@param approve boolean
 ---@param on_ok fun(data: table)
-function M.process_join_request_async(chat_id, user_id, approve, on_ok)
+---@param on_err fun()|nil
+function M.process_join_request_async(chat_id, user_id, approve, on_ok, on_err)
 	request_async({ url = base_url() .. "/chat/process-join-request", body = vim.json.encode({ chatId = chat_id, userId = user_id, approve = approve }) }, function(data, err)
-		if on_ok then vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else if on_ok then vim.schedule(function() on_ok(data) end) end end
 	end)
 end
 

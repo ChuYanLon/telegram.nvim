@@ -1472,6 +1472,8 @@ M.register("joinrequests", {
 							(approve and "Approved" or "Declined") .. " user_" .. choice.user_id,
 							vim.log.levels.INFO, { title = "tg" }
 						)
+					end, function()
+						vim.notify("Failed to process join request", vim.log.levels.ERROR, { title = "tg" })
 					end)
 				end)
 			end)
