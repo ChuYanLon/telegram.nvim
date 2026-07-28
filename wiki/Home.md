@@ -50,6 +50,28 @@ A Telegram chat client inside Neovim.
 - Online status with periodic heartbeat (shows as `telegram.nvim`)
 - Real-time sync between devices
 - Proxy support (SOCKS5 / HTTP) for restricted regions
+- `:TgPr` — create/merge PRs with branch picker, squash option, auto-delete
+- `:TgIssue` — browse issues, close, assign, create branches, open in browser
+
+### Known limitations
+- Send media (photos/videos/files/audio), stickers/GIFs
+- Scheduled messages
+- Inline bots / bot commands
+
+### blink.cmp integration
+
+telegram.nvim provides a [blink.cmp](https://github.com/saghen/blink.cmp) source for auto-completion in the input editor:
+
+- Type `:` + name for emoji completion (`:smile` → 😊, `:heart` → ❤️...)
+- Type `@` for chat member mention completion (@Alice, @group_name...)
+
+Add to your blink.cmp setup:
+
+```lua
+sources = {
+  { name = 'telegram', module = 'telegram.blink' },
+}
+```
 <!-- FEATURES_END -->
 
 ### GitHub integration
