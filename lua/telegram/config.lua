@@ -136,6 +136,13 @@ function M.setup(opts)
 		"TgUnreadDivider",
 		{ fg = hl_fg("DiagnosticInfo") or "#89b4fa", bold = true, default = true }
 	)
+	-- Rich text entity highlights (applied in render/highlight.lua)
+	vim.api.nvim_set_hl(0, "TgBold", { bold = true, default = true })
+	vim.api.nvim_set_hl(0, "TgItalic", { italic = true, default = true })
+	vim.api.nvim_set_hl(0, "TgCode", { link = "Function", default = true })
+	vim.api.nvim_set_hl(0, "TgStrikethrough", { strikethrough = true, default = true })
+	vim.api.nvim_set_hl(0, "TgSpoiler", { fg = "#000000", bg = "#000000", default = true })
+	vim.api.nvim_set_hl(0, "TgLinkText", { link = "Underlined", default = true })
 end
 
 M.plugin_root = plugin_root

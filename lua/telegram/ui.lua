@@ -1,6 +1,7 @@
 local server = require("telegram.server")
 local config = require("telegram.config")
 local render_msg = require("telegram.render").render
+local highlight = require("telegram.render.highlight")
 local state = require("telegram.state").state
 local st = require("telegram.state")
 local title = require("telegram.render.title")
@@ -61,6 +62,8 @@ local function apply_highlights()
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgService", l, 0, -1)
 		elseif line:find("^↗ ") or line:find("^  %S") then
 			pcall(vim.api.nvim_buf_add_highlight, buf, st.hl_ns, "TgLinkPreview", l, 0, -1)
+		elseif highlight.is_content_line(line) then
+			highlight.apply_line_highlights(buf, st.hl_ns, l, line)
 		end
 	end
 	local target_id = state.reply_to
