@@ -1712,7 +1712,7 @@ export class TelegramLSPClient {
       return {
         id: me.id,
         name: [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${me.id}`,
-        bio: fullInfo?.bio || '',
+        bio: (fullInfo?.bio?.text as string) || '',
       };
     } catch (e) {
       console.warn('getMyProfile failed:', (e as Error).message);
