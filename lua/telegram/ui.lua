@@ -756,7 +756,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			online_count = 0,
 		}
 		table.insert(state.group_ids, 1, chat_id)
-		end)
 	end
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
 		state.buf = vim.api.nvim_create_buf(false, false)
