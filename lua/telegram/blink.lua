@@ -193,7 +193,7 @@ function source:get_member_items(keyword, range)
 		if #kw == 0 or mention:lower():find(kw, 1, true) or (m.name and m.name:lower():find(kw, 1, true)) then
 			table.insert(items, {
 				label = mention,
-				filterText = (#m.username > 0 and m.username) or m.name or "",
+				filterText = (m.username and #m.username > 0 and m.username) or m.name or "",
 				textEdit = { newText = mention .. " ", range = range },
 				kind = ItemKind.User,
 			})
@@ -340,7 +340,7 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 				local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
 				table.insert(items, {
 					label = mention,
-					filterText = (#m.username > 0 and m.username) or m.name,
+					filterText = (m.username and #m.username > 0 and m.username) or m.name,
 					textEdit = { newText = mention .. " ", range = range },
 					kind = ItemKind.User,
 				})
