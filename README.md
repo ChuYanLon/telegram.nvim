@@ -19,10 +19,13 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### Messages
 - Read text, media, links, code blocks, service messages in real-time via WebSocket
-- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, and more
+- Rich text highlighting: **bold**, *italic*, `code`, ~~strikethrough~~, ||spoiler||, [links](url) with distinct highlight groups
+- Rich display for contacts (`👤`), venues (`📍` with map link), locations, invoices, gifts, calls, dice, and more
+- Full service message coverage: screenshot, contact registered, proximity alert, theme/background changes, boosts, payments, web apps, admin events, and more
 - Send/edit/delete/forward/reply with markdown formatting
 - Polls: display with progress bars, vote (`@vote`), create (`@createpoll`), view voters (`@voters`), stop (`@stoppoll`). Supports multi-answer and timed polls.
 - Search messages, copy text, save to Favorites
+- Jump to any date with `@jump_to_date` — supports `YYYY-MM-DD`, `today`, `yesterday`
 - Auto-download media with `@refreshmedia`, inline previews (photo/video/sticker/file)
 - Read receipts, edited indicators, view counts, typing indicators
 
@@ -36,6 +39,8 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 
 ### UI & UX
 - Configurable panel position (right/left/bottom/top)
+- Rich text highlighting: **bold**, *italic*, `code`, ~~strikethrough~~, ||spoiler||, [links](url) in messages
+- Footer metadata ([edited], views, reactions) styled with distinct highlight group
 - Floating input editor with markdown treesitter highlight and reply preview
 - Cursor persistence per chat, unread-aware loading with divider
 - Scroll infinitely in both directions, date separators
@@ -58,7 +63,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 ### Known limitations
 - Send media (photos/videos/files/audio), stickers/GIFs
 - Scheduled messages
-- Unsupported message types (display basic label only)
 - Inline bots / bot commands
 
 ### Customizing keys
