@@ -38,6 +38,7 @@ function M.set_groups(groups)
 			is_archived = g.isArchived or false,
 			is_muted = (existing and existing.is_muted) or false,
 			is_marked_unread = (existing and existing.is_marked_unread) or false,
+			bot_commands = g.bot_commands,
 		}
 		table.insert(new_ids, g.id)
 	end
