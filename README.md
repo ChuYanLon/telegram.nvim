@@ -73,7 +73,7 @@ telegram.nvim provides a [blink.cmp](https://github.com/saghen/blink.cmp) source
 | `:` | `:heart` | ❤️ emoji (60+ names) |
 | `@` | `@alice` | 👤 chat member mentions |
 | `#` | `#dev` | 👥 chat/channel references |
-| `/` | `/ty` | 💬 quick phrase templates |
+| `!` | `!ty` | 💬 quick phrase templates |
 | ``` ``` ``` | ```` ```lua```` | 🖥️ code block language (42 langs) |
 
 Add to your blink.cmp setup:
