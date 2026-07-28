@@ -48,17 +48,20 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 | `<CR>` | Send message / confirm edit |
 | `Esc` | Cancel reply/edit/forward mode |
 
+<!-- COMMANDS_START -->
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `:Tg` | Toggle Telegram panel (start backend + auth if first run) |
-| `:TgLogout` | Log out, delete local TDLib database, stop server |
-| `:TgSend <text>` | Send to current chat |
-| `:TgSend <chatId> <text>` | Send to specific chat by ID |
-| `:TgTool` | Open tool picker (equivalent to `@`) |
-| `:TgIssue` | Browse GitHub issues, create branch, close, open in browser |
-| `:TgPr` | Create GitHub PR with branch picker (squash/merge option) |
+| Command       | Description                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `:Tg`         | Global toggle: opens tg window if closed, hides it if open (from any buffer). First run: server + auth, then opens last chat |
+| `:TgLogout`   | Log out, clear auth data, next `:Tg` starts fresh                                                                             |
+| `:TgSend`     | Send a message: `:TgSend <text>` to current chat, or `:TgSend <chatId> <text>` to specific chat                                      |
+| `:TgTool`     | Open tool picker (`@` equivalent)                                                                                             |
+| `:TgPr`       | Propose changes from a feature branch to main — choose squash or full merge, branch auto-deletes on completion                |
+| `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
+
+> The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
+<!-- COMMANDS_END -->
 
 ## Mouse
 

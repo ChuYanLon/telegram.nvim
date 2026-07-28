@@ -110,21 +110,27 @@ Supported formats:
 
 The proxy is applied via TDLib's `addProxy` at startup.
 
+<!-- LUA_API_START -->
 ## Lua API
 
-`require("telegram").status` is a pre-built lualine component. Drop it into any lualine section:
+### Statusline
+
+`require("telegram").lualine` is a pre-built lualine component:
 
 ```lua
-lualine_x = {
-  require("telegram").lualine,
-}
+require("lualine").setup({
+  sections = {
+    lualine_x = { require("telegram").lualine },
+  },
+})
 ```
 
-For other statuslines:
+For other statuslines (heirline, feline, etc.):
+
 ```lua
 require("telegram").status()       -- "disconnected" | "connecting" | "connected" | "error"
-require("telegram").status_color() -- { fg = "#..." }
-require("telegram").total_unread() -- total, mentions
+require("telegram").status_color() -- { fg = "#..." }   -- color matching current status
+require("telegram").total_unread() -- total, mentions   -- unread counts across all chats
 ```
 
 Displays `  ` with:
@@ -134,6 +140,7 @@ Displays `  ` with:
 - 🔴 red — error or has @mentions
 - Shows unread count after icon when there are new messages, e.g. `  5`
 - Appends `!` when there are @mentions, e.g. `  3!`
+<!-- LUA_API_END -->
 
 ## Database
 

@@ -150,8 +150,10 @@ for (const filePath of TARGETS) {
 const readmePath = join(ROOT, 'README.md');
 interface SectionSync { marker: string; source: string; target: string; label: string; }
 const sections: SectionSync[] = [
-  { marker: 'FEATURES',     source: readmePath, target: join(ROOT, 'wiki', 'Home.md'),         label: 'features' },
-  { marker: 'INSTALLATION', source: readmePath, target: join(ROOT, 'wiki', 'Installation.md'), label: 'installation' },
+  { marker: 'FEATURES',     source: readmePath, target: join(ROOT, 'wiki', 'Home.md'),           label: 'features' },
+  { marker: 'INSTALLATION', source: readmePath, target: join(ROOT, 'wiki', 'Installation.md'),   label: 'installation' },
+  { marker: 'COMMANDS',     source: readmePath, target: join(ROOT, 'wiki', 'Keymaps.md'),        label: 'commands' },
+  { marker: 'LUA_API',      source: readmePath, target: join(ROOT, 'wiki', 'Configuration.md'),  label: 'lua_api' },
 ];
 
 for (const { marker, source, target, label } of sections) {

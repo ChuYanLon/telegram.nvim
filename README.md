@@ -289,6 +289,7 @@ ldconfig 2>/dev/null || true
 > The server auto-detects `libtdjson` on startup via `ldconfig`, `LD_LIBRARY_PATH`, and common paths. See [Configuration](#configuration) for details.
 <!-- INSTALLATION_END -->
 
+<!-- LUA_API_START -->
 ## Lua API
 
 ### Statusline
@@ -318,7 +319,9 @@ Displays `  ` with:
 - 🔴 red — error or has @mentions
 - Shows unread count after icon when there are new messages, e.g. `  5`
 - Appends `!` when there are @mentions, e.g. `  3!`
+<!-- LUA_API_END -->
 
+<!-- COMMANDS_START -->
 ## Commands
 
 | Command       | Description                                                                                                                   |
@@ -331,6 +334,7 @@ Displays `  ` with:
 | `:TgIssue`    | Browse your assigned issues — create, close, assign, and create branches directly from an issue                               |
 
 > The server runs on ports 8080/8081 (configurable via `setup({ http_port, ws_port })` or `TG_PORT`/`TG_WS_PORT` env vars). Opening `:Tg` in another Neovim instance will connect to the same server — only the instance that started it will stop it on exit.
+<!-- COMMANDS_END -->
 
 ## Neovim Keymaps
 
