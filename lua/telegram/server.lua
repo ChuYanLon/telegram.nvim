@@ -819,6 +819,37 @@ function M.delete_chat_history(chat_id)
 	return http_post("/chat/delete-history", { chatId = chat_id }) ~= nil
 end
 
+-- ─── Join Requests ───────────────────────────────────────────────────
+
+---@param chat_id any
+---@param on_ok fun(data: table)
+---@param on_err fun()|nil
+function M.get_join_requests_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/join-requests?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param user_id any
+---@param approve boolean
+---@param on_ok fun(data: table)
+function M.process_join_request_async(chat_id, user_id, approve, on_ok)
+	request_async({ url = base_url() .. "/chat/process-join-request", body = vim.json.encode({ chatId = chat_id, userId = user_id, approve = approve }) }, function(data, err)
+		if on_ok then vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+-- ─── Event Log ──────────────────────────────────────────────────────
+
+---@param chat_id any
+---@param on_ok fun(data: table)
+---@param on_err fun()|nil
+function M.get_event_log_async(chat_id, on_ok, on_err)
+	request_async({ url = base_url() .. "/chat/event-log?chatId=" .. chat_id }, function(data, err)
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
 
 function M.get_folders()
 	return http_get("/chats/folders")

@@ -555,6 +555,37 @@ app.post('/chat/set-description', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Join Requests ─────────────────────────────────────────────────────
+
+app.get('/chat/join-requests', async (req, res) => {
+  try {
+    const { chatId, limit } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.getChatJoinRequests(Number(chatId), limit ? Number(limit) : 50);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/chat/process-join-request', async (req, res) => {
+  try {
+    const { chatId, userId, approve } = req.body;
+    if (!chatId || !userId) { res.status(400).json({ error: 'chatId and userId are required' }); return; }
+    const ok = await tgClient.processChatJoinRequest(Number(chatId), Number(userId), approve !== false);
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Event Log ──────────────────────────────────────────────────────────
+
+app.get('/chat/event-log', async (req, res) => {
+  try {
+    const { chatId, limit } = req.query;
+    if (!chatId) { res.status(400).json({ error: 'chatId is required' }); return; }
+    const result = await tgClient.getChatEventLog(Number(chatId), limit ? Number(limit) : 50);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.post('/chat/leave', async (req, res) => {
   try {
     const { chatId } = req.body;

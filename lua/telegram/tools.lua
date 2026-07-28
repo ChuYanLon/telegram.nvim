@@ -1434,4 +1434,95 @@ M.register("jump_to_date", {
 	end,
 })
 
+M.register("joinrequests", {
+	description = "View and manage pending join requests",
+	condition = function()
+		local cid = ui.state.chat_id
+		return cid ~= nil and ui.state.groups[cid] and (ui.state.groups[cid].type == "group" or ui.state.groups[cid].type == "channel")
+	end,
+	callback = function()
+		local chat_id = ui.state.chat_id
+		if not chat_id then return end
+		server.get_join_requests_async(chat_id, function(data)
+			local requests = data and data.requests
+			if not requests or #requests == 0 then
+				vim.notify("No pending join requests", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, r in ipairs(requests) do
+				local date_str = os.date("%Y-%m-%d %H:%M", r.date)
+				local label = string.format("👤 user_%d  (%s)", r.user_id, date_str)
+				if r.bio and #r.bio > 0 then
+					label = label .. "  bio: " .. r.bio:gsub("\n", " "):sub(1, 40)
+				end
+				table.insert(items, { user_id = r.user_id, label = label })
+			end
+			vim.ui.select(items, {
+				prompt = "Join Requests — approve or decline",
+				format_item = function(item) return item.label end,
+			}, function(choice)
+				if not choice then return end
+				local actions = { "✅ Approve", "❌ Decline", "Cancel" }
+				vim.ui.select(actions, { prompt = "Action for user_" .. choice.user_id }, function(action)
+					if action == "Cancel" or not action then return end
+					local approve = action:match("Approve") ~= nil
+					server.process_join_request_async(chat_id, choice.user_id, approve, function()
+						vim.notify(
+							(approve and "Approved" or "Declined") .. " user_" .. choice.user_id,
+							vim.log.levels.INFO, { title = "tg" }
+						)
+					end)
+				end)
+			end)
+		end, function()
+			vim.notify("Failed to load join requests", vim.log.levels.ERROR, { title = "tg" })
+		end)
+	end,
+})
+
+M.register("eventlog", {
+	description = "View recent admin events (member changes, edits, etc.)",
+	condition = function()
+		local cid = ui.state.chat_id
+		return cid ~= nil and ui.state.groups[cid] and (ui.state.groups[cid].type == "group" or ui.state.groups[cid].type == "channel")
+	end,
+	callback = function()
+		local chat_id = ui.state.chat_id
+		if not chat_id then return end
+		server.get_event_log_async(chat_id, function(data)
+			local events = data and data.events
+			if not events or #events == 0 then
+				vim.notify("No recent admin events", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local lines = { "── Recent Admin Events ──", "" }
+			for _, ev in ipairs(events) do
+				local date_str = os.date("%Y-%m-%d %H:%M", ev.date)
+				local action_type = ev.action and ev.action._ or "unknown"
+				local desc = action_type:gsub("^chatEvent", ""):gsub("(%l)(%u)", "%1 %2")
+				table.insert(lines, string.format("  [%s] %s", date_str, desc))
+			end
+			local height = math.min(#lines + 2, 30)
+			local width = 60
+			local buf = vim.api.nvim_create_buf(false, true)
+			vim.bo[buf].buftype = "nofile"
+			vim.bo[buf].bufhidden = "wipe"
+			local win = vim.api.nvim_open_win(buf, true, {
+				relative = "editor", width = width, height = height,
+				row = math.max(0, (vim.o.lines - height) / 2),
+				col = math.max(0, (vim.o.columns - width) / 2),
+				zindex = 200, style = "minimal", border = "rounded",
+				title = " Event Log ", title_pos = "center",
+			})
+			vim.wo[win].winhighlight = "Normal:TgNoBg,FloatBorder:TgBorder"
+			vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+			vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf })
+			vim.keymap.set("n", "<Esc>", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf })
+		end, function()
+			vim.notify("Failed to load event log", vim.log.levels.ERROR, { title = "tg" })
+		end)
+	end,
+})
+
 return M

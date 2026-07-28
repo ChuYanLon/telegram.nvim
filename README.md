@@ -79,10 +79,12 @@ Available tools via the tool picker (`@` or `:TgTool`):
 | `@createpoll` | Create a poll in current chat |
 | `@dm` | Switch to a private chat (filtered) |
 | `@draft` | Save draft to server / clear draft |
+| `@eventlog` | View recent admin events (member changes, edits, etc.) |
 | `@folders` | Switch chat folder |
 | `@groups` | Switch to a group (filtered) |
 | `@groupsettings` | Group / channel settings (title, description, permissions, etc.) |
 | `@invitelinks` | Manage invite links |
+| `@joinrequests` | View and manage pending join requests |
 | `@jump_to_date` | Jump to messages on a specific date |
 | `@markunread` | Mark current chat as unread / read |
 | `@members` | View and manage chat members |

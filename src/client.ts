@@ -1549,6 +1549,52 @@ export class TelegramLSPClient {
     }
   }
 
+  async getChatJoinRequests(chatId: number, limit = 50): Promise<{ requests: { user_id: number; date: number; bio?: string }[] }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'getChatJoinRequests', chat_id: chatId, invite_link: '', query: '', offset_request: null, limit,
+      }) as { requests: { user_id: number; date: number; bio?: string }[] } | undefined;
+      return { requests: result?.requests || [] };
+    } catch (e) {
+      console.warn('getChatJoinRequests failed:', (e as Error).message);
+      return { requests: [] };
+    }
+  }
+
+  async processChatJoinRequest(chatId: number, userId: number, approve: boolean): Promise<boolean> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      await this.client.invoke({ _: 'processChatJoinRequest', chat_id: chatId, user_id: userId, approve });
+      return true;
+    } catch (e) {
+      console.warn('processChatJoinRequest failed:', (e as Error).message);
+      return false;
+    }
+  }
+
+  async getChatEventLog(chatId: number, limit = 50): Promise<{ events: { id: number; date: number; action: any }[] }> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({
+        _: 'getChatEventLog', chat_id: chatId, query: '', from_event_id: 0, limit,
+        filters: {
+          _: 'chatEventLogFilters',
+          message_edits: true, message_deletions: true, message_pins: true,
+          member_joins: true, member_leaves: true, member_invites: true,
+          member_promotions: true, member_restrictions: true, member_tag_changes: true,
+          info_changes: true, setting_changes: true, invite_link_changes: true,
+          video_chat_changes: true, forum_changes: true, subscription_extensions: true,
+        },
+        user_ids: [],
+      }) as { events?: { id: number; date: number; action: any }[] } | undefined;
+      return { events: result?.events || [] };
+    } catch (e) {
+      console.warn('getChatEventLog failed:', (e as Error).message);
+      return { events: [] };
+    }
+  }
+
   async getUserProfile(userId: number): Promise<Record<string, unknown> | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     try {
