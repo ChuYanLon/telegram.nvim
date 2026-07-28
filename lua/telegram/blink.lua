@@ -38,30 +38,7 @@ local emoji_names = {
 	santa = "🎅", christmas = "🎄", halloween = "🎃",
 }
 
--- ── Quick phrase templates ─────────────────────────────────────────────
 
-local phrases = {
-	{ cmd = "brb", text = "Be right back", desc = "Be right back" },
-	{ cmd = "ty", text = "Thank you!", desc = "Thank you" },
-	{ cmd = "yw", text = "You're welcome!", desc = "You're welcome" },
-	{ cmd = "np", text = "No problem", desc = "No problem" },
-	{ cmd = "omw", text = "On my way!", desc = "On my way" },
-	{ cmd = "gtg", text = "Got to go", desc = "Got to go" },
-	{ cmd = "afk", text = "AFK", desc = "Away from keyboard" },
-	{ cmd = "lol", text = "😂", desc = "Laugh out loud" },
-	{ cmd = "idk", text = "I don't know", desc = "I don't know" },
-	{ cmd = "imo", text = "In my opinion", desc = "In my opinion" },
-	{ cmd = "fyi", text = "FYI: ", desc = "For your information" },
-	{ cmd = "wfh", text = "Working from home", desc = "Working from home" },
-	{ cmd = "ttyl", text = "Talk to you later", desc = "Talk to you later" },
-	{ cmd = "thx", text = "Thanks!", desc = "Thanks" },
-	{ cmd = "sry", text = "Sorry", desc = "Sorry" },
-	{ cmd = "pls", text = "Please", desc = "Please" },
-	{ cmd = "wb", text = "Welcome back!", desc = "Welcome back" },
-	{ cmd = "gl", text = "Good luck!", desc = "Good luck" },
-	{ cmd = "hf", text = "Have fun!", desc = "Have fun" },
-	{ cmd = "gg", text = "GG", desc = "Good game" },
-}
 
 -- ── Code languages ─────────────────────────────────────────────────────
 
@@ -94,7 +71,7 @@ function source:enabled()
 end
 
 function source:get_trigger_characters()
-	return { ":", "@", "#", "/", "!", "`" }
+	return { ":", "@", "#", "/", "`" }
 end
 
 function source:get_completions(ctx, callback)
@@ -118,7 +95,7 @@ function source:get_completions(ctx, callback)
 	local trigger_pos
 	for i = cursor, 1, -1 do
 		local char = line:sub(i, i)
-		if char == ":" or char == "@" or char == "#" or char == "/" or char == "!" then
+		if char == ":" or char == "@" or char == "#" or char == "/" then
 			if i == 1 or line:sub(i - 1, i - 1):match("%s") then
 				trigger_pos = i
 				break
@@ -147,8 +124,7 @@ function source:get_completions(ctx, callback)
 		items = self:get_chat_items(keyword, range)
 	elseif trigger == "/" then
 		items = self:get_command_items(keyword, range)
-	elseif trigger == "!" then
-		items = self:get_phrase_items(keyword, range)
+
 	end
 	callback({ items = items })
 end
@@ -165,7 +141,7 @@ function source:get_emoji_items(keyword, range)
 				filterText = name,
 				textEdit = { newText = char, range = range },
 				kind = ItemKind.Text,
-				score_offset = 100,
+				score_offset = 10000,
 			})
 		end
 	end
@@ -283,7 +259,7 @@ function source:get_command_items(keyword, range)
 					filterText = name,
 					textEdit = { newText = "/" .. name .. " ", range = range },
 					kind = ItemKind.Keyword,
-					score_offset = 100,
+					score_offset = 10000,
 				})
 			end
 		end
@@ -300,32 +276,7 @@ function source:get_command_items(keyword, range)
 	return items
 end
 
--- ── Phrase items (!cmd) ─────────────────────────────────────────────
 
-function source:get_phrase_items(keyword, range)
-	local kw = keyword:lower()
-	local items = {}
-	for _, p in ipairs(phrases) do
-		if #kw == 0 or p.cmd:find(kw, 1, true) then
-			table.insert(items, {
-				label = "!" .. p.cmd .. "  " .. p.desc,
-				filterText = p.cmd,
-				textEdit = { newText = p.text, range = range },
-				score_offset = 100,
-				kind = ItemKind.Snippet,
-			})
-		end
-	end
-	table.sort(items, function(a, b)
-		if #kw > 0 then
-			local a_exact = a.filterText == kw
-			local b_exact = b.filterText == kw
-			if a_exact ~= b_exact then return a_exact end
-		end
-		return a.filterText < b.filterText
-	end)
-	return items
-end
 
 -- ── Language items (```) ─────────────────────────────────────────────
 
