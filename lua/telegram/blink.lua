@@ -120,6 +120,10 @@ function source:get_completions(ctx, callback)
 		items = self:get_emoji_items(keyword, range)
 	elseif trigger == "@" then
 		items = self:get_member_items(keyword, range)
+		-- If full member list not yet cached, fetch async and re-callback
+		if #items == 0 then
+			self:ensure_members_fetched(keyword, range, callback)
+		end
 	elseif trigger == "#" then
 		items = self:get_chat_items(keyword, range)
 	elseif trigger == "!" then
@@ -298,6 +302,46 @@ function source:get_language_items(range)
 		})
 	end
 	return items
+end
+
+-- ── Async member fetch with re-callback ─────────────────────────────
+
+function source:ensure_members_fetched(keyword, range, callback)
+	if self._fetching_members then return end
+	self._fetching_members = true
+	local server = require("telegram.server")
+	server.get_members_async(state.chat_id, function(data)
+		self._fetching_members = false
+		local names = {}
+		for _, m in ipairs(data.members or {}) do
+			if m.name and #m.name > 0 then
+				table.insert(names, m.name)
+			end
+		end
+		state.member_names = names
+		-- Re-callback with full results (blink appends/updates the menu)
+		local items = {}
+		local kw = keyword:lower()
+		for _, name in ipairs(names) do
+			if #kw == 0 or name:lower():find(kw, 1, true) then
+				table.insert(items, {
+					label = "@" .. name,
+					filterText = name,
+					textEdit = { newText = "@" .. name .. " ", range = range },
+					kind = ItemKind.User,
+				})
+			end
+		end
+		table.sort(items, function(a, b)
+			if #kw > 0 then
+				local a_exact = a.filterText:lower() == kw
+				local b_exact = b.filterText:lower() == kw
+				if a_exact ~= b_exact then return a_exact end
+			end
+			return a.filterText < b.filterText
+		end)
+		callback({ items = items })
+	end)
 end
 
 return source
