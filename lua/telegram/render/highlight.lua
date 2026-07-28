@@ -25,8 +25,7 @@ local entity_patterns = {
 }
 
 --- Apply highlights for all markdown pattern matches in a line.
---- Handles overlapping matches by taking the earliest-starting match
---- and skipping overlapping regions.
+--- Non-overlapping matches selected via earliest-starting greedy strategy.
 ---@param buf number buffer handle
 ---@param ns number highlight namespace
 ---@param line_idx integer 0-based buffer line index
@@ -43,20 +42,11 @@ function M.apply_line_highlights(buf, ns, line_idx, text)
 		local hl = ent.hl_group
 		local pos = 1
 		while pos <= #text do
-			local s, e, open, _, close = text:find(pat, pos)
+			local s, e = text:find(pat, pos)
 			if not s then
 				break
 			end
-			table.insert(matches, {
-				start = s,
-				end_pos = e,
-				hl = hl,
-				-- Highlight the full match range (including markers)
-				inner_start = s + #open - 1,
-				inner_end = e - #close + 1,
-				marker_start = s,
-				marker_end = e,
-			})
+			table.insert(matches, { s = s, e = e, hl = hl })
 			pos = e + 1
 		end
 	end
@@ -65,43 +55,36 @@ function M.apply_line_highlights(buf, ns, line_idx, text)
 		return
 	end
 
-	-- Sort by start position, then by length (longest first for tiebreakers)
-	table.sort(matches, function(a, b)
-		if a.start ~= b.start then
-			return a.start < b.start
-		end
-		return a.end_pos > b.end_pos
-	end)
+	-- Sort by start position
+	table.sort(matches, function(a, b) return a.s < b.s end)
 
-	-- Resolve overlaps: greedily take earliest-starting match
+	-- Greedy non-overlapping selection:
+	-- pick the earliest-starting match, then skip past its end
 	local selected = {}
-	table.sort(matches, function(a, b)
-		return a.start < b.start
-	end)
-
 	local i = 1
 	while i <= #matches do
 		local best = matches[i]
+		-- Among matches that overlap with this one, keep the longest
 		local j = i + 1
-		while j <= #matches and matches[j].start <= best.end_pos do
-			-- Same-start: prefer longer match
-			if matches[j].end_pos > best.end_pos then
+		while j <= #matches and matches[j].s <= best.e do
+			if matches[j].e > best.e then
 				best = matches[j]
 			end
 			j = j + 1
 		end
 		table.insert(selected, best)
-		-- Move cursor past this match
-		i = j
-		-- Skip any matches that overlap with this one
-		while i <= #matches and matches[i].start < best.end_pos + 1 do
+		-- Skip all matches overlapping with the selected one
+		while i <= #matches and matches[i].s <= best.e do
 			i = i + 1
 		end
 	end
 
 	-- Apply highlights
 	for _, m in ipairs(selected) do
-		pcall(vim.api.nvim_buf_add_highlight, buf, ns, m.hl, line_idx, m.marker_start - 1, m.marker_end)
+		-- text:find returns 1-indexed positions; nvim_buf_add_highlight
+		-- uses 0-indexed columns with exclusive end.
+		-- col_start = s - 1, col_end = e (since 1-indexed e = 0-indexed exclusive end)
+		pcall(vim.api.nvim_buf_add_highlight, buf, ns, m.hl, line_idx, m.s - 1, m.e)
 	end
 end
 
