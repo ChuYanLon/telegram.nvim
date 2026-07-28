@@ -160,7 +160,7 @@ Available tools via the tool picker (`@` or `:TgTool`):
 | `@mentions` | Search @mentions in current chat |
 | `@messagelink` | Copy shareable link of message under cursor |
 | `@mute` | Mute / unmute current chat |
-| `@myprofile` | Edit your profile name and bio |
+| `@myprofile` | View and edit your profile name and bio |
 | `@newchat` | Start a new private chat by @username |
 | `@openlink` | Open URL or media file under cursor |
 | `@openshared` | Open shared chat or user DM |
