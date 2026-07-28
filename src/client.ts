@@ -501,6 +501,26 @@ export class TelegramLSPClient {
     return enriched.filter(Boolean) as ChatInfo[];
   }
 
+  private _memberNameCache: Map<number, Map<string, number>> = new Map(); // chatId → { name → userId }
+
+  private _getMemberNameId(chatId: number, name: string): number | null {
+    return this._memberNameCache.get(chatId)?.get(name.toLowerCase()) ?? null;
+  }
+
+  private _addToMemberCache(chatId: number, members: { name: string; user_id: number }[]) {
+    let map = this._memberNameCache.get(chatId);
+    if (!map) { map = new Map(); this._memberNameCache.set(chatId, map); }
+    for (const m of members) {
+      if (m.name) {
+        const lower = m.name.toLowerCase();
+        map.set(lower, m.user_id);
+        // Also store by first word for partial @Firstname matching
+        const first = lower.split(/\s+/)[0];
+        if (first && first !== lower) map.set(first, m.user_id);
+      }
+    }
+  }
+
   private async _parseMD(text: string): Promise<{ _: string; text: string; entities: unknown[] }> {
     try {
       const parsed = await this.client.invoke({
@@ -517,7 +537,32 @@ export class TelegramLSPClient {
 
   async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
-    const formatted = await this._parseMD(text);
+    let formatted = await this._parseMD(text);
+    // Convert @DisplayName mentions without usernames into mention_name entities
+    const memberMap = this._memberNameCache.get(chatId);
+    if (memberMap) {
+      const entities = [...(formatted.entities || [])] as any[];
+      const textLower = formatted.text.toLowerCase();
+      const covered = new Set<number>();
+      for (const e of entities) {
+        if (typeof e.offset === 'number')
+          for (let j = e.offset; j < e.offset + (e.length || 0); j++) covered.add(j);
+      }
+      const atRe = /@(\S+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = atRe.exec(formatted.text)) !== null) {
+        if (covered.has(m.index)) continue;
+        const userId = memberMap.get(m[1].toLowerCase());
+        if (userId && userId > 0) {
+          entities.push({
+            offset: m.index,
+            length: m[0].length,
+            type: { _: 'textEntityTypeMentionName', user_id: userId },
+          });
+        }
+      }
+      if (entities.length > (formatted.entities || []).length) formatted = { ...formatted, entities };
+    }
     const params: Record<string, unknown> = {
       _: 'sendMessage',
       chat_id: chatId,
@@ -1229,7 +1274,9 @@ export class TelegramLSPClient {
       seen.add(id);
       return true;
     });
-    return this._resolveChatMembers(deduped);
+    const resolved = await this._resolveChatMembers(deduped);
+    this._addToMemberCache(chatId, resolved);
+    return resolved;
   }
 
   async setChatDefaultPermissions(chatId: number, permissions: Record<string, boolean>): Promise<{ ok: boolean }> {
