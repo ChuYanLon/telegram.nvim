@@ -62,8 +62,13 @@ A Telegram chat client inside Neovim.
 
 telegram.nvim provides a [blink.cmp](https://github.com/saghen/blink.cmp) source for auto-completion in the input editor:
 
-- Type `:` + name for emoji completion (`:smile` → 😊, `:heart` → ❤️...)
-- Type `@` for chat member mention completion (@Alice, @group_name...)
+| Trigger | Input | Completes |
+|---------|-------|-----------|
+| `:` | `:heart` | ❤️ emoji (60+ names) |
+| `@` | `@alice` | 👤 chat member mentions |
+| `#` | `#dev` | 👥 chat/channel references |
+| `/` | `/ty` | 💬 quick phrase templates |
+| ``` ``` ``` | ```` ```lua```` | 🖥️ code block language (42 langs) |
 
 Add to your blink.cmp setup:
 
