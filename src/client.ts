@@ -537,35 +537,7 @@ export class TelegramLSPClient {
 
   async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
-    let formatted = await this._parseMD(text);
-    // Ensure member name cache is populated for mention conversion
-    if (!this._memberNameCache.has(chatId)) {
-      try { await this.searchChatMembers(chatId); } catch {}
-    }
-    const memberMap = this._memberNameCache.get(chatId);
-    if (memberMap) {
-      const entities = [...(formatted.entities || [])] as any[];
-      const textLower = formatted.text.toLowerCase();
-      const covered = new Set<number>();
-      for (const e of entities) {
-        if (typeof e.offset === 'number')
-          for (let j = e.offset; j < e.offset + (e.length || 0); j++) covered.add(j);
-      }
-      const atRe = /@(\S+)/g;
-      let m: RegExpExecArray | null;
-      while ((m = atRe.exec(formatted.text)) !== null) {
-        if (covered.has(m.index)) continue;
-        const userId = memberMap.get(m[1].toLowerCase());
-        if (userId && userId > 0) {
-          entities.push({
-            offset: m.index,
-            length: m[0].length,
-            type: { _: 'textEntityTypeMentionName', user_id: userId },
-          });
-        }
-      }
-      if (entities.length > (formatted.entities || []).length) formatted = { ...formatted, entities };
-    }
+    const formatted = await this._parseMD(text);
     const params: Record<string, unknown> = {
       _: 'sendMessage',
       chat_id: chatId,
@@ -583,33 +555,7 @@ export class TelegramLSPClient {
 
   async editMessage(chatId: number, messageId: number, text: string): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
-    let formatted = await this._parseMD(text);
-    if (!this._memberNameCache.has(chatId)) {
-      try { await this.searchChatMembers(chatId); } catch {}
-    }
-    const memberMap = this._memberNameCache.get(chatId);
-    if (memberMap) {
-      const entities = [...(formatted.entities || [])] as any[];
-      const covered = new Set<number>();
-      for (const e of entities) {
-        if (typeof e.offset === 'number')
-          for (let j = e.offset; j < e.offset + (e.length || 0); j++) covered.add(j);
-      }
-      const atRe = /@(\S+)/g;
-      let m: RegExpExecArray | null;
-      while ((m = atRe.exec(formatted.text)) !== null) {
-        if (covered.has(m.index)) continue;
-        const userId = memberMap.get(m[1].toLowerCase());
-        if (userId && userId > 0) {
-          entities.push({
-            offset: m.index,
-            length: m[0].length,
-            type: { _: 'textEntityTypeMentionName', user_id: userId },
-          });
-        }
-      }
-      if (entities.length > (formatted.entities || []).length) formatted = { ...formatted, entities };
-    }
+    const formatted = await this._parseMD(text);
     await this.client.invoke({
       _: 'editMessageText',
       chat_id: chatId,

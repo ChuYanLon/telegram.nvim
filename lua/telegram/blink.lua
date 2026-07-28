@@ -172,34 +172,21 @@ end
 function source:get_member_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
-	local seen = {}
 
-	-- Use pre-fetched member list (full group members) as { name, id, username }
-	local members = state.member_names
-	-- Fallback: if async fetch hasn't completed, use senders from loaded messages
-	if not members or #members == 0 then
-		members = {}
-		for _, msg in ipairs(state.messages or {}) do
-			if msg.sender and msg.sender.name and #msg.sender.name > 0 then
-				local uid = msg.sender.id or msg.sender.user_id
-				if uid and not seen[uid] then
-					seen[uid] = true
-					table.insert(members, { name = msg.sender.name, id = uid, username = "" })
-				end
-			end
-		end
-	end
-
+	-- Only show members with public @username (like Android)
+	local members = state.member_names or {}
 	for _, m in ipairs(members) do
-		local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
-		if #kw == 0 or mention:lower():find(kw, 1, true) or (m.name and m.name:lower():find(kw, 1, true)) then
-			table.insert(items, {
-				label = mention,
-				filterText = (m.username and #m.username > 0 and m.username) or m.name or "",
-				textEdit = { newText = mention .. " ", range = range },
-				data = { user_id = m.id or m.user_id },
-				kind = ItemKind.User,
-			})
+		if m.username and #m.username > 0 then
+			if #kw == 0 or m.username:lower():find(kw, 1, true) then
+				local mention = "@" .. m.username
+				table.insert(items, {
+					label = mention,
+					filterText = m.username,
+					textEdit = { newText = mention .. " ", range = range },
+					data = { user_id = m.id or m.user_id },
+					kind = ItemKind.User,
+				})
+			end
 		end
 	end
 
