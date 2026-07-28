@@ -248,9 +248,11 @@ function source:get_command_items(keyword, range)
 	if not chat_id then return items end
 
 	local g = state.groups[chat_id]
-	if not g or not g.bot_commands then return items end
+	if not g then return items end
+	local cmds = g.bot_commands
+	if cmds == nil or cmds == vim.NIL then return items end
 
-	for _, bc in ipairs(g.bot_commands) do
+	for _, bc in ipairs(cmds) do
 		for _, cmd in ipairs(bc.commands or {}) do
 			local name = cmd.command or ""
 			if #kw == 0 or name:find(kw, 1, true) then

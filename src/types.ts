@@ -185,6 +185,7 @@ export interface ChatInfo {
   userId?: number;
   isSaved?: boolean;
   isArchived?: boolean;
+  bot_commands?: GroupBotCommands[];
 }
 
 export interface AuthState {
