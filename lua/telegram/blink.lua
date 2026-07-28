@@ -161,8 +161,22 @@ end
 function source:get_member_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
+	local seen = {}
 
-	for _, name in ipairs(state.member_names or {}) do
+	-- Use pre-fetched member list (full group members)
+	local names = state.member_names
+	-- Fallback: if async fetch hasn't completed, use senders from loaded messages
+	if not names or #names == 0 then
+		names = {}
+		for _, msg in ipairs(state.messages or {}) do
+			if msg.sender and msg.sender.name and #msg.sender.name > 0 and not seen[msg.sender.name] then
+				seen[msg.sender.name] = true
+				table.insert(names, msg.sender.name)
+			end
+		end
+	end
+
+	for _, name in ipairs(names) do
 		if #kw == 0 or name:lower():find(kw, 1, true) then
 			table.insert(items, {
 				label = "@" .. name,
