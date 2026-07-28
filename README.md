@@ -228,6 +228,7 @@ Media messages are shown as thumbnails or tags:
 | `🎨 Theme set: name` | Chat theme changed |
 | `🖼️ Background changed` | Chat background changed |
 
+<!-- INSTALLATION_START -->
 ## Requirements
 
 - **Node.js** (>= 18)
@@ -284,6 +285,9 @@ ldconfig 2>/dev/null || true
 ```
 
 `build = "npm i"` installs Node.js dependencies automatically on first install.
+
+> The server auto-detects `libtdjson` on startup via `ldconfig`, `LD_LIBRARY_PATH`, and common paths. See [Configuration](#configuration) for details.
+<!-- INSTALLATION_END -->
 
 ## Lua API
 

@@ -41,22 +41,6 @@ See [Configuration](Configuration.md#keymaps) for details and the full list of k
 
 <!-- KEYMAPS_TABLE_END -->
 
-## Tools (`@` key)
-
-| Tool | Description |
-|------|-------------|
-| **chats** | Switch to another chat (Snacks picker, falls back to `vim.ui.select`) |
-| **refresh** | Refresh current chat messages |
-| **send** | Send a message to current chat |
-| **search** | Search messages in current chat |
-| **refreshmedia** | Refresh media for current messages |
-| **openlink** | Open URL or media file under cursor |
-| **newchat** | Start a new private chat by @username |
-| **members** | View and manage chat members |
-| **invitelinks** | Manage invite links |
-| **groupsettings** | Group / channel settings (title, description, granular default permissions editor, add member, leave/unsubscribe) |
-| **toggleheader** | Toggle floating title bar visibility |
-
 ## Input Editor
 
 | Key | Action |

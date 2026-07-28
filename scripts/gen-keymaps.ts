@@ -22,6 +22,7 @@ const TARGETS = [
   join(ROOT, 'wiki', 'Home.md'),
   join(ROOT, 'wiki', 'Keymaps.md'),
   join(ROOT, 'wiki', 'Configuration.md'),
+  join(ROOT, 'wiki', 'Installation.md'),
 ];
 
 // ── Keymaps ────────────────────────────────────────────────────────────
@@ -144,30 +145,43 @@ for (const filePath of TARGETS) {
   }
 }
 
-// ── Sync Features from README.md → wiki/Home.md ──────────────────────
+// ── Sync sections from README.md → wiki files ─────────────────────
 
 const readmePath = join(ROOT, 'README.md');
-const homePath = join(ROOT, 'wiki', 'Home.md');
+interface SectionSync { marker: string; source: string; target: string; label: string; }
+const sections: SectionSync[] = [
+  { marker: 'FEATURES',     source: readmePath, target: join(ROOT, 'wiki', 'Home.md'),         label: 'features' },
+  { marker: 'INSTALLATION', source: readmePath, target: join(ROOT, 'wiki', 'Installation.md'), label: 'installation' },
+];
 
-try {
-  const readme = readFileSync(readmePath, 'utf-8');
-  const start = readme.indexOf('<!-- FEATURES_START -->');
-  const end = readme.indexOf('<!-- FEATURES_END -->');
+for (const { marker, source, target, label } of sections) {
+  try {
+    const srcContent = readFileSync(source, 'utf-8');
+    const start = srcContent.indexOf(`<!-- ${marker}_START -->`);
+    const end = srcContent.indexOf(`<!-- ${marker}_END -->`);
+    if (start === -1 || end === -1 || end <= start) continue;
 
-  if (start !== -1 && end !== -1 && end > start) {
-    const featureSection = readme.slice(start, end + '<!-- FEATURES_END -->'.length);
-    const home = readFileSync(homePath, 'utf-8');
-    const synced = replaceBetween(home, '<!-- FEATURES_START -->', '<!-- FEATURES_END -->',
-      featureSection.replace('<!-- FEATURES_START -->', '').replace('<!-- FEATURES_END -->', '').trim());
+    const sectionContent = srcContent.slice(
+      start + `<!-- ${marker}_START -->`.length,
+      end,
+    ).trim();
 
-    if (synced && synced !== home) {
-      writeFileSync(homePath, synced);
-      console.log(`  ✅ ${homePath.replace(ROOT, '.')} — features synced`);
+    const tgtContent = readFileSync(target, 'utf-8');
+    const result = replaceBetween(
+      tgtContent,
+      `<!-- ${marker}_START -->`,
+      `<!-- ${marker}_END -->`,
+      sectionContent,
+    );
+
+    if (result && result !== tgtContent) {
+      writeFileSync(target, result);
+      console.log(`  ✅ ${target.replace(ROOT, '.')} — ${label} synced`);
       updated++;
     }
+  } catch (e) {
+    console.log(`  ⚠ ${label} sync failed: ${(e as Error).message}`);
   }
-} catch (e) {
-  console.log(`  ⚠ features sync failed: ${(e as Error).message}`);
 }
 
 console.log(`\nDone: ${updated} updated, ${skipped} skipped, ${Object.keys(defaults).length} keys, ${tools.length} tools`);
