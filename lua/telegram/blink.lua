@@ -126,7 +126,9 @@ function source:get_completions(ctx, callback)
 		end
 		if not self._members_fetched then
 			local seen = {}
-			for _, it in ipairs(items) do seen[it.filterText] = true end
+			for _, it in ipairs(items) do
+				if it.data and it.data.user_id then seen[it.data.user_id] = true end
+			end
 			self:ensure_members_fetched(keyword, range, callback, seen)
 		end
 	elseif trigger == "#" then
@@ -182,7 +184,7 @@ function source:get_member_items(keyword, range)
 				local uid = msg.sender.id or msg.sender.user_id
 				if uid and not seen[uid] then
 					seen[uid] = true
-					table.insert(members, { name = msg.sender.name, id = uid })
+					table.insert(members, { name = msg.sender.name, id = uid, username = "" })
 				end
 			end
 		end
@@ -195,6 +197,7 @@ function source:get_member_items(keyword, range)
 				label = mention,
 				filterText = (m.username and #m.username > 0 and m.username) or m.name or "",
 				textEdit = { newText = mention .. " ", range = range },
+				data = { user_id = m.id or m.user_id },
 				kind = ItemKind.User,
 			})
 		end
@@ -334,7 +337,7 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 		local items = {}
 		local kw = keyword:lower()
 		for _, m in ipairs(members) do
-			if seen_names and (seen_names[m.name] or (m.username and #m.username > 0 and seen_names[m.username])) then
+			if seen_names and seen_names[m.id] then
 				-- skip, already in fallback results
 			elseif #kw == 0 or m.name:lower():find(kw, 1, true) or (m.username and #m.username > 0 and m.username:find(kw, 1, true)) then
 				local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
@@ -342,6 +345,7 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 					label = mention,
 					filterText = (m.username and #m.username > 0 and m.username) or m.name,
 					textEdit = { newText = mention .. " ", range = range },
+					data = { user_id = m.id or m.user_id },
 					kind = ItemKind.User,
 				})
 			end
