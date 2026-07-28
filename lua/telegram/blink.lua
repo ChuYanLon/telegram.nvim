@@ -122,7 +122,9 @@ function source:get_completions(ctx, callback)
 		items = self:get_member_items(keyword, range)
 		-- Always fetch full member list async (triggers re-callback with results)
 		if not self._members_fetched then
-			self:ensure_members_fetched(keyword, range, callback)
+			local seen = {}
+			for _, it in ipairs(items) do seen[it.filterText] = true end
+			self:ensure_members_fetched(keyword, range, callback, seen)
 		end
 	elseif trigger == "#" then
 		items = self:get_chat_items(keyword, range)
@@ -306,7 +308,7 @@ end
 
 -- ── Async member fetch with re-callback ─────────────────────────────
 
-function source:ensure_members_fetched(keyword, range, callback)
+function source:ensure_members_fetched(keyword, range, callback, seen_names)
 	if self._fetching_members then return end
 	self._fetching_members = true
 	local server = require("telegram.server")
@@ -323,7 +325,9 @@ function source:ensure_members_fetched(keyword, range, callback)
 		local items = {}
 		local kw = keyword:lower()
 		for _, name in ipairs(names) do
-			if #kw == 0 or name:lower():find(kw, 1, true) then
+			if seen_names and seen_names[name] then
+				-- skip, already in fallback results
+			elseif #kw == 0 or name:lower():find(kw, 1, true) then
 				table.insert(items, {
 					label = "@" .. name,
 					filterText = name,
