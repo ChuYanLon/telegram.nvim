@@ -161,37 +161,15 @@ end
 function source:get_member_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
-	local seen = {}
 
-	for _, msg in ipairs(state.messages or {}) do
-		if msg.sender and msg.sender.name and #msg.sender.name > 0 then
-			local name = msg.sender.name
-			if not seen[name] then
-				seen[name] = true
-				if #kw == 0 or name:lower():find(kw, 1, true) then
-					table.insert(items, {
-						label = "@" .. name,
-						filterText = name,
-						textEdit = { newText = "@" .. name .. " ", range = range },
-						kind = ItemKind.User,
-					})
-				end
-			end
-		end
-	end
-
-	local chat_id = state.chat_id
-	if chat_id then
-		local g = state.groups[chat_id]
-		if g and g.title and #g.title > 0 and not seen[g.title] then
-			if #kw == 0 or g.title:lower():find(kw, 1, true) then
-				table.insert(items, {
-					label = "@" .. g.title,
-					filterText = g.title,
-					textEdit = { newText = "@" .. g.title .. " ", range = range },
-					kind = ItemKind.User,
-				})
-			end
+	for _, name in ipairs(state.member_names or {}) do
+		if #kw == 0 or name:lower():find(kw, 1, true) then
+			table.insert(items, {
+				label = "@" .. name,
+				filterText = name,
+				textEdit = { newText = "@" .. name .. " ", range = range },
+				kind = ItemKind.User,
+			})
 		end
 	end
 

@@ -54,6 +54,7 @@ local state = {
 	current_chat_archived = false,
 	prev_chat = nil,
 	chat_folders = {},
+	member_names = {},
 }
 
 M.state = state
