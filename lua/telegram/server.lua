@@ -1022,6 +1022,13 @@ end
 
 -- ─── Profile Editing ────────────────────────────────────────────────────
 
+---@param on_ok fun(profile: table|nil)
+function M.get_my_profile_async(on_ok)
+	request_async({ url = base_url() .. "/my-profile" }, function(data, err)
+		vim.schedule(function() on_ok(not err and data or nil) end)
+	end)
+end
+
 ---@param first_name string
 ---@param last_name string|nil
 ---@param on_ok fun(success: boolean)

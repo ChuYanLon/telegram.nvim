@@ -840,6 +840,17 @@ app.get('/contacts', async (_req, res) => {
 
 // ─── Profile Editing ────────────────────────────────────────────────────
 
+app.get('/my-profile', async (_req, res) => {
+  try {
+    const profile = await tgClient.getMyProfile();
+    if (profile) {
+      res.json(profile);
+    } else {
+      res.status(400).json({ error: 'Could not fetch profile' });
+    }
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.post('/my-profile/name', async (req, res) => {
   try {
     const { firstName, lastName } = req.body;

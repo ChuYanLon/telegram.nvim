@@ -1560,28 +1560,51 @@ M.register("contacts", {
 })
 
 M.register("myprofile", {
-	description = "Edit your profile name and bio",
+	description = "View and edit your profile name and bio",
 	callback = function()
-		local actions = { "📝 Change name", "📝 Change bio", "Cancel" }
-		vim.ui.select(actions, { prompt = "Edit Profile" }, function(action)
-			if not action or action == "Cancel" then return end
-			if action:match("bio") then
-				vim.ui.input({ prompt = "New bio (empty to clear):" }, function(value)
-					if value == nil then return end
-					server.set_my_bio_async(value, function(ok)
-						vim.notify(ok and "Bio updated" or "Failed to update bio", ok and vim.log.levels.INFO or vim.log.levels.ERROR, { title = "tg" })
-					end)
-				end)
-			else
-				vim.ui.input({ prompt = "New first name:" }, function(first)
-					if not first or #first == 0 then return end
-					vim.ui.input({ prompt = "New last name (optional):" }, function(last)
-						server.set_my_name_async(first, last or "", function(ok)
-							vim.notify(ok and "Name updated" or "Failed to update name", ok and vim.log.levels.INFO or vim.log.levels.ERROR, { title = "tg" })
+		server.get_my_profile_async(function(profile)
+			if not profile then
+				vim.notify("Failed to fetch profile", vim.log.levels.ERROR, { title = "tg" })
+				return
+			end
+			local curr_name = profile.name or "?"
+			local curr_bio = profile.bio or ""
+			local header = "Current name: " .. curr_name
+			if #curr_bio > 0 then
+				header = header .. "  |  Bio: " .. curr_bio:gsub("\n", " "):sub(1, 40)
+			end
+			local actions = { "📝 Change name", "📝 Change bio", "Cancel" }
+			vim.ui.select(actions, { prompt = header }, function(action)
+				if not action or action == "Cancel" then return end
+				if action:match("bio") then
+					vim.ui.input({ prompt = "New bio (was: " .. curr_bio:gsub("\n", " "):sub(1, 30) .. "):", default = curr_bio }, function(value)
+						if value == nil then return end
+						server.set_my_bio_async(value, function(ok)
+							if ok then
+								vim.notify("✅ Bio updated → " .. value:gsub("\n", " "):sub(1, 40), vim.log.levels.INFO, { title = "tg" })
+							else
+								vim.notify("Failed to update bio", vim.log.levels.ERROR, { title = "tg" })
+							end
 						end)
 					end)
-				end)
-			end
+				else
+					vim.ui.input({ prompt = "New first name (was: " .. curr_name:match("^(%S+)") or curr_name .. "):", default = curr_name:match("^(%S+)") or "" }, function(first)
+						if not first or #first == 0 then return end
+						local old_last = curr_name:match("^%S+%s+(.+)$") or ""
+						vim.ui.input({ prompt = "New last name (was: " .. old_last .. "):", default = old_last }, function(last)
+							if last == nil then return end
+							server.set_my_name_async(first, last, function(ok)
+								if ok then
+									local full = first .. (last and #last > 0 and " " .. last or "")
+									vim.notify("✅ Name updated → " .. full, vim.log.levels.INFO, { title = "tg" })
+								else
+									vim.notify("Failed to update name", vim.log.levels.ERROR, { title = "tg" })
+								end
+							end)
+						end)
+					end)
+				end
+			end)
 		end)
 	end,
 })

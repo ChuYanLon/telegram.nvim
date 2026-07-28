@@ -1703,6 +1703,23 @@ export class TelegramLSPClient {
     }
   }
 
+  async getMyProfile(): Promise<{ id: number; name: string; bio: string } | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const me = await this.client.invoke({ _: 'getMe' }) as { id: number };
+      const user = await this.client.invoke({ _: 'getUser', user_id: me.id }) as any;
+      const fullInfo = await this.client.invoke({ _: 'getUserFullInfo', user_id: me.id }).catch(() => null) as any;
+      return {
+        id: me.id,
+        name: [user.first_name, user.last_name].filter(Boolean).join(' ') || `user_${me.id}`,
+        bio: fullInfo?.bio || '',
+      };
+    } catch (e) {
+      console.warn('getMyProfile failed:', (e as Error).message);
+      return null;
+    }
+  }
+
   async getGroupsInCommon(userId: number): Promise<{ id: number; title: string }[]> {
     try {
       if (!this._ready) return [];
