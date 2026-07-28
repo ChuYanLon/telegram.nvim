@@ -368,7 +368,7 @@ end
 ---@param on_err fun()|nil
 function M.get_chat_async(chat_id, on_ok, on_err)
 	request_async({ url = base_url() .. "/chat?chatId=" .. chat_id }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -420,7 +420,7 @@ end
 ---@param on_err fun()|nil
 function M.get_chats_async(on_ok, on_err)
 	request_async({ url = base_url() .. "/chats" }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -478,7 +478,7 @@ end
 function M.search_messages_async(chat_id, query, on_ok, on_err)
 	local url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986")
 	request_async({ url = url }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -490,7 +490,7 @@ end
 function M.search_messages_filtered_async(chat_id, query, filter, on_ok, on_err)
 	local url = base_url() .. "/searchMessages?chatId=" .. chat_id .. "&query=" .. vim.uri_encode(query, "RFC3986") .. "&filter=" .. vim.uri_encode(filter, "RFC3986")
 	request_async({ url = url }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -575,6 +575,17 @@ function M.get_messages_around_async(chat_id, message_id, limit, on_ok, on_err)
 		.. message_id
 		.. "&limit="
 		.. (limit or 11)
+	request_async({ url = url }, function(data, err)
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+---@param chat_id any
+---@param date integer unix timestamp
+---@param on_ok fun(data: table)|nil
+---@param on_err fun()|nil
+function M.get_message_by_date_async(chat_id, date, on_ok, on_err)
+	local url = base_url() .. "/messages/byDate?chatId=" .. chat_id .. "&date=" .. tostring(date)
 	request_async({ url = url }, function(data, err)
 		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
@@ -754,7 +765,7 @@ end
 ---@param on_err fun()|nil
 function M.get_my_permissions_async(chat_id, on_ok, on_err)
 	request_async({ url = base_url() .. "/chat/my-permissions?chatId=" .. chat_id }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -769,7 +780,7 @@ end
 ---@param on_err fun()|nil
 function M.get_members_async(chat_id, on_ok, on_err)
 	request_async({ url = base_url() .. "/chat/members?chatId=" .. chat_id }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -815,13 +826,13 @@ end
 
 function M.get_folder_chats_async(folder_id, on_ok, on_err)
 	request_async({ url = base_url() .. "/chats/folder/" .. tostring(folder_id) }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
 function M.get_folders_async(on_ok, on_err)
 	request_async({ url = base_url() .. "/chats/folders" }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -844,7 +855,7 @@ end
 ---@param on_err fun()|nil
 function M.get_archived_chats_async(on_ok, on_err)
 	request_async({ url = base_url() .. "/chats/archived" }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 
@@ -1047,7 +1058,7 @@ end
 ---@param on_err fun()|nil
 function M.get_invite_links_async(chat_id, on_ok, on_err)
 	request_async({ url = base_url() .. "/chat/invite-links?chatId=" .. chat_id }, function(data, err)
-		if err then if on_err then vim.schedule(on_err) end else vim.schedule(function() on_ok(data) end) end
+		if err then if on_err then vim.schedule(function() on_err(err) end) end else vim.schedule(function() on_ok(data) end) end
 	end)
 end
 

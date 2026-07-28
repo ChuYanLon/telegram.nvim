@@ -1392,4 +1392,46 @@ M.register("openshared", {
 	end,
 })
 
+M.register("jump_to_date", {
+	description = "Jump to messages on a specific date",
+	condition = function() return ui.state.chat_id ~= nil end,
+	callback = function()
+		local chat_id = ui.state.chat_id
+		if not chat_id then return end
+		local today = os.date("%Y-%m-%d")
+		vim.ui.input({ prompt = "Date (YYYY-MM-DD, today/yesterday): ", default = today }, function(input)
+			if not input or #input == 0 then return end
+			if chat_id ~= ui.state.chat_id then return end
+			local ts
+			if input == "today" then
+				local t = os.date("*t")
+				ts = os.time({ year = t.year, month = t.month, day = t.day, hour = 0, min = 0, sec = 0 })
+			elseif input == "yesterday" then
+				local t = os.date("*t")
+				t.day = t.day - 1
+				ts = os.time({ year = t.year, month = t.month, day = t.day, hour = 0, min = 0, sec = 0 })
+			else
+				local y, m, d = input:match("(%d%d%d%d)-(%d%d)-(%d%d)")
+				if not y then
+					vim.notify("Invalid date format. Use YYYY-MM-DD", vim.log.levels.ERROR, { title = "tg" })
+					return
+				end
+				y, m, d = tonumber(y), tonumber(m), tonumber(d)
+				ts = os.time({ year = y, month = m, day = d, hour = 0, min = 0, sec = 0 })
+			end
+			vim.notify("Jumping to " .. input .. "...", vim.log.levels.INFO, { title = "tg" })
+			server.get_message_by_date_async(chat_id, ts, function(data)
+				if chat_id ~= ui.state.chat_id then return end
+				if data and data.message_id then
+					ui.jump_to_message(data.message_id)
+				else
+					vim.notify("No messages found on this date", vim.log.levels.WARN, { title = "tg" })
+				end
+			end, function()
+				vim.notify("Failed to search by date", vim.log.levels.ERROR, { title = "tg" })
+			end)
+		end)
+	end,
+})
+
 return M

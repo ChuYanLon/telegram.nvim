@@ -1537,6 +1537,18 @@ export class TelegramLSPClient {
     return { chat: { id: chatId, title: chat ? chat.title : 'Unknown group' }, messages: allMsgs, targetIndex: older.length };
   }
 
+  async getMessageByDate(chatId: number, date: number): Promise<{ message_id: number } | null> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({ _: 'getChatMessageByDate', chat_id: chatId, date }) as { id: number };
+      if (result && result.id) return { message_id: result.id };
+      return null;
+    } catch (e) {
+      console.warn('getMessageByDate failed:', (e as Error).message);
+      return null;
+    }
+  }
+
   async getUserProfile(userId: number): Promise<Record<string, unknown> | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     try {

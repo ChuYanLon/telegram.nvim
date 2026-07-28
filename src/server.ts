@@ -284,6 +284,24 @@ app.get('/messages/around', async (req, res) => {
   }
 });
 
+app.get('/messages/byDate', async (req, res) => {
+  try {
+    const { chatId, date } = req.query;
+    if (!chatId || !date) {
+      res.status(400).json({ error: 'chatId and date are required' });
+      return;
+    }
+    const result = await tgClient.getMessageByDate(Number(chatId), Number(date));
+    if (result) {
+      res.json(result);
+    } else {
+      res.status(404).json({ error: 'No message found for this date' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 app.post('/sendMessage', async (req, res) => {
   try {
     const { chatId, text, replyTo } = req.body;
