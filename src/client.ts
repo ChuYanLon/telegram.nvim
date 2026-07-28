@@ -1461,9 +1461,17 @@ export class TelegramLSPClient {
       const sender = m.member_id || { _: 'messageSenderUser', user_id: 0 };
       const userInfo = await this.resolver.resolveSender(sender);
       const status = m.status?._?.replace('chatMemberStatus', '') || 'member';
+      let username = '';
+      if (sender.user_id) {
+        try {
+          const user = await this.client.invoke({ _: 'getUser', user_id: sender.user_id }) as any;
+          username = user?.usernames?.active_usernames?.[0] || '';
+        } catch {}
+      }
       return {
         user_id: sender.user_id || sender.chat_id || 0,
         name: userInfo?.name || 'Unknown',
+        username,
         status,
         custom_title: m.tag as string | undefined,
         joined_date: m.joined_chat_date,

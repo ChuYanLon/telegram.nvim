@@ -756,15 +756,6 @@ function M.open_chat(chat_id, chat_title, chat_type)
 			online_count = 0,
 		}
 		table.insert(state.group_ids, 1, chat_id)
-		-- Pre-fetch member names for blink @ completion
-		server.get_members_async(chat_id, function(data)
-			local names = {}
-			for _, m in ipairs(data.members or {}) do
-				if m.name and #m.name > 0 then
-					table.insert(names, m.name)
-				end
-			end
-			state.member_names = names
 		end)
 	end
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then

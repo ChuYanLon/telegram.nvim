@@ -172,25 +172,29 @@ function source:get_member_items(keyword, range)
 	local items = {}
 	local seen = {}
 
-	-- Use pre-fetched member list (full group members)
-	local names = state.member_names
+	-- Use pre-fetched member list (full group members) as { name, id, username }
+	local members = state.member_names
 	-- Fallback: if async fetch hasn't completed, use senders from loaded messages
-	if not names or #names == 0 then
-		names = {}
+	if not members or #members == 0 then
+		members = {}
 		for _, msg in ipairs(state.messages or {}) do
-			if msg.sender and msg.sender.name and #msg.sender.name > 0 and not seen[msg.sender.name] then
-				seen[msg.sender.name] = true
-				table.insert(names, msg.sender.name)
+			if msg.sender and msg.sender.name and #msg.sender.name > 0 then
+				local uid = msg.sender.id or msg.sender.user_id
+				if uid and not seen[uid] then
+					seen[uid] = true
+					table.insert(members, { name = msg.sender.name, id = uid })
+				end
 			end
 		end
 	end
 
-	for _, name in ipairs(names) do
-		if #kw == 0 or name:lower():find(kw, 1, true) then
+	for _, m in ipairs(members) do
+		local mention = m.username and ("@" .. m.username) or ("@" .. m.name)
+		if #kw == 0 or mention:lower():find(kw, 1, true) or (m.name and m.name:lower():find(kw, 1, true)) then
 			table.insert(items, {
-				label = "@" .. name,
-				filterText = name,
-				textEdit = { newText = "@" .. name .. " ", range = range },
+				label = mention,
+				filterText = m.username or m.name or "",
+				textEdit = { newText = mention .. " ", range = range },
 				kind = ItemKind.User,
 			})
 		end
@@ -319,24 +323,25 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 		self._fetching_members = false
 		self._members_fetched = true
 		self._last_chat_id = state.chat_id
-		local names = {}
+		local members = {}
 		for _, m in ipairs(data.members or {}) do
 			if m.name and #m.name > 0 then
-				table.insert(names, m.name)
+				table.insert(members, { name = m.name, id = m.user_id, username = m.username or "" })
 			end
 		end
-		state.member_names = names
+		state.member_names = members
 		-- Re-callback with full results (blink appends/updates the menu)
 		local items = {}
 		local kw = keyword:lower()
-		for _, name in ipairs(names) do
-			if seen_names and seen_names[name] then
+		for _, m in ipairs(members) do
+			if seen_names and seen_names[m.name] then
 				-- skip, already in fallback results
-			elseif #kw == 0 or name:lower():find(kw, 1, true) then
+			elseif #kw == 0 or m.name:lower():find(kw, 1, true) or (m.username and #m.username > 0 and m.username:find(kw, 1, true)) then
+				local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
 				table.insert(items, {
-					label = "@" .. name,
-					filterText = name,
-					textEdit = { newText = "@" .. name .. " ", range = range },
+					label = mention,
+					filterText = (#m.username > 0 and m.username) or m.name,
+					textEdit = { newText = mention .. " ", range = range },
 					kind = ItemKind.User,
 				})
 			end
