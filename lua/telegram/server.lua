@@ -1011,6 +1011,34 @@ function M.delete_contact(user_id)
 	return res and res.ok == true
 end
 
+-- ─── Contacts ───────────────────────────────────────────────────────────
+
+---@param on_ok fun(data: table)
+function M.get_contacts_async(on_ok)
+	request_async({ url = base_url() .. "/contacts" }, function(data, err)
+		if not err then vim.schedule(function() on_ok(data) end) end
+	end)
+end
+
+-- ─── Profile Editing ────────────────────────────────────────────────────
+
+---@param first_name string
+---@param last_name string|nil
+---@param on_ok fun(success: boolean)
+function M.set_my_name_async(first_name, last_name, on_ok)
+	request_async({ url = base_url() .. "/my-profile/name", body = vim.json.encode({ firstName = first_name, lastName = last_name or "" }) }, function(data)
+		vim.schedule(function() on_ok(data and data.ok == true) end)
+	end)
+end
+
+---@param bio string
+---@param on_ok fun(success: boolean)
+function M.set_my_bio_async(bio, on_ok)
+	request_async({ url = base_url() .. "/my-profile/bio", body = vim.json.encode({ bio = bio }) }, function(data)
+		vim.schedule(function() on_ok(data and data.ok == true) end)
+	end)
+end
+
 -- ─── Message Link ───────────────────────────────────────────────────────
 
 ---@param chat_id any

@@ -829,6 +829,35 @@ app.post('/user/delete-contact', async (req, res) => {
   } catch (err) { res.status(500).json({ error: (err as Error).message }); }
 });
 
+// ─── Contacts ───────────────────────────────────────────────────────────
+
+app.get('/contacts', async (_req, res) => {
+  try {
+    const contacts = await tgClient.getContacts();
+    res.json({ contacts });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+// ─── Profile Editing ────────────────────────────────────────────────────
+
+app.post('/my-profile/name', async (req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+    if (!firstName) { res.status(400).json({ error: 'firstName is required' }); return; }
+    const ok = await tgClient.setMyName(firstName, lastName || '');
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
+app.post('/my-profile/bio', async (req, res) => {
+  try {
+    const { bio } = req.body;
+    if (bio === undefined) { res.status(400).json({ error: 'bio is required' }); return; }
+    const ok = await tgClient.setMyBio(bio);
+    res.json({ ok });
+  } catch (err) { res.status(500).json({ error: (err as Error).message }); }
+});
+
 app.get('/messageLink', async (req, res) => {
   try {
     const { chatId, messageId } = req.query;

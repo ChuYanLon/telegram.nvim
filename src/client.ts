@@ -1660,6 +1660,49 @@ export class TelegramLSPClient {
     }
   }
 
+  async getContacts(limit = 100): Promise<{ id: number; name: string; username?: string }[]> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      const result = await this.client.invoke({ _: 'getContacts' }) as { user_ids?: number[] };
+      const ids = (result?.user_ids || []).slice(0, limit);
+      const users = await Promise.all(
+        ids.map((id: number) =>
+          this.client.invoke({ _: 'getUser', user_id: id }).catch(() => null) as Promise<any>
+        )
+      );
+      return users.filter(Boolean).map((u: any) => ({
+        id: u.id,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || `user_${u.id}`,
+        username: u.usernames?.active_usernames?.[0] || undefined,
+      }));
+    } catch (e) {
+      console.warn('getContacts failed:', (e as Error).message);
+      return [];
+    }
+  }
+
+  async setMyName(firstName: string, lastName = ''): Promise<boolean> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      await this.client.invoke({ _: 'setName', first_name: firstName, last_name: lastName });
+      return true;
+    } catch (e) {
+      console.warn('setName failed:', (e as Error).message);
+      return false;
+    }
+  }
+
+  async setMyBio(bio: string): Promise<boolean> {
+    if (!this._ready) throw new Error('Client not ready yet');
+    try {
+      await this.client.invoke({ _: 'setBio', bio });
+      return true;
+    } catch (e) {
+      console.warn('setBio failed:', (e as Error).message);
+      return false;
+    }
+  }
+
   async getGroupsInCommon(userId: number): Promise<{ id: number; title: string }[]> {
     try {
       if (!this._ready) return [];

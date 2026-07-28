@@ -144,19 +144,23 @@ Available tools via the tool picker (`@` or `:TgTool`):
 | `@blocked` | List and manage blocked users |
 | `@channels` | Switch to a channel (filtered) |
 | `@chats` | Switch to another chat |
+| `@contacts` | Browse your contacts list |
 | `@createpoll` | Create a poll in current chat |
 | `@dm` | Switch to a private chat (filtered) |
 | `@draft` | Save draft to server / clear draft |
+| `@eventlog` | View recent admin events (member changes, edits, etc.) |
 | `@folders` | Switch chat folder |
 | `@groups` | Switch to a group (filtered) |
 | `@groupsettings` | Group / channel settings (title, description, permissions, etc.) |
 | `@invitelinks` | Manage invite links |
+| `@joinrequests` | View and manage pending join requests |
 | `@jump_to_date` | Jump to messages on a specific date |
 | `@markunread` | Mark current chat as unread / read |
 | `@members` | View and manage chat members |
 | `@mentions` | Search @mentions in current chat |
 | `@messagelink` | Copy shareable link of message under cursor |
 | `@mute` | Mute / unmute current chat |
+| `@myprofile` | Edit your profile name and bio |
 | `@newchat` | Start a new private chat by @username |
 | `@openlink` | Open URL or media file under cursor |
 | `@openshared` | Open shared chat or user DM |

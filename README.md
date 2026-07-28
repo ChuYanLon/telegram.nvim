@@ -76,6 +76,7 @@ Available tools via the tool picker (`@` or `:TgTool`):
 | `@blocked` | List and manage blocked users |
 | `@channels` | Switch to a channel (filtered) |
 | `@chats` | Switch to another chat |
+| `@contacts` | Browse your contacts list |
 | `@createpoll` | Create a poll in current chat |
 | `@dm` | Switch to a private chat (filtered) |
 | `@draft` | Save draft to server / clear draft |
@@ -91,6 +92,7 @@ Available tools via the tool picker (`@` or `:TgTool`):
 | `@mentions` | Search @mentions in current chat |
 | `@messagelink` | Copy shareable link of message under cursor |
 | `@mute` | Mute / unmute current chat |
+| `@myprofile` | Edit your profile name and bio |
 | `@newchat` | Start a new private chat by @username |
 | `@openlink` | Open URL or media file under cursor |
 | `@openshared` | Open shared chat or user DM |

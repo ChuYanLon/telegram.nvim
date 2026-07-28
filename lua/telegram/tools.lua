@@ -1527,4 +1527,63 @@ M.register("eventlog", {
 	end,
 })
 
+M.register("contacts", {
+	description = "Browse your contacts list",
+	callback = function()
+		server.get_contacts_async(function(data)
+			local contacts = data and data.contacts
+			if not contacts or #contacts == 0 then
+				vim.notify("No contacts found", vim.log.levels.INFO, { title = "tg" })
+				return
+			end
+			local items = {}
+			for _, c in ipairs(contacts) do
+				local label = c.name
+				if c.username then label = label .. "  @" .. c.username end
+				table.insert(items, { id = c.id, title = c.name, label = label })
+			end
+			vim.ui.select(items, {
+				prompt = "Contacts (" .. #contacts .. ")",
+				format_item = function(item) return item.label end,
+			}, function(choice)
+				if choice then
+					local chat = require("telegram.server").open_private_chat(choice.id)
+					if chat then
+						require("telegram").open_chat(chat.id, chat.title)
+					else
+						vim.notify("Could not open chat with " .. choice.title, vim.log.levels.WARN, { title = "tg" })
+					end
+				end
+			end)
+		end)
+	end,
+})
+
+M.register("myprofile", {
+	description = "Edit your profile name and bio",
+	callback = function()
+		local actions = { "📝 Change name", "📝 Change bio", "Cancel" }
+		vim.ui.select(actions, { prompt = "Edit Profile" }, function(action)
+			if not action or action == "Cancel" then return end
+			if action:match("bio") then
+				vim.ui.input({ prompt = "New bio (empty to clear):" }, function(value)
+					if value == nil then return end
+					server.set_my_bio_async(value, function(ok)
+						vim.notify(ok and "Bio updated" or "Failed to update bio", ok and vim.log.levels.INFO or vim.log.levels.ERROR, { title = "tg" })
+					end)
+				end)
+			else
+				vim.ui.input({ prompt = "New first name:" }, function(first)
+					if not first or #first == 0 then return end
+					vim.ui.input({ prompt = "New last name (optional):" }, function(last)
+						server.set_my_name_async(first, last or "", function(ok)
+							vim.notify(ok and "Name updated" or "Failed to update name", ok and vim.log.levels.INFO or vim.log.levels.ERROR, { title = "tg" })
+						end)
+					end)
+				end)
+			end
+		end)
+	end,
+})
+
 return M
