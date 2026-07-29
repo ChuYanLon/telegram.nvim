@@ -15,38 +15,118 @@ local state = require("telegram.state").state
 -- ── Emoji name → character ─────────────────────────────────────────────
 
 local emoji_names = {
-	smile = "😊", grin = "😁", joy = "😂", sweat_smile = "😅",
-	laugh = "🤣", wink = "😉", heart_eyes = "😍",
-	kissing_heart = "😘", sleepy = "😴", sob = "😭", cry = "😢",
-	angry = "😡", skull = "💀", ghost = "👻",
-	wave = "👋", clap = "👏", thumbsup = "👍", thumbsdown = "👎",
-	ok_hand = "👌", pray = "🙏", muscle = "💪", middle_finger = "🖕",
-	thinking = "🤔", hug = "🤗", rolling_eyes = "🙄",
-	heart = "❤️", broken_heart = "💔", sparkles = "✨",
-	fire = "🔥", zap = "⚡", boom = "💥", poop = "💩",
-	star = "⭐", crown = "👑", gem = "💎", trophy = "🏆",
-	rocket = "🚀", gift = "🎁", tada = "🎉",
-	dog = "🐶", cat = "🐱", unicorn = "🦄",
-	apple = "🍎", banana = "🍌", pizza = "🍕", burger = "🍔",
-	see_no_evil = "🙈", hear_no_evil = "🙉", speak_no_evil = "🙊",
-	_100 = "💯", nerd = "🤓", sunglasses = "😎", devil = "😈",
-	angel = "😇", neutral = "😐", money = "💰",
-	moon = "🌚", whale = "🐳", octopus = "🐙",
-	cool = "🆒", lightning = "⚡", pills = "💊", nails = "💅",
-	santa = "🎅", christmas = "🎄", halloween = "🎃",
+	smile = "😊",
+	grin = "😁",
+	joy = "😂",
+	sweat_smile = "😅",
+	laugh = "🤣",
+	wink = "😉",
+	heart_eyes = "😍",
+	kissing_heart = "😘",
+	sleepy = "😴",
+	sob = "😭",
+	cry = "😢",
+	angry = "😡",
+	skull = "💀",
+	ghost = "👻",
+	wave = "👋",
+	clap = "👏",
+	thumbsup = "👍",
+	thumbsdown = "👎",
+	ok_hand = "👌",
+	pray = "🙏",
+	muscle = "💪",
+	middle_finger = "🖕",
+	thinking = "🤔",
+	hug = "🤗",
+	rolling_eyes = "🙄",
+	heart = "❤️",
+	broken_heart = "💔",
+	sparkles = "✨",
+	fire = "🔥",
+	zap = "⚡",
+	boom = "💥",
+	poop = "💩",
+	star = "⭐",
+	crown = "👑",
+	gem = "💎",
+	trophy = "🏆",
+	rocket = "🚀",
+	gift = "🎁",
+	tada = "🎉",
+	dog = "🐶",
+	cat = "🐱",
+	unicorn = "🦄",
+	apple = "🍎",
+	banana = "🍌",
+	pizza = "🍕",
+	burger = "🍔",
+	see_no_evil = "🙈",
+	hear_no_evil = "🙉",
+	speak_no_evil = "🙊",
+	_100 = "💯",
+	nerd = "🤓",
+	sunglasses = "😎",
+	devil = "😈",
+	angel = "😇",
+	neutral = "😐",
+	money = "💰",
+	moon = "🌚",
+	whale = "🐳",
+	octopus = "🐙",
+	cool = "🆒",
+	lightning = "⚡",
+	pills = "💊",
+	nails = "💅",
+	santa = "🎅",
+	christmas = "🎄",
+	halloween = "🎃",
 }
-
-
 
 -- ── Code languages ─────────────────────────────────────────────────────
 
 local code_languages = {
-	"bash", "c", "cpp", "csharp", "css", "diff", "elixir", "erlang",
-	"go", "graphql", "haskell", "html", "java", "javascript", "json",
-	"jsx", "kotlin", "lua", "makefile", "markdown", "nim", "ocaml",
-	"perl", "php", "powershell", "python", "r", "ruby", "rust",
-	"scala", "scheme", "shell", "solidity", "sql", "swift", "toml",
-	"typescript", "tsx", "vim", "yaml", "zig",
+	"bash",
+	"c",
+	"cpp",
+	"csharp",
+	"css",
+	"diff",
+	"elixir",
+	"erlang",
+	"go",
+	"graphql",
+	"haskell",
+	"html",
+	"java",
+	"javascript",
+	"json",
+	"jsx",
+	"kotlin",
+	"lua",
+	"makefile",
+	"markdown",
+	"nim",
+	"ocaml",
+	"perl",
+	"php",
+	"powershell",
+	"python",
+	"r",
+	"ruby",
+	"rust",
+	"scala",
+	"scheme",
+	"shell",
+	"solidity",
+	"sql",
+	"swift",
+	"toml",
+	"typescript",
+	"tsx",
+	"vim",
+	"yaml",
+	"zig",
 }
 
 -- ── Kind constants ─────────────────────────────────────────────────────
@@ -69,7 +149,7 @@ function source:enabled()
 end
 
 function source:get_trigger_characters()
-	return { ":", "@", "!", "`" }
+	return { ":", "@", "/", "`" }
 end
 
 function source:get_completions(ctx, callback)
@@ -81,10 +161,12 @@ function source:get_completions(ctx, callback)
 	if cursor >= 3 then
 		local before = line:sub(cursor - 2, cursor)
 		if before == "```" then
-			callback({ items = self:get_language_items({
-				start = { line = line_idx, character = cursor - 2 },
-				["end"] = { line = line_idx, character = cursor },
-			}) })
+			callback({
+				items = self:get_language_items({
+					start = { line = line_idx, character = cursor - 2 },
+					["end"] = { line = line_idx, character = cursor },
+				}),
+			})
 			return
 		end
 	end
@@ -125,13 +207,14 @@ function source:get_completions(ctx, callback)
 		if not self._members_fetched then
 			local seen = {}
 			for _, it in ipairs(items) do
-				if it.data and it.data.user_id then seen[it.data.user_id] = true end
+				if it.data and it.data.user_id then
+					seen[it.data.user_id] = true
+				end
 			end
 			self:ensure_members_fetched(keyword, range, callback, seen)
 		end
-	elseif trigger == "!" then
+	elseif trigger == "/" then
 		items = self:get_command_items(keyword, range)
-
 	end
 	callback({ items = items })
 end
@@ -156,7 +239,9 @@ function source:get_emoji_items(keyword, range)
 		local an, bn = a.filterText, b.filterText
 		if #kw > 0 then
 			local a_exact, b_exact = an == kw, bn == kw
-			if a_exact ~= b_exact then return a_exact end
+			if a_exact ~= b_exact then
+				return a_exact
+			end
 		end
 		return an < bn
 	end)
@@ -180,6 +265,7 @@ function source:get_member_items(keyword, range)
 				textEdit = { newText = "@" .. username .. " ", range = range },
 				data = { user_id = m.id or m.user_id, has_username = true },
 				kind = ItemKind.User,
+				score_offset = 10000,
 			})
 		end
 	end
@@ -188,13 +274,14 @@ function source:get_member_items(keyword, range)
 		if #kw > 0 then
 			local a_exact = a.filterText == kw
 			local b_exact = b.filterText == kw
-			if a_exact ~= b_exact then return a_exact end
+			if a_exact ~= b_exact then
+				return a_exact
+			end
 		end
 		return a.filterText < b.filterText
 	end)
 	return items
 end
-
 
 -- ── Bot command items (/cmd) ─────────────────────────────────────────
 
@@ -202,12 +289,18 @@ function source:get_command_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
 	local chat_id = state.chat_id
-	if not chat_id then return items end
+	if not chat_id then
+		return items
+	end
 
 	local g = state.groups[chat_id]
-	if not g then return items end
+	if not g then
+		return items
+	end
 	local cmds = g.bot_commands
-	if cmds == nil or cmds == vim.NIL then return items end
+	if cmds == nil or cmds == vim.NIL then
+		return items
+	end
 
 	for _, bc in ipairs(cmds) do
 		for _, cmd in ipairs(bc.commands or {}) do
@@ -228,14 +321,14 @@ function source:get_command_items(keyword, range)
 		if #kw > 0 then
 			local a_exact = a.filterText == kw
 			local b_exact = b.filterText == kw
-			if a_exact ~= b_exact then return a_exact end
+			if a_exact ~= b_exact then
+				return a_exact
+			end
 		end
 		return a.filterText < b.filterText
 	end)
 	return items
 end
-
-
 
 -- ── Language items (```) ─────────────────────────────────────────────
 
@@ -243,17 +336,28 @@ function source:get_language_items(range)
 	local items = {}
 	for _, lang in ipairs(code_languages) do
 		local icon = ""
-		if lang == "lua" then icon = "🌙 "
-		elseif lang == "python" then icon = "🐍 "
-		elseif lang == "javascript" or lang == "jsx" then icon = "🟨 "
-		elseif lang == "typescript" or lang == "tsx" then icon = "🔵 "
-		elseif lang == "go" then icon = "🔷 "
-		elseif lang == "rust" then icon = "🦀 "
-		elseif lang == "html" then icon = "🌐 "
-		elseif lang == "css" then icon = "🎨 "
-		elseif lang == "bash" or lang == "shell" or lang == "powershell" then icon = "🖥️ "
-		elseif lang == "sql" then icon = "🗃️ "
-		elseif lang == "json" or lang == "toml" or lang == "yaml" then icon = "📋 "
+		if lang == "lua" then
+			icon = "🌙 "
+		elseif lang == "python" then
+			icon = "🐍 "
+		elseif lang == "javascript" or lang == "jsx" then
+			icon = "🟨 "
+		elseif lang == "typescript" or lang == "tsx" then
+			icon = "🔵 "
+		elseif lang == "go" then
+			icon = "🔷 "
+		elseif lang == "rust" then
+			icon = "🦀 "
+		elseif lang == "html" then
+			icon = "🌐 "
+		elseif lang == "css" then
+			icon = "🎨 "
+		elseif lang == "bash" or lang == "shell" or lang == "powershell" then
+			icon = "🖥️ "
+		elseif lang == "sql" then
+			icon = "🗃️ "
+		elseif lang == "json" or lang == "toml" or lang == "yaml" then
+			icon = "📋 "
 		end
 		table.insert(items, {
 			label = icon .. lang,
@@ -268,7 +372,9 @@ end
 -- ── Async member fetch with re-callback ─────────────────────────────
 
 function source:ensure_members_fetched(keyword, range, callback, seen_names)
-	if self._fetching_members then return end
+	if self._fetching_members then
+		return
+	end
 	self._fetching_members = true
 	local server = require("telegram.server")
 	server.get_members_async(state.chat_id, function(data)
@@ -306,7 +412,9 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 			if #kw > 0 then
 				local a_exact = a.filterText:lower() == kw
 				local b_exact = b.filterText:lower() == kw
-				if a_exact ~= b_exact then return a_exact end
+				if a_exact ~= b_exact then
+					return a_exact
+				end
 			end
 			return a.filterText < b.filterText
 		end)
