@@ -119,7 +119,7 @@ function source:get_completions(ctx, callback)
 	elseif trigger == "@" then
 		items = self:get_member_items(keyword, range)
 		-- Always fetch full member list async (triggers re-callback with results)
-		if self._last_chat_id ~= state.chat_id then
+		if self._last_chat_id ~= state.chat_id or #(state.member_names or {}) == 0 then
 			self._members_fetched = nil
 		end
 		if not self._members_fetched then
