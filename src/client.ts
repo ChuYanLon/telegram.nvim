@@ -521,6 +521,23 @@ export class TelegramLSPClient {
     }
   }
 
+  private _addMentionEntities(formatted: { text: string; entities: unknown[] }, mentions?: { text: string; user_id: number }[]) {
+    if (!mentions || mentions.length === 0) return;
+    for (const m of mentions) {
+      const idx = formatted.text.indexOf(m.text);
+      if (idx >= 0) {
+        (formatted.entities as any[]).push({
+          _: 'textEntityTypeMentionName',
+          offset: idx,
+          length: m.text.length,
+          user_id: m.user_id,
+        });
+      }
+    }
+    // Sort entities by offset as required by TDLib
+    (formatted.entities as any[]).sort((a: any, b: any) => a.offset - b.offset);
+  }
+
   private async _parseMD(text: string): Promise<{ _: string; text: string; entities: unknown[] }> {
     try {
       const parsed = await this.client.invoke({
@@ -535,9 +552,10 @@ export class TelegramLSPClient {
     return { _: 'formattedText', text, entities: [] };
   }
 
-  async sendMessage(chatId: number, text: string, replyTo?: number): Promise<FormattedMessage | null> {
+  async sendMessage(chatId: number, text: string, replyTo?: number, mentions?: { text: string; user_id: number }[]): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const formatted = await this._parseMD(text);
+    this._addMentionEntities(formatted, mentions);
     const params: Record<string, unknown> = {
       _: 'sendMessage',
       chat_id: chatId,
@@ -553,9 +571,10 @@ export class TelegramLSPClient {
     return msg;
   }
 
-  async editMessage(chatId: number, messageId: number, text: string): Promise<FormattedMessage | null> {
+  async editMessage(chatId: number, messageId: number, text: string, mentions?: { text: string; user_id: number }[]): Promise<FormattedMessage | null> {
     if (!this._ready) throw new Error('Client not ready yet');
     const formatted = await this._parseMD(text);
+    this._addMentionEntities(formatted, mentions);
     await this.client.invoke({
       _: 'editMessageText',
       chat_id: chatId,

@@ -95,7 +95,20 @@ M.register("send", {
 			if not text then
 				return
 			end
-			local msg = server.send_message(ui.state.chat_id, text)
+			local mentions = {}
+			local lower_text = text:lower()
+			local seen = {}
+			for _, m in ipairs(ui.state.member_names or {}) do
+				local name = m.name or ""
+				if name and #name > 0 and not seen[m.user_id] and not (m.username and #m.username > 0) then
+					local idx = lower_text:find(name:lower(), 1, true)
+					if idx then
+						table.insert(mentions, { text = name, user_id = m.user_id })
+						seen[m.user_id] = true
+					end
+				end
+			end
+			local msg = server.send_message(ui.state.chat_id, text, nil, mentions)
 			if msg then
 				table.insert(ui.state.messages, msg)
 				ui.render()

@@ -595,10 +595,13 @@ end
 ---@param text string
 ---@param replyTo any|nil
 ---@return table|nil
-function M.send_message(chat_id, text, replyTo)
+function M.send_message(chat_id, text, replyTo, mentions)
 	local body = { chatId = chat_id, text = text }
 	if replyTo then
 		body.replyTo = replyTo
+	end
+	if mentions and #mentions > 0 then
+		body.mentions = mentions
 	end
 	local data = http_post("/sendMessage", body)
 	if type(data) == "table" and data.message then

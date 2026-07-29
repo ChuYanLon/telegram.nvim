@@ -1,7 +1,7 @@
 import type { RawTdMessage, FormattedMessage, SenderInfo, Reaction } from './types';
 import type { Resolver } from './resolve';
 
-interface Entity { offset: number; length: number; type: { _: string; url?: string; language?: string } }
+interface Entity { offset: number; length: number; type: { _: string; url?: string; language?: string; user_id?: number } }
 
 function getEntities(src: { text?: string; entities?: unknown[] }): Entity[] {
   const raw = src.entities;
@@ -34,6 +34,7 @@ export function extractText(content: { _: string; text?: { text: string }; capti
       case 'textEntityTypeStrikethrough': before = '~~'; after = '~~'; break;
       case 'textEntityTypeSpoiler': before = '||'; after = '||'; break;
       case 'textEntityTypeTextUrl':     before = '['; after = '](' + (e.type.url || '') + ')'; break;
+      case 'textEntityTypeMentionName': before = '['; after = '](tg://user?id=' + (e.type.user_id ?? 0) + ')'; break;
       default: continue;
     }
     markup.push({ offset: e.offset, length: e.length, before, after });

@@ -304,12 +304,12 @@ app.get('/messages/byDate', async (req, res) => {
 
 app.post('/sendMessage', async (req, res) => {
   try {
-    const { chatId, text, replyTo } = req.body;
+    const { chatId, text, replyTo, mentions } = req.body;
     if (!chatId || !text) {
       res.status(400).json({ error: 'chatId and text are required' });
       return;
     }
-    const msg = await tgClient.sendMessage(Number(chatId), text, replyTo ? Number(replyTo) : undefined);
+    const msg = await tgClient.sendMessage(Number(chatId), text, replyTo ? Number(replyTo) : undefined, mentions);
     res.json({ ok: true, message: msg });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

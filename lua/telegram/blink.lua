@@ -168,28 +168,30 @@ end
 function source:get_member_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
+	local chat_id = state.chat_id
 
-	-- Only show members with public @username (like Android)
 	local members = state.member_names or {}
 	for _, m in ipairs(members) do
-		if m.username and #m.username > 0 then
-			if #kw == 0 or m.username:lower():find(kw, 1, true) then
-				local mention = "@" .. m.username
-				table.insert(items, {
-					label = mention,
-					filterText = m.username,
-					textEdit = { newText = mention .. " ", range = range },
-					data = { user_id = m.id or m.user_id },
-					kind = ItemKind.User,
-				})
-			end
+		local name = m.name or ""
+		local username = (m.username and #m.username > 0) and m.username or nil
+		if #kw == 0 or (username and username:lower():find(kw, 1, true)) or name:lower():find(kw, 1, true) then
+			local label = username and ("@" .. username) or name
+			local newText = username and ("@" .. username .. " ") or (name .. " ")
+			local filterText = username or name
+			table.insert(items, {
+				label = label,
+				filterText = filterText:lower(),
+				textEdit = { newText = newText, range = range },
+				data = { user_id = m.id or m.user_id, has_username = username ~= nil, name = name },
+				kind = ItemKind.User,
+			})
 		end
 	end
 
 	table.sort(items, function(a, b)
 		if #kw > 0 then
-			local a_exact = a.filterText:lower() == kw
-			local b_exact = b.filterText:lower() == kw
+			local a_exact = a.filterText == kw
+			local b_exact = b.filterText == kw
 			if a_exact ~= b_exact then return a_exact end
 		end
 		return a.filterText < b.filterText
@@ -290,15 +292,21 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 		for _, m in ipairs(members) do
 			if seen_names and seen_names[m.id] then
 				-- skip, already in fallback results
-			elseif #kw == 0 or m.name:lower():find(kw, 1, true) or (m.username and #m.username > 0 and m.username:find(kw, 1, true)) then
-				local mention = m.username and #m.username > 0 and ("@" .. m.username) or ("@" .. m.name)
-				table.insert(items, {
-					label = mention,
-					filterText = (m.username and #m.username > 0 and m.username) or m.name,
-					textEdit = { newText = mention .. " ", range = range },
-					data = { user_id = m.id or m.user_id },
-					kind = ItemKind.User,
-				})
+			else
+				local name = m.name or ""
+				local username = (m.username and #m.username > 0) and m.username or nil
+				if #kw == 0 or (username and username:lower():find(kw, 1, true)) or name:lower():find(kw, 1, true) then
+					local label = username and ("@" .. username) or name
+					local newText = username and ("@" .. username .. " ") or (name .. " ")
+					local filterText = username or name
+					table.insert(items, {
+						label = label,
+						filterText = filterText:lower(),
+						textEdit = { newText = newText, range = range },
+						data = { user_id = m.id or m.user_id, has_username = username ~= nil, name = name },
+						kind = ItemKind.User,
+					})
+				end
 			end
 		end
 		table.sort(items, function(a, b)

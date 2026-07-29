@@ -25,6 +25,7 @@ local state = {
 	forward_target = nil,
 	esc_count = 0,
 	sending = false,
+	pending_mentions = {},  -- chat_id -> {text, user_id}[]
 	loading_newer = false,
 	exhausted_forward = false,
 
