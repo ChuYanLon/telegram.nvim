@@ -99,12 +99,18 @@ M.register("send", {
 			local lower_text = text:lower()
 			local seen = {}
 			for _, m in ipairs(ui.state.member_names or {}) do
+				local uid = m.id
 				local name = m.name or ""
-				if name and #name > 0 and not seen[m.user_id] and not (m.username and #m.username > 0) then
+				if name and #name > 0 and uid and not seen[uid] and not (m.username and #m.username > 0) then
 					local idx = lower_text:find(name:lower(), 1, true)
 					if idx then
-						table.insert(mentions, { text = name, user_id = m.user_id })
-						seen[m.user_id] = true
+						-- word boundary: preceded by whitespace/start, followed by whitespace/end
+						local before = (idx > 1) and text:sub(idx - 1, idx - 1) or " "
+						local after = text:sub(idx + #name, idx + #name) or " "
+						if before:match("%s") and after:match("%s") then
+							table.insert(mentions, { text = name, user_id = uid })
+							seen[uid] = true
+						end
 					end
 				end
 			end

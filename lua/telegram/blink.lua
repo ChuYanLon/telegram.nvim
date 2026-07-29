@@ -168,7 +168,6 @@ end
 function source:get_member_items(keyword, range)
 	local kw = keyword:lower()
 	local items = {}
-	local chat_id = state.chat_id
 
 	local members = state.member_names or {}
 	for _, m in ipairs(members) do
