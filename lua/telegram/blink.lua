@@ -173,15 +173,12 @@ function source:get_member_items(keyword, range)
 	for _, m in ipairs(members) do
 		local name = m.name or ""
 		local username = (m.username and #m.username > 0) and m.username or nil
-		if #kw == 0 or (username and username:lower():find(kw, 1, true)) or name:lower():find(kw, 1, true) then
-			local label = username and ("@" .. username) or name
-			local newText = username and ("@" .. username .. " ") or (name .. " ")
-			local filterText = username or name
+		if username and (#kw == 0 or username:lower():find(kw, 1, true) or name:lower():find(kw, 1, true)) then
 			table.insert(items, {
-				label = label,
-				filterText = filterText:lower(),
-				textEdit = { newText = newText, range = range },
-				data = { user_id = m.id or m.user_id, has_username = username ~= nil, name = name },
+				label = "@" .. username .. "  (" .. name .. ")",
+				filterText = username:lower(),
+				textEdit = { newText = "@" .. username .. " ", range = range },
+				data = { user_id = m.id or m.user_id, has_username = true },
 				kind = ItemKind.User,
 			})
 		end
@@ -294,15 +291,12 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 			else
 				local name = m.name or ""
 				local username = (m.username and #m.username > 0) and m.username or nil
-				if #kw == 0 or (username and username:lower():find(kw, 1, true)) or name:lower():find(kw, 1, true) then
-					local label = username and ("@" .. username) or name
-					local newText = username and ("@" .. username .. " ") or (name .. " ")
-					local filterText = username or name
+				if username and (#kw == 0 or username:lower():find(kw, 1, true) or name:lower():find(kw, 1, true)) then
 					table.insert(items, {
-						label = label,
-						filterText = filterText:lower(),
-						textEdit = { newText = newText, range = range },
-						data = { user_id = m.id or m.user_id, has_username = username ~= nil, name = name },
+						label = "@" .. username .. "  (" .. name .. ")",
+						filterText = username:lower(),
+						textEdit = { newText = "@" .. username .. " ", range = range },
+						data = { user_id = m.id or m.user_id, has_username = true },
 						kind = ItemKind.User,
 					})
 				end
