@@ -141,6 +141,18 @@ end)
 local source = {}
 
 function source.new(_opts, _config)
+	-- Disable other blink sources (path, buffer, etc.) for telegram buffers
+	pcall(function()
+		local blink_cmp = require("blink.cmp")
+		if blink_cmp and blink_cmp.config then
+			local cfg = blink_cmp.config
+			cfg.sources = cfg.sources or {}
+			cfg.sources.per_filetype = cfg.sources.per_filetype or {}
+			if cfg.sources.per_filetype.telegram == nil then
+				cfg.sources.per_filetype.telegram = { "telegram" }
+			end
+		end
+	end)
 	return setmetatable({}, { __index = source })
 end
 
