@@ -86,6 +86,7 @@ lua/telegram/          # Neovim Lua frontend
 ├── emojis.lua         # Static emoji name→character mapping
 ├── github.lua         # :TgPr / :TgIssue commands
 ├── help.lua           # Keybinding help popup
+├── blink.lua          # blink.cmp completion source (emoji, @mentions, bot commands, code langs)
 ├── status.lua         # Statusline component helpers
 └── render/            # Message rendering pipeline
     ├── init.lua       # Dispatcher — routes by message type
@@ -130,6 +131,7 @@ tests/
 | `github.lua` | `:TgPr` (create/merge PR with branch picker, squash/merge options, auto-delete branch), `:TgIssue` (list issues, create branch, close, assignees, open in browser) |
 | `help.lua` | Keybinding help popup |
 | `status.lua` | Statusline component helpers for integration with lualine, heirline, etc. |
+| `blink.lua` | blink.cmp completion source for the input editor — provides emoji (`:`), @mentions (`@`), bot commands (`/`), and code block languages (`` ``` ``) |
 
 ### TypeScript Backend — Key Modules
 

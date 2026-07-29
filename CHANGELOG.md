@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1] - 2026-07-29
+
+### Fixed
+
+- **blink.cmp bot command trigger** — `/` now correctly triggers bot command completions instead of `!`; fixed scan loop inconsistency where `get_trigger_characters()` included `/` but `get_completions()` didn't detect it
+- **blink.cmp source registration** — switched from direct config mutation to `add_filetype_source("telegram", "telegram")` public API, matching the codecompanion.nvim pattern
+
 ## [0.6.0] - 2026-06-08
 
 ### Added
