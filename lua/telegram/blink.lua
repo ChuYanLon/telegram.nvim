@@ -2,9 +2,7 @@
 --- Provides completions in the input editor:
 ---   :name  → emoji
 ---   @name  → chat member mention
----   #chat  → chat/channel reference
----   /cmd   → bot commands (from group info)
----   !cmd   → quick phrase templates
+---   !cmd   → bot commands (from group info)
 ---   ```    → code block language
 ---
 --- Register in blink.cmp setup:
@@ -71,7 +69,7 @@ function source:enabled()
 end
 
 function source:get_trigger_characters()
-	return { ":", "@", "#", "!", "`" }
+	return { ":", "@", "!", "`" }
 end
 
 function source:get_completions(ctx, callback)
@@ -95,7 +93,7 @@ function source:get_completions(ctx, callback)
 	local trigger_pos
 	for i = cursor, 1, -1 do
 		local char = line:sub(i, i)
-		if char == ":" or char == "@" or char == "#" or char == "!" then
+		if char == ":" or char == "@" or char == "!" then
 			if i == 1 or line:sub(i - 1, i - 1):match("%s") then
 				trigger_pos = i
 				break
@@ -131,8 +129,6 @@ function source:get_completions(ctx, callback)
 			end
 			self:ensure_members_fetched(keyword, range, callback, seen)
 		end
-	elseif trigger == "#" then
-		items = self:get_chat_items(keyword, range)
 	elseif trigger == "!" then
 		items = self:get_command_items(keyword, range)
 
@@ -201,38 +197,6 @@ function source:get_member_items(keyword, range)
 	return items
 end
 
--- ── Chat items (#name) ───────────────────────────────────────────────
-
-function source:get_chat_items(keyword, range)
-	local kw = keyword:lower()
-	local items = {}
-
-	for _, id in ipairs(state.group_ids or {}) do
-		local g = state.groups[id]
-		if g and g.title and #g.title > 0 then
-			local icon = g.type == "private" and "👤 " or g.type == "channel" and "📢 " or "👥 "
-			local label = icon .. "#" .. g.title
-			if #kw == 0 or g.title:lower():find(kw, 1, true) then
-				table.insert(items, {
-					label = label,
-					filterText = g.title:lower(),
-					textEdit = { newText = "#" .. g.title .. " ", range = range },
-					kind = ItemKind.Text,
-				})
-			end
-		end
-	end
-
-	table.sort(items, function(a, b)
-		if #kw > 0 then
-			local a_exact = a.filterText == kw
-			local b_exact = b.filterText == kw
-			if a_exact ~= b_exact then return a_exact end
-		end
-		return a.filterText < b.filterText
-	end)
-	return items
-end
 
 -- ── Bot command items (/cmd) ─────────────────────────────────────────
 
