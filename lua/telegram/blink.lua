@@ -2,7 +2,7 @@
 --- Provides completions in the input editor:
 ---   :name  → emoji
 ---   @name  → chat member mention
----   !cmd   → bot commands (from group info)
+---   /cmd   → bot commands
 ---   ```    → code block language
 ---
 --- Register in blink.cmp setup:
@@ -11,6 +11,12 @@
 ---   }
 
 local state = require("telegram.state").state
+
+-- Register telegram source for telegram buffers via blink's public API
+pcall(function()
+	local blink = require("blink.cmp")
+	blink.add_filetype_source("telegram", "telegram")
+end)
 
 -- ── Emoji name → character ─────────────────────────────────────────────
 
@@ -141,18 +147,6 @@ end)
 local source = {}
 
 function source.new(_opts, _config)
-	-- Disable other blink sources (path, buffer, etc.) for telegram buffers
-	pcall(function()
-		local blink_cmp = require("blink.cmp")
-		if blink_cmp and blink_cmp.config then
-			local cfg = blink_cmp.config
-			cfg.sources = cfg.sources or {}
-			cfg.sources.per_filetype = cfg.sources.per_filetype or {}
-			if cfg.sources.per_filetype.telegram == nil then
-				cfg.sources.per_filetype.telegram = { "telegram" }
-			end
-		end
-	end)
 	return setmetatable({}, { __index = source })
 end
 
