@@ -317,6 +317,8 @@ function source:ensure_members_fetched(keyword, range, callback, seen_names)
 			return a.filterText < b.filterText
 		end)
 		callback({ items = items })
+	end, function()
+		self._fetching_members = false
 	end)
 end
 
