@@ -147,25 +147,19 @@ function M.render(msg)
 		end
 		local content = get_renderer(msg).render(msg)
 		if msg.linkPreview and msg.linkPreview.url then
+			for _, l in ipairs(content) do
+				table.insert(out, l)
+			end
 			table.insert(out, "↗ " .. msg.linkPreview.url)
-			local has_info = false
 			if msg.linkPreview.siteName and #msg.linkPreview.siteName > 0 then
 				table.insert(out, "  " .. msg.linkPreview.siteName)
-				has_info = true
 			end
 			if msg.linkPreview.title and #msg.linkPreview.title > 0 then
 				table.insert(out, "  " .. msg.linkPreview.title)
-				has_info = true
 			end
 			if msg.linkPreview.description and #msg.linkPreview.description > 0 then
 				for _, desc_line in ipairs(vim.split(msg.linkPreview.description, "\n")) do
 					table.insert(out, "  " .. desc_line)
-				end
-				has_info = true
-			end
-			if not has_info then
-				for _, l in ipairs(content) do
-					table.insert(out, l)
 				end
 			end
 		else
