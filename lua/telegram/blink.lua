@@ -175,7 +175,7 @@ function source:get_completions(ctx, callback)
 	local trigger_pos
 	for i = cursor, 1, -1 do
 		local char = line:sub(i, i)
-		if char == ":" or char == "@" or char == "!" then
+		if char == ":" or char == "@" or char == "/" then
 			if i == 1 or line:sub(i - 1, i - 1):match("%s") then
 				trigger_pos = i
 				break
