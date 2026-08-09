@@ -62,7 +62,6 @@ Backend powered by TDLib + Node.js (TypeScript), frontend in pure Lua with HTTP 
 ### Known limitations
 - Send media (photos/videos/files/audio), stickers/GIFs
 - Scheduled messages
-- Inline bots / bot commands
 
 ### blink.cmp integration
 
