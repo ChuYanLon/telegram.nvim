@@ -23,7 +23,7 @@
     "check:docs": "pnpm gen:docs && git diff --exit-code README.md wiki/Home.md wiki/Keymaps.md wiki/Configuration.md wiki/Installation.md"
   },
   "dependencies": {
-    "dotenv": "^16.6.1",
+    "dotenv": "^18.0.4",
     "express": "^5.2.1",
     "tdl": "^8.1.0",
     "ws": "^8.21.1"
